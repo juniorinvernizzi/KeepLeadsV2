@@ -58,7 +58,6 @@ async function upsertUser(
   claims: any,
 ) {
   await storage.upsertUser({
-    id: claims["sub"],
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
@@ -92,7 +91,6 @@ export async function setupAuth(app: Express) {
         config,
         scope: "openid email profile offline_access",
         callbackURL: `https://${domain}/api/callback`,
-        passReqToCallback: false,
       },
       verify,
     );
@@ -119,7 +117,7 @@ export async function setupAuth(app: Express) {
     passport.authenticate(`replitauth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
-    })(req, res, (err) => {
+    })(req, res, (err: any) => {
       if (err) {
         console.error("Authentication callback error:", err);
         return res.redirect("/api/login");
