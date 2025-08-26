@@ -185,15 +185,14 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
               </div>
               <p className="text-lg font-bold text-gray-900">{lead.availableLives}</p>
             </div>
-          </div>
-
-          {/* Tipo de Plano com destaque */}
-          <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 mb-6 border border-orange-100">
-            <div className="flex items-center space-x-2 mb-2">
-              <CreditCard className="w-4 h-4 text-orange-600" />
-              <span className="text-xs font-medium text-orange-600 uppercase tracking-wide">Tipo de Plano</span>
+            
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-3 border border-orange-100 col-span-2">
+              <div className="flex items-center space-x-2 mb-1">
+                <CreditCard className="w-4 h-4 text-orange-600" />
+                <span className="text-xs font-medium text-orange-600">Tipo de Plano</span>
+              </div>
+              <p className="text-lg font-bold text-gray-900 capitalize">{lead.planType}</p>
             </div>
-            <p className="text-lg font-bold text-gray-900 capitalize">{lead.planType}</p>
           </div>
 
           {/* Preço com destaque especial */}
