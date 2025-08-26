@@ -11,6 +11,7 @@ import LeadsMarketplace from "@/pages/LeadsMarketplace";
 import MyLeads from "@/pages/MyLeads";
 import Credits from "@/pages/Credits";
 import AdminPanel from "@/pages/AdminPanel";
+import ManageLeads from "@/pages/ManageLeads";
 import PublicLeads from "@/pages/PublicLeads";
 
 function Router() {
@@ -32,6 +33,7 @@ function Router() {
           <Route path="/my-leads" component={MyLeads} />
           <Route path="/credits" component={Credits} />
           <Route path="/admin" component={AdminPanel} />
+          <Route path="/admin/manage-leads" component={ManageLeads} />
         </>
       )}
       <Route component={NotFound} />
