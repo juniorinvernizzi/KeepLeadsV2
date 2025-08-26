@@ -38,20 +38,6 @@ export default function Layout({ children }: LayoutProps) {
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!isLoading && !user) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [user, isLoading, toast]);
 
   if (isLoading) {
     return (
