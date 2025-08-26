@@ -17,8 +17,19 @@ import {
   Filter,
   Star,
   BarChart3,
-  Eye
+  Eye,
+  Settings,
+  LogOut,
+  ChevronDown
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface User {
   id: string;
@@ -125,10 +136,47 @@ export default function Dashboard() {
               </p>
             </div>
             
-            <Button className="bg-purple-600 hover:bg-purple-700">
-              <Filter className="w-4 h-4 mr-2" />
-              Filtrar
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button className="bg-purple-600 hover:bg-purple-700">
+                <Filter className="w-4 h-4 mr-2" />
+                Filtrar
+              </Button>
+              
+              {/* User Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 p-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.profileImageUrl || ''} alt={user?.firstName || 'User'} />
+                      <AvatarFallback className="bg-purple-100 text-purple-700 font-semibold">
+                        {(user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'A').toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium">{user?.firstName || user?.email?.split('@')[0] || 'Admin'}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-3 py-2">
+                    <p className="text-sm font-medium">{user?.firstName || 'Admin'}</p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Editar Perfil</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    className="cursor-pointer text-red-600 hover:bg-red-50"
+                    onClick={() => window.location.href = '/api/logout'}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sair</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           {/* Admin Stats */}
@@ -290,14 +338,51 @@ export default function Dashboard() {
               Dashboard
             </h1>
             <p className="text-gray-600">
-              Bem-vindo de volta! Aqui está um resumo da sua atividade.
+              Bem-vindo de volta, {user?.firstName || user?.email?.split('@')[0] || 'usuário'}! Aqui está um resumo da sua atividade.
             </p>
           </div>
           
-          <Button className="bg-purple-600 hover:bg-purple-700">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtrar
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button className="bg-purple-600 hover:bg-purple-700">
+              <Filter className="w-4 h-4 mr-2" />
+              Filtrar
+            </Button>
+            
+            {/* User Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 p-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.profileImageUrl || ''} alt={user?.firstName || 'User'} />
+                    <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
+                      {(user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium">{user?.firstName || user?.email?.split('@')[0] || 'Usuário'}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="px-3 py-2">
+                  <p className="text-sm font-medium">{user?.firstName || 'Usuário'}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Editar Perfil</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="cursor-pointer text-red-600 hover:bg-red-50"
+                  onClick={() => window.location.href = '/api/logout'}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Sair</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Stats Grid */}
