@@ -87,7 +87,10 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
             >
               {company?.logo ? (
                 <img 
-                  src={company.logo} 
+                  src={company.logo.startsWith('@assets/') ? 
+                    new URL(`../../../${company.logo.replace('@assets/', 'attached_assets/')}`, import.meta.url).href : 
+                    company.logo
+                  } 
                   alt={company.name}
                   className="w-8 h-8 object-contain filter brightness-0 invert"
                 />

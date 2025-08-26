@@ -100,7 +100,10 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
             <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm mb-2">
               {company?.logo ? (
                 <img 
-                  src={company.logo} 
+                  src={company.logo.startsWith('@assets/') ? 
+                    new URL(`../../../${company.logo.replace('@assets/', 'attached_assets/')}`, import.meta.url).href : 
+                    company.logo
+                  } 
                   alt={company.name}
                   className="w-12 h-12 object-contain filter brightness-0 invert"
                 />
