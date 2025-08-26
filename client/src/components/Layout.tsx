@@ -15,7 +15,8 @@ import {
   LogOut,
   Menu,
   X,
-  Target
+  Target,
+  Plus
 } from "lucide-react";
 
 interface LayoutProps {
@@ -66,7 +67,7 @@ export default function Layout({ children }: LayoutProps) {
     },
     { 
       path: "/leads", 
-      label: "Leads", 
+      label: "Marketplace", 
       icon: <ShoppingBag className="w-5 h-5" />
     },
     { 
@@ -79,11 +80,18 @@ export default function Layout({ children }: LayoutProps) {
       label: "Adicionar Crédito", 
       icon: <CreditCard className="w-5 h-5" />
     },
-    ...(user.role === "admin" ? [{
-      path: "/admin", 
-      label: "Configurações", 
-      icon: <Settings className="w-5 h-5" />
-    }] : []),
+    ...(user.role === "admin" ? [
+      {
+        path: "/admin/add-lead", 
+        label: "Adicionar Lead", 
+        icon: <Plus className="w-5 h-5" />
+      },
+      {
+        path: "/admin", 
+        label: "Painel Admin", 
+        icon: <Settings className="w-5 h-5" />
+      }
+    ] : []),
   ];
 
   const getSidebarItemClass = (path: string) => {
@@ -122,7 +130,9 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* Navigation Header */}
         <div className="px-6 py-4">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">GERAL</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            {user.role === "admin" ? "ADMINISTRAÇÃO" : "GERAL"}
+          </p>
         </div>
 
         {/* Navigation */}
