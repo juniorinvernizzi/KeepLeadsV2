@@ -200,94 +200,106 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
   return (
     <>
       <Card 
-        className="w-full max-w-sm bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-0 cursor-pointer" 
+        className="w-full max-w-sm bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 cursor-pointer group" 
         data-testid={`card-lead-${lead.id}`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex h-44">
-          {/* Left side - Company Logo/Branding */}
-          <div 
-            className="w-40 flex flex-col items-center justify-center relative"
-            style={{ backgroundColor: company?.color || '#dc2626' }}
-          >
-            {/* Time indicator */}
-            <div className="absolute top-3 left-3 bg-white/20 rounded-full px-2 py-1">
-              <span className="text-white text-xs font-medium">
-                {daysSinceCreated === 0 ? 'Hoje' : `${daysSinceCreated}d`}
+        {/* Header */}
+        <div className="p-4 border-b border-gray-100">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-2">
+              <div 
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
+                style={{ backgroundColor: company?.color || '#7C3AED' }}
+              >
+                {company?.name?.charAt(0) || 'L'}
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-sm">
+                  {company?.name || 'Operadora'}
+                </h3>
+                <p className="text-xs text-gray-500">Plano de Saúde</p>
+              </div>
+            </div>
+            <Badge className={`text-xs ${getQualityColor(lead.quality)}`}>
+              {lead.quality === 'high' ? 'Alta' : lead.quality === 'medium' ? 'Média' : 'Baixa'}
+            </Badge>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-gray-500 flex items-center space-x-1">
+              <Calendar className="w-3 h-3" />
+              <span>{daysSinceCreated === 0 ? 'Hoje' : `${daysSinceCreated}d`}</span>
+            </div>
+            <Badge className={statusBadge.className}>
+              {statusBadge.label}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4">
+          {/* Basic Info */}
+          <div className="space-y-2 mb-4">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500 flex items-center">
+                <MapPin className="w-3 h-3 mr-1" />
+                Localização
+              </span>
+              <span className="font-medium text-gray-900" data-testid={`text-location-${lead.id}`}>
+                {lead.city}, {lead.state}
               </span>
             </div>
-
-            {/* Company Logo */}
-            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm mb-2">
-              {company?.logo ? (
-                <img 
-                  src={company.logo.startsWith('@assets/') ? 
-                    new URL(`../../../${company.logo.replace('@assets/', 'attached_assets/')}`, import.meta.url).href : 
-                    company.logo
-                  } 
-                  alt={company.name}
-                  className="w-12 h-12 object-contain filter brightness-0 invert"
-                />
-              ) : (
-                <span className="text-white font-bold text-2xl">
-                  {company?.name?.charAt(0) || 'L'}
-                </span>
-              )}
+            
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500 flex items-center">
+                <User className="w-3 h-3 mr-1" />
+                Idade
+              </span>
+              <span className="font-medium text-gray-900">{lead.age} anos</span>
             </div>
-
-            {/* Quality Badge */}
-            <div className="bg-white/20 rounded-full px-3 py-1">
-              <span className="text-white text-xs font-semibold">
-                Qualidade {lead.quality}
+            
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500">Vidas</span>
+              <span className="font-medium text-gray-900">{lead.availableLives}</span>
+            </div>
+            
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-500">Orçamento</span>
+              <span className="font-medium text-gray-900">
+                R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}
               </span>
             </div>
           </div>
 
-          {/* Right side - Lead Information */}
-          <div className="flex-1 p-4 flex flex-col justify-between relative">
-            {/* Header */}
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-1">
-                {company?.name || 'Operadora'}
-              </h3>
-              <p className="text-sm text-gray-500 mb-3">Plano de Saúde</p>
-            </div>
-
-            {/* Price and Action */}
-            <div>
-              <div className="text-right mb-3">
-                <div className="text-2xl font-bold text-gray-900" data-testid={`text-price-${lead.id}`}>
-                  R$ {parseFloat(lead.price).toFixed(2)}
-                </div>
+          {/* Price */}
+          <div className="bg-gray-50 rounded-lg p-3 mb-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-gray-900 mb-1" data-testid={`text-price-${lead.id}`}>
+                R$ {parseFloat(lead.price).toFixed(2)}
               </div>
-              
-              {canPurchase ? (
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowPurchaseModal(true);
-                  }}
-                  disabled={!hasSufficientCredits}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl text-sm tracking-wide transition-all duration-200"
-                  data-testid={`button-purchase-${lead.id}`}
-                >
-                  {!hasSufficientCredits ? "SALDO INSUFICIENTE" : "COMPRAR AGORA"}
-                </Button>
-              ) : (
-                <div className="w-full bg-red-100 text-red-800 font-bold py-3 rounded-xl text-sm text-center">
-                  {lead.status === 'sold' ? 'VENDIDO' : 'INDISPONÍVEL'}
-                </div>
-              )}
-            </div>
-
-            {/* Bottom right indicator */}
-            <div className="absolute bottom-3 right-3">
-              <div className="flex items-center space-x-1 text-gray-400">
-                <User className="w-3 h-3" />
-                <span className="text-xs">Individual</span>
-              </div>
+              <p className="text-xs text-gray-500">Preço do lead</p>
             </div>
           </div>
+
+          {/* Action Button */}
+          {canPurchase ? (
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowPurchaseModal(true);
+              }}
+              disabled={!hasSufficientCredits}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg text-sm transition-all duration-200"
+              data-testid={`button-purchase-${lead.id}`}
+            >
+              {!hasSufficientCredits ? "SALDO INSUFICIENTE" : "COMPRAR AGORA"}
+            </Button>
+          ) : (
+            <div className="w-full bg-red-100 text-red-800 font-semibold py-2 rounded-lg text-sm text-center">
+              {lead.status === 'sold' ? 'VENDIDO' : 'INDISPONÍVEL'}
+            </div>
+          )}
         </div>
 
         {/* Expandable details - Information that shows when clicked */}
@@ -388,13 +400,13 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
         )}
 
         {/* Action buttons at bottom */}
-        <div className="border-t border-gray-100 p-2 flex space-x-2">
+        <div className="border-t border-gray-100 p-3 flex space-x-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
-            className="flex-1 flex items-center justify-center py-2 text-gray-500 hover:text-gray-700 transition-colors"
+            className="flex-1 flex items-center justify-center py-2 text-gray-500 hover:text-gray-700 transition-colors rounded-lg hover:bg-gray-50"
           >
             {isExpanded ? (
               <>
@@ -404,7 +416,7 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
             ) : (
               <>
                 <Eye className="w-4 h-4 mr-2" />
-                <span className="text-sm">Expandir</span>
+                <span className="text-sm">Ver mais</span>
               </>
             )}
           </button>
@@ -414,10 +426,10 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
               e.stopPropagation();
               setShowInfoModal(true);
             }}
-            className="flex-1 flex items-center justify-center py-2 text-purple-600 hover:text-purple-700 transition-colors"
+            className="flex-1 flex items-center justify-center py-2 text-purple-600 hover:text-purple-700 transition-colors rounded-lg hover:bg-purple-50"
           >
             <Star className="w-4 h-4 mr-2" />
-            <span className="text-sm">Popup</span>
+            <span className="text-sm">Detalhes</span>
           </button>
         </div>
       </Card>
