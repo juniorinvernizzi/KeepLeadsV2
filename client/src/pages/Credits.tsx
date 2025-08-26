@@ -141,7 +141,7 @@ export default function Credits() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="w-full px-[60px] py-8">
+        <div className="w-4/5 mx-auto py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-slate-200 rounded w-1/3 mb-8"></div>
             <div className="bg-slate-200 rounded-xl h-32 mb-8"></div>
@@ -157,7 +157,7 @@ export default function Credits() {
 
   return (
     <Layout>
-      <div className="w-full px-[60px] py-8">
+      <div className="w-4/5 mx-auto py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-slate-800 mb-2" data-testid="text-page-title">
             Gerenciar Créditos
