@@ -315,143 +315,14 @@ export default function AdminPanel() {
 
         {/* Admin Tabs */}
         <Card>
-          <Tabs defaultValue="leads" className="w-full">
+          <Tabs defaultValue="users" className="w-full">
             <div className="border-b border-slate-200 px-6 py-4">
-              <TabsList className="grid w-full max-w-lg grid-cols-3">
-                <TabsTrigger value="leads">Leads</TabsTrigger>
+              <TabsList className="grid w-full max-w-lg grid-cols-2">
                 <TabsTrigger value="users">Usuários</TabsTrigger>
                 <TabsTrigger value="settings">Configurações</TabsTrigger>
               </TabsList>
             </div>
 
-            {/* Leads Tab */}
-            <TabsContent value="leads" className="mt-0">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Gerenciar Leads</CardTitle>
-                  <Button 
-                    onClick={() => {
-                      setEditingLead(null);
-                      form.reset();
-                      setShowLeadModal(true);
-                    }}
-                    data-testid="button-add-lead"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Adicionar Lead
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {allLeads.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="w-12 h-12 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
-                      <Users className="w-6 h-6 text-slate-400" />
-                    </div>
-                    <p className="text-slate-600" data-testid="text-no-leads">Nenhum lead encontrado</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-slate-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Lead
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Operadora
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Qualidade
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Preço
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Ações
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-slate-200">
-                        {allLeads.map((lead) => {
-                          const company = companies.find(c => c.id === lead.insuranceCompanyId);
-                          return (
-                            <tr key={lead.id} className="hover:bg-slate-50" data-testid={`row-lead-${lead.id}`}>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div>
-                                  <div className="text-sm font-medium text-slate-900" data-testid={`text-lead-name-${lead.id}`}>
-                                    {lead.name}
-                                  </div>
-                                  <div className="text-sm text-slate-500">{lead.email}</div>
-                                  <div className="text-sm text-slate-500">{lead.city}, {lead.state}</div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-slate-900">{company?.name || "N/A"}</div>
-                                <div className="text-sm text-slate-500">{lead.planType}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <Badge 
-                                  className={
-                                    lead.quality === "high" ? "bg-green-100 text-green-800" :
-                                    lead.quality === "medium" ? "bg-yellow-100 text-yellow-800" :
-                                    "bg-red-100 text-red-800"
-                                  }
-                                  data-testid={`text-lead-quality-${lead.id}`}
-                                >
-                                  {lead.quality === "high" ? "Alta" : lead.quality === "medium" ? "Média" : "Baixa"}
-                                </Badge>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" data-testid={`text-lead-price-${lead.id}`}>
-                                R$ {parseFloat(lead.price).toFixed(2)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <Badge 
-                                  className={
-                                    lead.status === "available" ? "bg-green-100 text-green-800" :
-                                    lead.status === "sold" ? "bg-blue-100 text-blue-800" :
-                                    lead.status === "reserved" ? "bg-yellow-100 text-yellow-800" :
-                                    "bg-gray-100 text-gray-800"
-                                  }
-                                  data-testid={`text-lead-status-${lead.id}`}
-                                >
-                                  {lead.status === "available" ? "Disponível" : 
-                                   lead.status === "sold" ? "Vendido" :
-                                   lead.status === "reserved" ? "Reservado" : "Expirado"}
-                                </Badge>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => handleEditLead(lead)}
-                                  className="text-primary hover:text-primary-dark mr-2" 
-                                  data-testid={`button-edit-lead-${lead.id}`}
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={() => handleDeleteLead(lead.id)}
-                                  className="text-red-600 hover:text-red-800" 
-                                  data-testid={`button-delete-lead-${lead.id}`}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </TabsContent>
 
             {/* Users Tab */}
             <TabsContent value="users" className="mt-0">
