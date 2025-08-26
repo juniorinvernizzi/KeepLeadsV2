@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   Target,
-  Plus
+  Plus,
+  FolderOpen
 } from "lucide-react";
 
 interface LayoutProps {
@@ -85,6 +86,11 @@ export default function Layout({ children }: LayoutProps) {
         path: "/admin/add-lead", 
         label: "Adicionar Lead", 
         icon: <Plus className="w-5 h-5" />
+      },
+      {
+        path: "/admin/manage-leads", 
+        label: "Gerenciar Leads", 
+        icon: <FolderOpen className="w-5 h-5" />
       },
       {
         path: "/admin", 
