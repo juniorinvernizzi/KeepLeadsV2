@@ -113,62 +113,7 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Fixed Global Header */}
-      <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 h-16">
-        <div className="flex items-center justify-between h-full px-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center">
-              <Target className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <span className="text-lg font-bold text-gray-900">Keep</span>
-              <span className="text-lg font-bold text-purple-600">Leads</span>
-            </div>
-          </div>
-          
-          {/* User Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 p-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={''} alt={user?.firstName || 'User'} />
-                  <AvatarFallback className={`${user?.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'} font-semibold`}>
-                    {(user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium hidden md:block">{user?.firstName || user?.email?.split('@')[0] || 'Usuário'}</span>
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <div className="px-3 py-2">
-                <p className="text-sm font-medium">{user?.firstName || 'Usuário'}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
-                <p className="text-xs text-green-600 font-medium mt-1">
-                  Saldo: R$ {parseFloat(user?.credits || "0").toFixed(2)}
-                </p>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Editar Perfil</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                className="cursor-pointer text-red-600 hover:bg-red-50"
-                onClick={() => window.location.href = '/api/logout'}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
-      
-      {/* Main Layout with top margin for fixed header */}
-      <div className="flex flex-1 pt-16">
+    <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-lg transform lg:translate-x-0 lg:static lg:inset-0 transition duration-200 ease-in-out lg:transition-none`}>
         {/* Sidebar Header */}
@@ -252,6 +197,47 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Fixed Header for content area only */}
+        <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-end px-6 sticky top-0 z-40">
+          {/* User Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2 p-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={''} alt={user?.firstName || 'User'} />
+                  <AvatarFallback className={`${user?.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'} font-semibold`}>
+                    {(user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium hidden md:block">{user?.firstName || user?.email?.split('@')[0] || 'Usuário'}</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium">{user?.firstName || 'Usuário'}</p>
+                <p className="text-xs text-gray-500">{user?.email}</p>
+                <p className="text-xs text-green-600 font-medium mt-1">
+                  Saldo: R$ {parseFloat(user?.credits || "0").toFixed(2)}
+                </p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Editar Perfil</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="cursor-pointer text-red-600 hover:bg-red-50"
+                onClick={() => window.location.href = '/api/logout'}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
+
         {/* Mobile menu button */}
         <div className="lg:hidden absolute top-4 left-4 z-10">
           <button
@@ -269,7 +255,6 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </main>
       </div>
-    </div>
     </div>
   );
 }
