@@ -11,12 +11,17 @@ import LeadsMarketplace from "@/pages/LeadsMarketplace";
 import MyLeads from "@/pages/MyLeads";
 import Credits from "@/pages/Credits";
 import AdminPanel from "@/pages/AdminPanel";
+import PublicLeads from "@/pages/PublicLeads";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
   return (
     <Switch>
+      {/* Public routes */}
+      <Route path="/leads-publicos" component={PublicLeads} />
+      
+      {/* Auth-required routes */}
       {isLoading || !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (

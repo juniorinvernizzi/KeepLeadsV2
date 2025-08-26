@@ -27,6 +27,16 @@ export default function Landing() {
               : "Gestão e Venda de Leads de Planos de Saúde"
             }
           </p>
+          
+          {/* Link to public leads */}
+          <div className="mt-4">
+            <a 
+              href="/leads-publicos" 
+              className="text-primary hover:text-primary-dark font-medium text-sm underline"
+            >
+              Ver leads disponíveis (sem necessidade de login)
+            </a>
+          </div>
         </div>
 
         {/* Auth Form */}
