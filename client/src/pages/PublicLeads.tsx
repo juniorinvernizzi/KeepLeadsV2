@@ -165,7 +165,14 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              window.location.href = "/api/login";
+              // Detect if we're in Replit preview (iframe)
+              if (window.parent !== window) {
+                // Open in new tab for Replit preview
+                window.open("/api/login", "_blank");
+              } else {
+                // Normal redirect for other environments
+                window.location.href = "/api/login";
+              }
             }}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg text-sm transition-all duration-200"
             data-testid={`button-login-to-buy-${lead.id}`}

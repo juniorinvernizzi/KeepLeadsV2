@@ -116,7 +116,16 @@ export default function Landing() {
             
             <Button 
               className="w-full" 
-              onClick={() => window.location.href = "/api/login"}
+              onClick={() => {
+                // Detect if we're in Replit preview (iframe)
+                if (window.parent !== window) {
+                  // Open in new tab for Replit preview
+                  window.open("/api/login", "_blank");
+                } else {
+                  // Normal redirect for other environments
+                  window.location.href = "/api/login";
+                }
+              }}
               data-testid="button-auth"
             >
               {isRegister ? "Criar Conta" : "Entrar"}
