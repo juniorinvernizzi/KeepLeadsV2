@@ -112,18 +112,7 @@ export async function setupAuth(app: Express) {
     
     passport.authenticate(`replitauth:${req.hostname}`, {
       scope: ["openid", "email", "profile", "offline_access"],
-      prompt: "none", // Don't prompt for consent if already authorized
-    })(req, res, (err) => {
-      if (err) {
-        console.error("Authentication login error:", err);
-        // If prompt=none fails, try normal login
-        passport.authenticate(`replitauth:${req.hostname}`, {
-          scope: ["openid", "email", "profile", "offline_access"],
-        })(req, res, next);
-        return;
-      }
-      next();
-    });
+    })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
