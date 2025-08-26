@@ -461,7 +461,7 @@ export default function PublicLeads() {
 
         {/* Leads Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="bg-white rounded-xl h-80 animate-pulse"></div>
             ))}
@@ -484,7 +484,7 @@ export default function PublicLeads() {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {leads.map((lead) => (
               <PublicLeadCard 
                 key={lead.id} 
