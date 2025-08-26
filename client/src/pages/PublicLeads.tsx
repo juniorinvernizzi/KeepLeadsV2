@@ -98,21 +98,9 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
 
             {/* Company Logo */}
             <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm mb-2 border border-white/20">
-              {company?.logo ? (
-                <img 
-                  src={company.logo.startsWith('@assets/') ? 
-                    new URL(`../../../${company.logo.replace('@assets/', 'attached_assets/')}`, import.meta.url).href : 
-                    company.logo
-                  } 
-                  alt={company.name}
-                  className="w-14 h-14 object-contain"
-                  style={{ filter: 'brightness(0) invert(1)' }}
-                />
-              ) : (
-                <span className="text-white font-bold text-2xl">
-                  {company?.name?.charAt(0) || 'L'}
-                </span>
-              )}
+              <span className="text-white font-bold text-2xl">
+                {company?.name?.charAt(0) || 'L'}
+              </span>
             </div>
 
             {/* Quality Badge */}
