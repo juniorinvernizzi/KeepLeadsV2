@@ -40,7 +40,19 @@ export default function LeadsMarketplace() {
   });
 
   const { data: leads = [], isLoading, refetch } = useQuery<Lead[]>({
-    queryKey: ["/api/leads", filters],
+    queryKey: ["/api/leads", JSON.stringify(filters)],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== "all") {
+          searchParams.append(key, value);
+        }
+      });
+      const url = `/api/leads${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+      const response = await fetch(url, { credentials: "include" });
+      if (!response.ok) throw new Error(`${response.status}: ${response.statusText}`);
+      return response.json();
+    },
     enabled: true,
   });
 
