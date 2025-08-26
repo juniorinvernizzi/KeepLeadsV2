@@ -107,11 +107,11 @@ export class DatabaseStorage implements IStorage {
         );
       }
       
-      if (filters.insuranceCompany) {
+      if (filters.insuranceCompany && filters.insuranceCompany !== "all") {
         conditions.push(eq(leads.insuranceCompanyId, filters.insuranceCompany));
       }
       
-      if (filters.city) {
+      if (filters.city && filters.city !== "all") {
         conditions.push(eq(leads.city, filters.city));
       }
       
@@ -129,7 +129,7 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(leads.status, "available"));
       }
       
-      if (filters.ageRange) {
+      if (filters.ageRange && filters.ageRange !== "all") {
         const [min, max] = filters.ageRange.split('-').map(Number);
         if (!isNaN(min) && !isNaN(max)) {
           conditions.push(and(gte(leads.age, min), lte(leads.age, max)));

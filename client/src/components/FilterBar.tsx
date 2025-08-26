@@ -66,9 +66,9 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
   const clearFilters = () => {
     const emptyFilters = {
       search: "",
-      insuranceCompany: "",
-      ageRange: "",
-      city: "",
+      insuranceCompany: "all",
+      ageRange: "all",
+      city: "all",
       minPrice: "",
       maxPrice: "",
     };
@@ -106,7 +106,7 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
                 <SelectValue placeholder="Todas as operadoras" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as operadoras</SelectItem>
+                <SelectItem value="all">Todas as operadoras</SelectItem>
                 {companies.map((company) => (
                   <SelectItem key={company.id} value={company.id}>
                     {company.name}
@@ -123,7 +123,7 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
                 <SelectValue placeholder="Todas as idades" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as idades</SelectItem>
+                <SelectItem value="all">Todas as idades</SelectItem>
                 {ageRanges.map((range) => (
                   <SelectItem key={range.value} value={range.value}>
                     {range.label}
@@ -140,7 +140,7 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
                 <SelectValue placeholder="Todas as cidades" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as cidades</SelectItem>
+                <SelectItem value="all">Todas as cidades</SelectItem>
                 {cities.map((city) => (
                   <SelectItem key={city} value={city}>
                     {city}

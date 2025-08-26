@@ -32,9 +32,9 @@ interface Lead {
 export default function LeadsMarketplace() {
   const [filters, setFilters] = useState({
     search: "",
-    insuranceCompany: "",
-    ageRange: "",
-    city: "",
+    insuranceCompany: "all",
+    ageRange: "all",
+    city: "all",
     minPrice: "",
     maxPrice: "",
   });
@@ -132,7 +132,14 @@ export default function LeadsMarketplace() {
             </p>
             <Button 
               variant="outline" 
-              onClick={() => handleFilterChange({})}
+              onClick={() => handleFilterChange({
+                search: "",
+                insuranceCompany: "all",
+                ageRange: "all", 
+                city: "all",
+                minPrice: "",
+                maxPrice: "",
+              })}
               data-testid="button-clear-filters"
             >
               Limpar filtros
