@@ -6,6 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { useEffect } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   LayoutDashboard,
   ShoppingBag, 
@@ -16,8 +24,8 @@ import {
   Menu,
   X,
   Target,
-  Plus,
-  FolderOpen
+  FolderOpen,
+  ChevronDown
 } from "lucide-react";
 
 interface LayoutProps {
@@ -83,11 +91,6 @@ export default function Layout({ children }: LayoutProps) {
     },
     ...(user.role === "admin" ? [
       {
-        path: "/admin/add-lead", 
-        label: "Adicionar Lead", 
-        icon: <Plus className="w-5 h-5" />
-      },
-      {
         path: "/admin/manage-leads", 
         label: "Gerenciar Leads", 
         icon: <FolderOpen className="w-5 h-5" />
@@ -110,7 +113,62 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Fixed Global Header */}
+      <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 h-16">
+        <div className="flex items-center justify-between h-full px-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center">
+              <Target className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <span className="text-lg font-bold text-gray-900">Keep</span>
+              <span className="text-lg font-bold text-purple-600">Leads</span>
+            </div>
+          </div>
+          
+          {/* User Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2 p-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={''} alt={user?.firstName || 'User'} />
+                  <AvatarFallback className={`${user?.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'} font-semibold`}>
+                    {(user?.firstName?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium hidden md:block">{user?.firstName || user?.email?.split('@')[0] || 'Usuário'}</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium">{user?.firstName || 'Usuário'}</p>
+                <p className="text-xs text-gray-500">{user?.email}</p>
+                <p className="text-xs text-green-600 font-medium mt-1">
+                  Saldo: R$ {parseFloat(user?.credits || "0").toFixed(2)}
+                </p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Editar Perfil</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="cursor-pointer text-red-600 hover:bg-red-50"
+                onClick={() => window.location.href = '/api/logout'}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Sair</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+      
+      {/* Main Layout with top margin for fixed header */}
+      <div className="flex flex-1 pt-16">
       {/* Sidebar */}
       <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-lg transform lg:translate-x-0 lg:static lg:inset-0 transition duration-200 ease-in-out lg:transition-none`}>
         {/* Sidebar Header */}
@@ -157,9 +215,9 @@ export default function Layout({ children }: LayoutProps) {
           ))}
         </nav>
 
-        {/* User Info & Logout */}
+        {/* User Info */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
-          <div className="bg-gray-50 rounded-xl p-4 mb-3">
+          <div className="bg-gray-50 rounded-xl p-4">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
                 <span className="text-sm font-semibold text-purple-600">
@@ -181,17 +239,6 @@ export default function Layout({ children }: LayoutProps) {
               </div>
             </div>
           </div>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => window.location.href = "/api/logout"}
-            className="w-full justify-start text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-            data-testid="button-logout"
-          >
-            <LogOut className="w-4 h-4 mr-3" />
-            Fazer Logout
-          </Button>
         </div>
       </div>
 
@@ -205,27 +252,15 @@ export default function Layout({ children }: LayoutProps) {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top header for mobile */}
-        <header className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 rounded-lg hover:bg-gray-100"
-            >
-              <Menu className="w-5 h-5 text-gray-500" />
-            </button>
-            
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg flex items-center justify-center">
-                <Target className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <span className="text-lg font-bold text-gray-900">Keep</span>
-                <span className="text-lg font-bold text-purple-600">Leads</span>
-              </div>
-            </div>
-          </div>
-        </header>
+        {/* Mobile menu button */}
+        <div className="lg:hidden absolute top-4 left-4 z-10">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg hover:bg-gray-100 bg-white shadow-sm border"
+          >
+            <Menu className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
 
         {/* Page content with full width and padding */}
         <main className="flex-1 overflow-auto">
@@ -234,6 +269,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </main>
       </div>
+    </div>
     </div>
   );
 }

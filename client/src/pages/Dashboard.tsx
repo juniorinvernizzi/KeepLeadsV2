@@ -17,19 +17,8 @@ import {
   Filter,
   Star,
   BarChart3,
-  Eye,
-  Settings,
-  LogOut,
-  ChevronDown
+  Eye
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface User {
   id: string;
