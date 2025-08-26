@@ -33,8 +33,11 @@ export interface IStorage {
     maxPrice?: number;
     status?: string;
   }): Promise<Lead[]>;
+  getAllLeads(): Promise<Lead[]>;
   getLeadById(id: string): Promise<Lead | undefined>;
   createLead(lead: InsertLead): Promise<Lead>;
+  updateLead(id: string, data: InsertLead): Promise<Lead | undefined>;
+  deleteLead(id: string): Promise<boolean>;
   updateLeadStatus(id: string, status: string): Promise<void>;
   
   // Lead purchase operations
@@ -83,7 +86,28 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Lead operations
+  // Lead operations  
+  async getAllLeads(): Promise<Lead[]> {
+    return db.select().from(leads).orderBy(desc(leads.createdAt));
+  }
+
+  async updateLead(id: string, data: InsertLead): Promise<Lead | undefined> {
+    const [lead] = await db
+      .update(leads)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(leads.id, id))
+      .returning();
+    return lead;
+  }
+
+  async deleteLead(id: string): Promise<boolean> {
+    const result = await db.delete(leads).where(eq(leads.id, id));
+    return result.rowCount > 0;
+  }
+
   async getLeads(filters?: {
     search?: string;
     insuranceCompany?: string;

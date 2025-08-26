@@ -241,6 +241,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin lead management routes
+  app.get('/api/admin/leads', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const allLeads = await storage.getAllLeads();
+      res.json(allLeads);
+    } catch (error) {
+      console.error("Error fetching admin leads:", error);
+      res.status(500).json({ message: "Failed to fetch leads" });
+    }
+  });
+
   app.post('/api/admin/leads', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = req.user!.claims.sub;
@@ -256,6 +274,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating lead:", error);
       res.status(500).json({ message: "Failed to create lead" });
+    }
+  });
+
+  app.put('/api/admin/leads/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const validatedData = insertLeadSchema.parse(req.body);
+      const lead = await storage.updateLead(req.params.id, validatedData);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      res.json(lead);
+    } catch (error) {
+      console.error("Error updating lead:", error);
+      res.status(500).json({ message: "Failed to update lead" });
+    }
+  });
+
+  app.delete('/api/admin/leads/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const success = await storage.deleteLead(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Lead not found" });
+      }
+      res.json({ message: "Lead deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting lead:", error);
+      res.status(500).json({ message: "Failed to delete lead" });
     }
   });
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import Layout from "@/components/Layout";
@@ -7,6 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { insertLeadSchema, type Lead, type InsuranceCompany } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Plus, Edit, Trash2, DollarSign, Users } from "lucide-react";
 
 interface User {
   id: string;
@@ -26,9 +38,43 @@ interface AdminStats {
   totalRevenue: string;
 }
 
+// Form schema for lead creation/editing
+const leadFormSchema = insertLeadSchema.extend({
+  price: z.string().min(1, "Preço é obrigatório"),
+  budgetMin: z.string().optional(),
+  budgetMax: z.string().optional(),
+});
+
+type LeadFormData = z.infer<typeof leadFormSchema>;
+
 export default function AdminPanel() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [showLeadModal, setShowLeadModal] = useState(false);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  
+  const form = useForm<LeadFormData>({
+    resolver: zodResolver(leadFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      age: 25,
+      city: "",
+      state: "",
+      insuranceCompanyId: "",
+      planType: "individual",
+      budgetMin: "",
+      budgetMax: "",
+      availableLives: 1,
+      source: "",
+      campaign: "",
+      quality: "medium",
+      status: "available",
+      price: "",
+      notes: "",
+    },
+  });
 
   // Redirect non-admin users
   useEffect(() => {
@@ -51,6 +97,116 @@ export default function AdminPanel() {
     queryKey: ["/api/admin/users"],
     enabled: user?.role === "admin",
   });
+
+  const { data: allLeads = [] } = useQuery<Lead[]>({
+    queryKey: ["/api/admin/leads"],
+    enabled: user?.role === "admin",
+  });
+
+  const { data: companies = [] } = useQuery<InsuranceCompany[]>({
+    queryKey: ["/api/insurance-companies"],
+    enabled: user?.role === "admin",
+  });
+
+  // Mutation for creating/updating leads
+  const leadMutation = useMutation({
+    mutationFn: async (data: LeadFormData) => {
+      const leadData = {
+        ...data,
+        price: parseFloat(data.price),
+        budgetMin: data.budgetMin ? parseFloat(data.budgetMin) : null,
+        budgetMax: data.budgetMax ? parseFloat(data.budgetMax) : null,
+      };
+
+      if (editingLead) {
+        return apiRequest(`/api/admin/leads/${editingLead.id}`, {
+          method: "PUT",
+          body: JSON.stringify(leadData),
+        });
+      } else {
+        return apiRequest("/api/admin/leads", {
+          method: "POST", 
+          body: JSON.stringify(leadData),
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setShowLeadModal(false);
+      setEditingLead(null);
+      form.reset();
+      toast({
+        title: "Sucesso",
+        description: editingLead ? "Lead atualizado com sucesso!" : "Lead criado com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: `Falha ao ${editingLead ? "atualizar" : "criar"} lead: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for deleting leads  
+  const deleteMutation = useMutation({
+    mutationFn: async (leadId: string) => {
+      return apiRequest(`/api/admin/leads/${leadId}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Sucesso",
+        description: "Lead excluído com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro", 
+        description: `Falha ao excluir lead: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditLead = (lead: Lead) => {
+    setEditingLead(lead);
+    form.reset({
+      name: lead.name,
+      email: lead.email,
+      phone: lead.phone,
+      age: lead.age,
+      city: lead.city,
+      state: lead.state,
+      insuranceCompanyId: lead.insuranceCompanyId || "",
+      planType: lead.planType,
+      budgetMin: lead.budgetMin?.toString() || "",
+      budgetMax: lead.budgetMax?.toString() || "",
+      availableLives: lead.availableLives,
+      source: lead.source,
+      campaign: lead.campaign || "",
+      quality: lead.quality,
+      status: lead.status,
+      price: lead.price.toString(),
+      notes: lead.notes || "",
+    });
+    setShowLeadModal(true);
+  };
+
+  const handleDeleteLead = (leadId: string) => {
+    if (confirm("Tem certeza que deseja excluir este lead?")) {
+      deleteMutation.mutate(leadId);
+    }
+  };
+
+  const onSubmit = (data: LeadFormData) => {
+    leadMutation.mutate(data);
+  };
 
   // Don't render for non-admin users
   if (!user || user.role !== "admin") {
@@ -167,13 +323,143 @@ export default function AdminPanel() {
 
         {/* Admin Tabs */}
         <Card>
-          <Tabs defaultValue="users" className="w-full">
+          <Tabs defaultValue="leads" className="w-full">
             <div className="border-b border-slate-200 px-6 py-4">
-              <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsList className="grid w-full max-w-lg grid-cols-3">
+                <TabsTrigger value="leads">Leads</TabsTrigger>
                 <TabsTrigger value="users">Usuários</TabsTrigger>
                 <TabsTrigger value="settings">Configurações</TabsTrigger>
               </TabsList>
             </div>
+
+            {/* Leads Tab */}
+            <TabsContent value="leads" className="mt-0">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Gerenciar Leads</CardTitle>
+                  <Button 
+                    onClick={() => {
+                      setEditingLead(null);
+                      form.reset();
+                      setShowLeadModal(true);
+                    }}
+                    data-testid="button-add-lead"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Adicionar Lead
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {allLeads.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+                      <Users className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <p className="text-slate-600" data-testid="text-no-leads">Nenhum lead encontrado</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            Lead
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            Operadora
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            Qualidade
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            Preço
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                            Ações
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-slate-200">
+                        {allLeads.map((lead) => {
+                          const company = companies.find(c => c.id === lead.insuranceCompanyId);
+                          return (
+                            <tr key={lead.id} className="hover:bg-slate-50" data-testid={`row-lead-${lead.id}`}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                  <div className="text-sm font-medium text-slate-900" data-testid={`text-lead-name-${lead.id}`}>
+                                    {lead.name}
+                                  </div>
+                                  <div className="text-sm text-slate-500">{lead.email}</div>
+                                  <div className="text-sm text-slate-500">{lead.city}, {lead.state}</div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-slate-900">{company?.name || "N/A"}</div>
+                                <div className="text-sm text-slate-500">{lead.planType}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Badge 
+                                  className={
+                                    lead.quality === "high" ? "bg-green-100 text-green-800" :
+                                    lead.quality === "medium" ? "bg-yellow-100 text-yellow-800" :
+                                    "bg-red-100 text-red-800"
+                                  }
+                                  data-testid={`text-lead-quality-${lead.id}`}
+                                >
+                                  {lead.quality === "high" ? "Alta" : lead.quality === "medium" ? "Média" : "Baixa"}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" data-testid={`text-lead-price-${lead.id}`}>
+                                R$ {parseFloat(lead.price).toFixed(2)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Badge 
+                                  className={
+                                    lead.status === "available" ? "bg-green-100 text-green-800" :
+                                    lead.status === "sold" ? "bg-blue-100 text-blue-800" :
+                                    lead.status === "reserved" ? "bg-yellow-100 text-yellow-800" :
+                                    "bg-gray-100 text-gray-800"
+                                  }
+                                  data-testid={`text-lead-status-${lead.id}`}
+                                >
+                                  {lead.status === "available" ? "Disponível" : 
+                                   lead.status === "sold" ? "Vendido" :
+                                   lead.status === "reserved" ? "Reservado" : "Expirado"}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleEditLead(lead)}
+                                  className="text-primary hover:text-primary-dark mr-2" 
+                                  data-testid={`button-edit-lead-${lead.id}`}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleDeleteLead(lead.id)}
+                                  className="text-red-600 hover:text-red-800" 
+                                  data-testid={`button-delete-lead-${lead.id}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </TabsContent>
 
             {/* Users Tab */}
             <TabsContent value="users" className="mt-0">
@@ -348,6 +634,323 @@ export default function AdminPanel() {
             </TabsContent>
           </Tabs>
         </Card>
+
+        {/* Lead Modal */}
+        <Dialog open={showLeadModal} onOpenChange={setShowLeadModal}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingLead ? "Editar Lead" : "Adicionar Novo Lead"}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Nome completo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>E-mail</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="email@exemplo.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Telefone</FormLabel>
+                        <FormControl>
+                          <Input placeholder="(11) 99999-9999" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="age"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Idade</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="25" 
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cidade</FormLabel>
+                        <FormControl>
+                          <Input placeholder="São Paulo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="state"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estado</FormLabel>
+                        <FormControl>
+                          <Input placeholder="SP" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="insuranceCompanyId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Operadora</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione a operadora" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {companies.map((company) => (
+                              <SelectItem key={company.id} value={company.id}>
+                                {company.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="planType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Plano</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Tipo do plano" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="individual">Individual</SelectItem>
+                            <SelectItem value="familiar">Familiar</SelectItem>
+                            <SelectItem value="empresarial">Empresarial</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="budgetMin"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Orçamento Mínimo</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="100" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="budgetMax"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Orçamento Máximo</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="500" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="availableLives"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vidas Disponíveis</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            placeholder="1" 
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="source"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fonte</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Google Ads" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="campaign"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Campanha</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Campanha Verão" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="quality"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Qualidade</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Qualidade do lead" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="high">Alta</SelectItem>
+                            <SelectItem value="medium">Média</SelectItem>
+                            <SelectItem value="low">Baixa</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Status do lead" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="available">Disponível</SelectItem>
+                            <SelectItem value="reserved">Reservado</SelectItem>
+                            <SelectItem value="sold">Vendido</SelectItem>
+                            <SelectItem value="expired">Expirado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Preço (R$)</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" placeholder="50.00" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Observações</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Observações sobre o lead..." 
+                          className="min-h-[80px]"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button type="button" variant="outline" onClick={() => setShowLeadModal(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit" disabled={leadMutation.isPending}>
+                    {leadMutation.isPending ? "Salvando..." : editingLead ? "Atualizar" : "Criar"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
