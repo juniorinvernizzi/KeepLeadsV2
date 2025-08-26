@@ -196,183 +196,158 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
 
   return (
     <>
-      <Card className="h-full hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-gray-300 group overflow-hidden" data-testid={`card-lead-${lead.id}`}>
-        <CardContent className="p-0">
-          {/* Header with company branding */}
+      <Card className="w-full max-w-sm bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-0" data-testid={`card-lead-${lead.id}`}>
+        <div className="flex h-44">
+          {/* Left side - Company Logo/Branding */}
           <div 
-            className="h-20 p-4 flex items-center justify-between relative"
-            style={{ 
-              background: `linear-gradient(135deg, ${company?.color || '#6366f1'} 0%, ${company?.color || '#6366f1'}dd 100%)` 
-            }}
+            className="w-40 flex flex-col items-center justify-center relative"
+            style={{ backgroundColor: company?.color || '#dc2626' }}
           >
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                {company?.logo ? (
-                  <img 
-                    src={company.logo} 
-                    alt={company.name}
-                    className="w-8 h-8 object-contain"
-                  />
-                ) : (
-                  <span className="text-white font-bold text-lg">
-                    {company?.name?.charAt(0) || 'L'}
-                  </span>
-                )}
-              </div>
-              <div>
-                <h3 className="text-white font-semibold text-sm">
-                  {company?.name || 'Operadora'}
-                </h3>
-                <p className="text-white/80 text-xs">Plano de Saúde</p>
-              </div>
+            {/* Time indicator */}
+            <div className="absolute top-3 left-3 bg-white/20 rounded-full px-2 py-1">
+              <span className="text-white text-xs font-medium">
+                {daysSinceCreated === 0 ? 'Hoje' : `${daysSinceCreated}d`}
+              </span>
             </div>
-            
-            <div className="text-right">
-              <div className="text-white font-bold text-lg" data-testid={`text-price-${lead.id}`}>
-                R$ {parseFloat(lead.price).toFixed(2)}
-              </div>
-              <div className="text-white/80 text-xs">
-                {daysSinceCreated === 0 ? 'Hoje' : `${daysSinceCreated}d atrás`}
-              </div>
+
+            {/* Company Logo */}
+            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm mb-2">
+              {company?.logo ? (
+                <img 
+                  src={company.logo} 
+                  alt={company.name}
+                  className="w-12 h-12 object-contain filter brightness-0 invert"
+                />
+              ) : (
+                <span className="text-white font-bold text-2xl">
+                  {company?.name?.charAt(0) || 'L'}
+                </span>
+              )}
+            </div>
+
+            {/* Quality Badge */}
+            <div className="bg-white/20 rounded-full px-3 py-1">
+              <span className="text-white text-xs font-semibold">
+                Qualidade {lead.quality}
+              </span>
             </div>
           </div>
 
-          {/* Content */}
-          <div className="p-4">
-            {/* Quality and Status */}
-            <div className="flex items-center justify-between mb-4">
-              <Badge className={`${getQualityColor(lead.quality)} border font-medium`} data-testid={`text-status-${lead.id}`}>
-                <Star className="w-3 h-3 mr-1" />
-                Qualidade {lead.quality}
-              </Badge>
+          {/* Right side - Lead Information */}
+          <div className="flex-1 p-4 flex flex-col justify-between">
+            {/* Header */}
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">
+                {company?.name || 'Operadora'}
+              </h3>
+              <p className="text-sm text-gray-500 mb-3">Plano de Saúde</p>
               
-              <Badge className={statusBadge.className}>
-                {statusBadge.label}
-              </Badge>
-            </div>
-
-            {/* Basic Info */}
-            <div className="space-y-3 mb-4">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500 text-sm flex items-center">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  Localização:
-                </span>
-                <span className="font-medium text-sm" data-testid={`text-location-${lead.id}`}>
-                  {lead.city}, {lead.state}
-                </span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500 text-sm flex items-center">
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Idade:
-                </span>
-                <span className="font-medium text-sm">{lead.age} anos</span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500 text-sm">Tipo:</span>
-                <span className="font-medium text-sm capitalize">{lead.planType}</span>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <span className="text-gray-500 text-sm flex items-center">
-                  <CreditCard className="w-4 h-4 mr-1" />
-                  Orçamento:
-                </span>
-                <span className="font-medium text-sm">
-                  R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}
-                </span>
-              </div>
-            </div>
-
-            {/* Sensitive Information (masked) */}
-            <div className="border-t border-gray-100 pt-4 mb-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-medium text-gray-700">Informações de Contato</span>
-                <button
-                  onClick={() => setShowSensitiveInfo(!showSensitiveInfo)}
-                  className="p-1 rounded-md hover:bg-gray-100 transition-colors"
-                >
-                  {showSensitiveInfo ? (
-                    <EyeOff className="w-4 h-4 text-gray-500" />
-                  ) : (
-                    <Eye className="w-4 h-4 text-gray-500" />
-                  )}
-                </button>
-              </div>
-              
-              {showSensitiveInfo && (
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-500 flex items-center">
-                      <User className="w-4 h-4 mr-1" />
-                      Nome:
-                    </span>
-                    <span className="text-gray-400 font-medium" data-testid={`text-lead-info-${lead.id}`}>
-                      {maskSensitiveInfo(lead.name, 'name')}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-500">Email:</span>
-                    <span className="text-gray-400 font-medium">
-                      {maskSensitiveInfo(lead.email, 'email')}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-500 flex items-center">
-                      <Phone className="w-4 h-4 mr-1" />
-                      Telefone:
-                    </span>
-                    <span className="text-gray-400 font-medium" data-testid={`text-phone-masked-${lead.id}`}>
-                      {maskSensitiveInfo(lead.phone, 'phone')}
-                    </span>
-                  </div>
+              {/* Lead basic info */}
+              <div className="space-y-1 text-xs text-gray-600">
+                <div className="flex items-center">
+                  <MapPin className="w-3 h-3 mr-1" />
+                  <span data-testid={`text-location-${lead.id}`}>
+                    {lead.city}, {lead.state}
+                  </span>
                 </div>
-              )}
-              
-              {showSensitiveInfo && (
-                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-xs text-amber-700 text-center">
-                    🔒 Informações completas disponíveis após a compra
-                  </p>
+                <div className="flex items-center">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  <span>{lead.age} anos</span>
                 </div>
-              )}
+                <div className="flex items-center">
+                  <User className="w-3 h-3 mr-1" />
+                  <span className="text-gray-400" data-testid={`text-lead-info-${lead.id}`}>
+                    {maskSensitiveInfo(lead.name, 'name')}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <Button 
-                variant="outline"
-                onClick={() => setShowDetailsModal(true)}
-                className="w-full"
-                data-testid={`button-details-${lead.id}`}
-              >
-                Ver mais detalhes
-              </Button>
+            {/* Price and Action */}
+            <div>
+              <div className="text-right mb-3">
+                <div className="text-2xl font-bold text-gray-900" data-testid={`text-price-${lead.id}`}>
+                  R$ {parseFloat(lead.price).toFixed(2)}
+                </div>
+              </div>
               
-              {canPurchase && (
+              {canPurchase ? (
                 <Button
                   onClick={() => setShowPurchaseModal(true)}
                   disabled={!hasSufficientCredits}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5"
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl text-sm tracking-wide transition-all duration-200"
                   data-testid={`button-purchase-${lead.id}`}
                 >
                   {!hasSufficientCredits ? "SALDO INSUFICIENTE" : "COMPRAR AGORA"}
                 </Button>
-              )}
-              
-              {!canPurchase && lead.status === 'sold' && (
-                <div className="text-center py-3">
-                  <Badge variant="secondary" className="bg-red-100 text-red-800">
-                    Lead Vendido
-                  </Badge>
+              ) : (
+                <div className="w-full bg-red-100 text-red-800 font-bold py-3 rounded-xl text-sm text-center">
+                  {lead.status === 'sold' ? 'VENDIDO' : 'INDISPONÍVEL'}
                 </div>
               )}
             </div>
+
+            {/* Bottom right indicator */}
+            <div className="absolute bottom-3 right-3">
+              <div className="flex items-center space-x-1 text-gray-400">
+                <User className="w-3 h-3" />
+                <span className="text-xs">Individual</span>
+              </div>
+            </div>
           </div>
-        </CardContent>
+        </div>
+
+        {/* Expandable details */}
+        {showSensitiveInfo && (
+          <div className="border-t border-gray-100 p-4 bg-gray-50">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Email:</span>
+                <span className="text-gray-400 font-medium">
+                  {maskSensitiveInfo(lead.email, 'email')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Telefone:</span>
+                <span className="text-gray-400 font-medium" data-testid={`text-phone-masked-${lead.id}`}>
+                  {maskSensitiveInfo(lead.phone, 'phone')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Orçamento:</span>
+                <span className="font-medium text-gray-700">
+                  R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}
+                </span>
+              </div>
+            </div>
+            
+            <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-xs text-amber-700 text-center">
+                🔒 Informações completas disponíveis após a compra
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Toggle details button */}
+        <div className="border-t border-gray-100 p-2">
+          <button
+            onClick={() => setShowSensitiveInfo(!showSensitiveInfo)}
+            className="w-full flex items-center justify-center py-2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            {showSensitiveInfo ? (
+              <>
+                <EyeOff className="w-4 h-4 mr-2" />
+                <span className="text-sm">Ocultar detalhes</span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-4 h-4 mr-2" />
+                <span className="text-sm">Ver mais detalhes</span>
+              </>
+            )}
+          </button>
+        </div>
       </Card>
 
       <PurchaseModal
