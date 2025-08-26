@@ -20,6 +20,7 @@ function Router() {
     <Switch>
       {/* Public routes */}
       <Route path="/leads-publicos" component={PublicLeads} />
+      <Route path="/public-leads" component={PublicLeads} />
       
       {/* Auth-required routes */}
       {isLoading || !isAuthenticated ? (
