@@ -11,6 +11,7 @@ import PurchaseModal from "./PurchaseModal";
 import LeadDetailsModal from "./LeadDetailsModal";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Eye, EyeOff, MapPin, Calendar, CreditCard, Star, User, Phone } from "lucide-react";
 
 interface Lead {
   id: string;
@@ -38,6 +39,7 @@ interface Company {
   id: string;
   name: string;
   color: string;
+  logo?: string;
 }
 
 interface LeadCardProps {
@@ -52,6 +54,7 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
   const queryClient = useQueryClient();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showSensitiveInfo, setShowSensitiveInfo] = useState(false);
 
   const company = companies.find(c => c.id === lead.insuranceCompanyId) || {
     id: lead.insuranceCompanyId,
@@ -61,7 +64,9 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
 
   const purchaseMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("POST", `/api/leads/${lead.id}/purchase`, {});
+      return await apiRequest(`/api/leads/${lead.id}/purchase`, {
+        method: "POST",
+      });
     },
     onSuccess: () => {
       toast({
@@ -160,91 +165,212 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
     purchaseMutation.mutate();
   };
 
+  // Masking function for sensitive information
+  const maskSensitiveInfo = (text: string, type: 'email' | 'phone' | 'name'): string => {
+    switch (type) {
+      case 'email':
+        const [name, domain] = text.split('@');
+        return `${name.slice(0, 2)}***@${domain}`;
+      case 'phone':
+        return text.slice(0, 5) + '****-****';
+      case 'name':
+        const names = text.split(' ');
+        return `${names[0]} ${'*'.repeat(names.slice(1).join(' ').length)}`;
+      default:
+        return text;
+    }
+  };
+
+  const daysSinceCreated = Math.floor(
+    (Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  const getQualityColor = (quality: string) => {
+    switch (quality.toUpperCase()) {
+      case 'A': return 'bg-green-100 text-green-800 border-green-200';
+      case 'B': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'C': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   return (
     <>
-      <Card className="overflow-hidden hover:shadow-md transition-shadow" data-testid={`card-lead-${lead.id}`}>
-        {/* Company Logo Header */}
-        <div className={`${colors.bg} p-4 flex items-center justify-between`}>
-          <div className="text-white">
-            <div className="text-2xl font-bold">{company.name}</div>
-            <div className={`${colors.text} text-sm`}>Plano de Saúde</div>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-white" data-testid={`text-price-${lead.id}`}>
-              R$ {parseFloat(lead.price).toFixed(2)}
+      <Card className="h-full hover:shadow-lg transition-all duration-200 border border-gray-200 hover:border-gray-300 group overflow-hidden" data-testid={`card-lead-${lead.id}`}>
+        <CardContent className="p-0">
+          {/* Header with company branding */}
+          <div 
+            className="h-20 p-4 flex items-center justify-between relative"
+            style={{ 
+              background: `linear-gradient(135deg, ${company?.color || '#6366f1'} 0%, ${company?.color || '#6366f1'}dd 100%)` 
+            }}
+          >
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                {company?.logo ? (
+                  <img 
+                    src={company.logo} 
+                    alt={company.name}
+                    className="w-8 h-8 object-contain"
+                  />
+                ) : (
+                  <span className="text-white font-bold text-lg">
+                    {company?.name?.charAt(0) || 'L'}
+                  </span>
+                )}
+              </div>
+              <div>
+                <h3 className="text-white font-semibold text-sm">
+                  {company?.name || 'Operadora'}
+                </h3>
+                <p className="text-white/80 text-xs">Plano de Saúde</p>
+              </div>
             </div>
-            {canPurchase && (
-              <Button
-                onClick={() => setShowPurchaseModal(true)}
-                className={`mt-2 ${colors.button} px-4 py-2 rounded-lg font-semibold transition-colors text-sm`}
-                disabled={!hasSufficientCredits}
-                data-testid={`button-purchase-${lead.id}`}
+            
+            <div className="text-right">
+              <div className="text-white font-bold text-lg" data-testid={`text-price-${lead.id}`}>
+                R$ {parseFloat(lead.price).toFixed(2)}
+              </div>
+              <div className="text-white/80 text-xs">
+                {daysSinceCreated === 0 ? 'Hoje' : `${daysSinceCreated}d atrás`}
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-4">
+            {/* Quality and Status */}
+            <div className="flex items-center justify-between mb-4">
+              <Badge className={`${getQualityColor(lead.quality)} border font-medium`} data-testid={`text-status-${lead.id}`}>
+                <Star className="w-3 h-3 mr-1" />
+                Qualidade {lead.quality}
+              </Badge>
+              
+              <Badge className={statusBadge.className}>
+                {statusBadge.label}
+              </Badge>
+            </div>
+
+            {/* Basic Info */}
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 text-sm flex items-center">
+                  <MapPin className="w-4 h-4 mr-1" />
+                  Localização:
+                </span>
+                <span className="font-medium text-sm" data-testid={`text-location-${lead.id}`}>
+                  {lead.city}, {lead.state}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 text-sm flex items-center">
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Idade:
+                </span>
+                <span className="font-medium text-sm">{lead.age} anos</span>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 text-sm">Tipo:</span>
+                <span className="font-medium text-sm capitalize">{lead.planType}</span>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500 text-sm flex items-center">
+                  <CreditCard className="w-4 h-4 mr-1" />
+                  Orçamento:
+                </span>
+                <span className="font-medium text-sm">
+                  R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}
+                </span>
+              </div>
+            </div>
+
+            {/* Sensitive Information (masked) */}
+            <div className="border-t border-gray-100 pt-4 mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm font-medium text-gray-700">Informações de Contato</span>
+                <button
+                  onClick={() => setShowSensitiveInfo(!showSensitiveInfo)}
+                  className="p-1 rounded-md hover:bg-gray-100 transition-colors"
+                >
+                  {showSensitiveInfo ? (
+                    <EyeOff className="w-4 h-4 text-gray-500" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-gray-500" />
+                  )}
+                </button>
+              </div>
+              
+              {showSensitiveInfo && (
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500 flex items-center">
+                      <User className="w-4 h-4 mr-1" />
+                      Nome:
+                    </span>
+                    <span className="text-gray-400 font-medium" data-testid={`text-lead-info-${lead.id}`}>
+                      {maskSensitiveInfo(lead.name, 'name')}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500">Email:</span>
+                    <span className="text-gray-400 font-medium">
+                      {maskSensitiveInfo(lead.email, 'email')}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500 flex items-center">
+                      <Phone className="w-4 h-4 mr-1" />
+                      Telefone:
+                    </span>
+                    <span className="text-gray-400 font-medium" data-testid={`text-phone-masked-${lead.id}`}>
+                      {maskSensitiveInfo(lead.phone, 'phone')}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              {showSensitiveInfo && (
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-xs text-amber-700 text-center">
+                    🔒 Informações completas disponíveis após a compra
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <Button 
+                variant="outline"
+                onClick={() => setShowDetailsModal(true)}
+                className="w-full"
+                data-testid={`button-details-${lead.id}`}
               >
-                {!hasSufficientCredits ? "SALDO INSUFICIENTE" : "COMPRAR AGORA"}
+                Ver mais detalhes
               </Button>
-            )}
-          </div>
-        </div>
-        
-        {/* Lead Info */}
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <Badge className={statusBadge.className} data-testid={`text-status-${lead.id}`}>
-              {statusBadge.label}
-            </Badge>
-            <span className="text-xs text-slate-500" data-testid={`text-time-${lead.id}`}>
-              {formatDistanceToNow(new Date(lead.createdAt), { addSuffix: true, locale: ptBR })}
-            </span>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex items-center text-sm">
-              <svg className="w-4 h-4 text-slate-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-              </svg>
-              <span className="text-slate-600" data-testid={`text-lead-info-${lead.id}`}>
-                {lead.name.split(' ')[0]} {lead.name.split(' ')[1]?.[0]}. - {lead.age} anos
-              </span>
+              
+              {canPurchase && (
+                <Button
+                  onClick={() => setShowPurchaseModal(true)}
+                  disabled={!hasSufficientCredits}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2.5"
+                  data-testid={`button-purchase-${lead.id}`}
+                >
+                  {!hasSufficientCredits ? "SALDO INSUFICIENTE" : "COMPRAR AGORA"}
+                </Button>
+              )}
+              
+              {!canPurchase && lead.status === 'sold' && (
+                <div className="text-center py-3">
+                  <Badge variant="secondary" className="bg-red-100 text-red-800">
+                    Lead Vendido
+                  </Badge>
+                </div>
+              )}
             </div>
-            <div className="flex items-center text-sm">
-              <svg className="w-4 h-4 text-slate-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-slate-600" data-testid={`text-location-${lead.id}`}>
-                {lead.city}, {lead.state}
-              </span>
-            </div>
-            <div className="flex items-center text-sm">
-              <svg className="w-4 h-4 text-slate-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-              </svg>
-              <span className="text-slate-600" data-testid={`text-phone-masked-${lead.id}`}>
-                Tel: ({lead.phone.slice(0, 2)}) 9****-****
-              </span>
-            </div>
-          </div>
-          
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <Button 
-              variant="ghost"
-              onClick={() => setShowDetailsModal(true)}
-              className="text-primary hover:text-primary-dark text-sm font-medium p-0 h-auto"
-              data-testid={`button-details-${lead.id}`}
-            >
-              Ver detalhes
-            </Button>
-            {canPurchase && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-slate-500 hover:text-slate-700 p-2 h-auto"
-                data-testid={`button-add-cart-${lead.id}`}
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
-                </svg>
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>

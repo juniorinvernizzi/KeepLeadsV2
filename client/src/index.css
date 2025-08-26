@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -30,7 +32,7 @@
   --chart-4: hsl(43, 74%, 66%);
   --chart-5: hsl(27, 87%, 67%);
   --radius: 0.5rem;
-  --font-sans: Inter, system-ui, sans-serif;
+  --font-sans: "Inter Tight", Inter, system-ui, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
 }
@@ -70,6 +72,7 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
+    font-family: "Inter Tight", Inter, system-ui, sans-serif;
   }
 }
 
