@@ -212,7 +212,7 @@ export default function AdminPanel() {
   if (!user || user.role !== "admin") {
     return (
       <Layout>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full px-[60px] py-8">
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
               <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">

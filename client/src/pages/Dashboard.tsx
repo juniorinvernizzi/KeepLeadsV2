@@ -112,7 +112,7 @@ export default function Dashboard() {
     
     return (
       <Layout>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full px-[60px] py-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -281,7 +281,7 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="w-full max-w-none">
+      <div className="w-full px-[60px] py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
