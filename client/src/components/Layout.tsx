@@ -50,9 +50,6 @@ export default function Layout({ children }: LayoutProps) {
     );
   }
 
-  if (!user) {
-    return null; // Will redirect in useEffect
-  }
 
   const navigationItems = [
     { 
