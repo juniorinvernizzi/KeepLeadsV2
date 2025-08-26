@@ -92,6 +92,7 @@ export async function setupAuth(app: Express) {
         config,
         scope: "openid email profile offline_access",
         callbackURL: `https://${domain}/api/callback`,
+        passReqToCallback: false,
       },
       verify,
     );
@@ -103,12 +104,23 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/login", (req, res, next) => {
     console.log("Login attempt from:", req.hostname);
+    
+    // Check if user is already logged in
+    if (req.isAuthenticated()) {
+      return res.redirect("/");
+    }
+    
     passport.authenticate(`replitauth:${req.hostname}`, {
       scope: ["openid", "email", "profile", "offline_access"],
+      prompt: "none", // Don't prompt for consent if already authorized
     })(req, res, (err) => {
       if (err) {
         console.error("Authentication login error:", err);
-        return res.status(500).json({ error: "Login failed" });
+        // If prompt=none fails, try normal login
+        passport.authenticate(`replitauth:${req.hostname}`, {
+          scope: ["openid", "email", "profile", "offline_access"],
+        })(req, res, next);
+        return;
       }
       next();
     });
