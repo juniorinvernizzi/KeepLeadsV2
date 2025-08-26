@@ -17,16 +17,26 @@ import PublicLeads from "@/pages/PublicLeads";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Show loading during auth check
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Switch>
-      {/* Public routes */}
+      {/* Public routes - always accessible */}
       <Route path="/leads-publicos" component={PublicLeads} />
       <Route path="/public-leads" component={PublicLeads} />
       
-      {/* Auth-required routes */}
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={Landing} />
-      ) : (
+      {/* Authenticated routes */}
+      {isAuthenticated ? (
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/leads" component={LeadsMarketplace} />
@@ -34,6 +44,15 @@ function Router() {
           <Route path="/credits" component={Credits} />
           <Route path="/admin" component={AdminPanel} />
           <Route path="/admin/manage-leads" component={ManageLeads} />
+        </>
+      ) : (
+        <>
+          <Route path="/" component={Landing} />
+          <Route path="/leads" component={Landing} />
+          <Route path="/my-leads" component={Landing} />
+          <Route path="/credits" component={Landing} />
+          <Route path="/admin" component={Landing} />
+          <Route path="/admin/manage-leads" component={Landing} />
         </>
       )}
       <Route component={NotFound} />
