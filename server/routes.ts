@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertLeadSchema, insertCreditTransactionSchema } from "@shared/schema";
+import { sendLeadPurchaseNotification, sendAdminPurchaseNotification } from "./emailService";
 import { z } from "zod";
 
 interface AuthenticatedRequest extends Request {
@@ -119,6 +120,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         balanceBefore: user.credits,
         balanceAfter: newBalance,
       });
+      
+      // Send email notifications
+      try {
+        // Get company details for email
+        const companies = await storage.getInsuranceCompanies();
+        const company = companies.find(c => c.id === lead.insuranceCompanyId) || {
+          id: lead.insuranceCompanyId,
+          name: lead.insuranceCompanyId,
+          color: "#7C3AED"
+        };
+        
+        // Update user object with new balance for email
+        const updatedUser = { ...user, credits: newBalance };
+        
+        // Send notification to user (async, don't wait)
+        sendLeadPurchaseNotification(updatedUser, lead, company).catch(error => {
+          console.error('Failed to send user email notification:', error);
+        });
+        
+        // Send notification to admin (async, don't wait)
+        sendAdminPurchaseNotification(updatedUser, lead, company).catch(error => {
+          console.error('Failed to send admin email notification:', error);
+        });
+      } catch (emailError) {
+        console.error('Error preparing email notifications:', emailError);
+        // Don't fail the purchase if email fails
+      }
       
       res.json(purchase);
     } catch (error) {
