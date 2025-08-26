@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import PurchaseModal from "./PurchaseModal";
 import LeadDetailsModal from "./LeadDetailsModal";
+import LeadInfoModal from "./LeadInfoModal";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Eye, EyeOff, MapPin, Calendar, CreditCard, Star, User, Phone } from "lucide-react";
@@ -25,6 +26,7 @@ interface Lead {
   planType: string;
   budgetMin: string;
   budgetMax: string;
+  availableLives: number;
   source: string;
   campaign: string;
   quality: string;
@@ -54,6 +56,7 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
   const queryClient = useQueryClient();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const company = companies.find(c => c.id === lead.insuranceCompanyId) || {
@@ -325,6 +328,14 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
                     </p>
                   </div>
                 </div>
+                
+                <div className="flex items-center space-x-2">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Vidas Disponíveis</p>
+                    <p className="font-medium">{lead.availableLives} vida{lead.availableLives > 1 ? 's' : ''}</p>
+                  </div>
+                </div>
               </div>
 
               {/* Separator */}
@@ -372,6 +383,40 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
             </div>
           </div>
         )}
+
+        {/* Action buttons at bottom */}
+        <div className="border-t border-gray-100 p-2 flex space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className="flex-1 flex items-center justify-center py-2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            {isExpanded ? (
+              <>
+                <EyeOff className="w-4 h-4 mr-2" />
+                <span className="text-sm">Ocultar</span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-4 h-4 mr-2" />
+                <span className="text-sm">Expandir</span>
+              </>
+            )}
+          </button>
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowInfoModal(true);
+            }}
+            className="flex-1 flex items-center justify-center py-2 text-purple-600 hover:text-purple-700 transition-colors"
+          >
+            <Star className="w-4 h-4 mr-2" />
+            <span className="text-sm">Popup</span>
+          </button>
+        </div>
       </Card>
 
       <PurchaseModal
@@ -394,6 +439,13 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
           setShowPurchaseModal(true);
         }}
         canPurchase={canPurchase && hasSufficientCredits}
+      />
+
+      <LeadInfoModal
+        isOpen={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+        lead={lead}
+        companies={companies}
       />
     </>
   );

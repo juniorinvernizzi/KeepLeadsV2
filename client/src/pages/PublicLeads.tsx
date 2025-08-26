@@ -10,6 +10,9 @@ import { Slider } from "@/components/ui/slider";
 
 interface Lead {
   id: string;
+  name: string;
+  email: string;
+  phone: string;
   age: number;
   city: string;
   state: string;
@@ -17,81 +20,249 @@ interface Lead {
   planType: string;
   budgetMin: string;
   budgetMax: string;
+  availableLives: number;
+  source: string;
+  campaign: string;
   quality: string;
+  status: string;
   price: string;
+  notes: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface PublicLeadCardProps {
   lead: Lead;
-  companies: Array<{id: string; name: string; color: string}>;
+  companies: Array<{id: string; name: string; color: string; logo?: string}>;
 }
 
 function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
-  const company = companies.find(c => c.id === lead.insuranceCompanyId);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const company = companies.find(c => c.id === lead.insuranceCompanyId) || {
+    id: lead.insuranceCompanyId,
+    name: lead.insuranceCompanyId,
+    color: "#7C3AED"
+  };
+
+  const maskSensitiveInfo = (text: string, type: 'email' | 'phone' | 'name'): string => {
+    switch (type) {
+      case 'email':
+        const [name, domain] = text.split('@');
+        return `${name.slice(0, 2)}***@${domain}`;
+      case 'phone':
+        return text.slice(0, 5) + '****-****';
+      case 'name':
+        const names = text.split(' ');
+        return `${names[0]} ${'*'.repeat(names.slice(1).join(' ').length)}`;
+      default:
+        return text;
+    }
+  };
+
+  const daysSinceCreated = Math.floor(
+    (Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  const getQualityColor = (quality: string) => {
+    switch (quality.toUpperCase()) {
+      case 'A': return 'bg-green-100 text-green-800 border-green-200';
+      case 'B': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'C': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
   
   return (
-    <Card className="h-full hover:shadow-lg transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center space-x-2">
-            <div 
-              className="w-3 h-3 rounded-full" 
-              style={{ backgroundColor: company?.color || '#6366f1' }}
-            ></div>
-            <span className="text-sm font-medium text-slate-600">
-              {company?.name || 'Operadora'}
-            </span>
-          </div>
-          <Badge variant={lead.quality === 'A' ? 'default' : 'secondary'}>
-            Qualidade {lead.quality}
-          </Badge>
-        </div>
-
-        <div className="space-y-3 mb-4">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-slate-500">Localização:</span>
-            <span className="text-sm font-medium">{lead.city}, {lead.state}</span>
-          </div>
-          
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-slate-500">Idade:</span>
-            <span className="text-sm font-medium">{lead.age} anos</span>
-          </div>
-          
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-slate-500">Tipo:</span>
-            <span className="text-sm font-medium capitalize">{lead.planType}</span>
-          </div>
-          
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-slate-500">Orçamento:</span>
-            <span className="text-sm font-medium">
-              R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}
-            </span>
-          </div>
-        </div>
-
-        <div className="border-t pt-4">
-          <div className="flex justify-between items-center mb-3">
-            <span className="text-lg font-bold text-primary">
-              R$ {parseFloat(lead.price).toFixed(2)}
-            </span>
-            <span className="text-xs text-slate-500">
-              há {Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24))} dias
-            </span>
-          </div>
-          
-          <Button 
-            className="w-full"
-            onClick={() => window.location.href = "/api/login"}
-            data-testid={`button-login-to-buy-${lead.id}`}
+    <>
+      <Card 
+        className="w-full max-w-sm bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-0 cursor-pointer" 
+        data-testid={`card-lead-${lead.id}`}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex h-44">
+          {/* Left side - Company Logo/Branding */}
+          <div 
+            className="w-40 flex flex-col items-center justify-center relative"
+            style={{ backgroundColor: company?.color || '#dc2626' }}
           >
-            Fazer Login para Comprar
-          </Button>
+            {/* Time indicator */}
+            <div className="absolute top-3 left-3 bg-white/20 rounded-full px-2 py-1">
+              <span className="text-white text-xs font-medium">
+                {daysSinceCreated === 0 ? 'Hoje' : `${daysSinceCreated}d`}
+              </span>
+            </div>
+
+            {/* Company Logo */}
+            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm mb-2">
+              {company?.logo ? (
+                <img 
+                  src={company.logo} 
+                  alt={company.name}
+                  className="w-12 h-12 object-contain filter brightness-0 invert"
+                />
+              ) : (
+                <span className="text-white font-bold text-2xl">
+                  {company?.name?.charAt(0) || 'L'}
+                </span>
+              )}
+            </div>
+
+            {/* Quality Badge */}
+            <div className="bg-white/20 rounded-full px-3 py-1">
+              <span className="text-white text-xs font-semibold">
+                Qualidade {lead.quality}
+              </span>
+            </div>
+          </div>
+
+          {/* Right side - Lead Information */}
+          <div className="flex-1 p-4 flex flex-col justify-between relative">
+            {/* Header */}
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">
+                {company?.name || 'Operadora'}
+              </h3>
+              <p className="text-sm text-gray-500 mb-3">Plano de Saúde</p>
+            </div>
+
+            {/* Price and Action */}
+            <div>
+              <div className="text-right mb-3">
+                <div className="text-2xl font-bold text-gray-900" data-testid={`text-price-${lead.id}`}>
+                  R$ {parseFloat(lead.price).toFixed(2)}
+                </div>
+              </div>
+              
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.location.href = "/api/login";
+                }}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl text-sm tracking-wide transition-all duration-200"
+                data-testid={`button-login-to-buy-${lead.id}`}
+              >
+                FAZER LOGIN PARA COMPRAR
+              </Button>
+            </div>
+
+            {/* Bottom right indicator */}
+            <div className="absolute bottom-3 right-3">
+              <div className="flex items-center space-x-1 text-gray-400">
+                <User className="w-3 h-3" />
+                <span className="text-xs">Individual</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Expandable details - Same as authenticated cards */}
+        {isExpanded && (
+          <div className="border-t border-gray-100 p-4 bg-gray-50">
+            <div className="space-y-3">
+              {/* Basic Lead Information */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center space-x-2">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Localização</p>
+                    <p className="font-medium" data-testid={`text-location-${lead.id}`}>
+                      {lead.city}, {lead.state}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Idade</p>
+                    <p className="font-medium">{lead.age} anos</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <CreditCard className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Tipo de Plano</p>
+                    <p className="font-medium capitalize">{lead.planType}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Star className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Orçamento</p>
+                    <p className="font-medium">
+                      R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <User className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Vidas Disponíveis</p>
+                    <p className="font-medium">{lead.availableLives} vida{lead.availableLives > 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Login Notice */}
+              <div className="border-t border-gray-200 pt-3">
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                  <p className="text-sm text-purple-700 text-center flex items-center justify-center">
+                    <span className="mr-2">🔐</span>
+                    Faça login para ver informações de contato e comprar este lead
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons at bottom */}
+        <div className="border-t border-gray-100 p-2 flex space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className="flex-1 flex items-center justify-center py-2 text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            {isExpanded ? (
+              <>
+                <EyeOff className="w-4 h-4 mr-2" />
+                <span className="text-sm">Ocultar</span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-4 h-4 mr-2" />
+                <span className="text-sm">Expandir</span>
+              </>
+            )}
+          </button>
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowInfoModal(true);
+            }}
+            className="flex-1 flex items-center justify-center py-2 text-purple-600 hover:text-purple-700 transition-colors"
+          >
+            <Star className="w-4 h-4 mr-2" />
+            <span className="text-sm">Popup</span>
+          </button>
+        </div>
+      </Card>
+
+      <LeadInfoModal
+        isOpen={showInfoModal}
+        onClose={() => setShowInfoModal(false)}
+        lead={lead}
+        companies={companies}
+      />
+    </>
   );
 }
 

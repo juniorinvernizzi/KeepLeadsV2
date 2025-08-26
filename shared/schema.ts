@@ -60,6 +60,7 @@ export const leads = pgTable("leads", {
   planType: varchar("plan_type").notNull().default("individual"),
   budgetMin: decimal("budget_min", { precision: 10, scale: 2 }),
   budgetMax: decimal("budget_max", { precision: 10, scale: 2 }),
+  availableLives: integer("available_lives").notNull().default(1), // Quantidade de vidas disponíveis
   source: varchar("source").notNull(), // 'Google Ads', 'Facebook', etc.
   campaign: varchar("campaign"),
   quality: varchar("quality").notNull().default("medium"), // 'high', 'medium', 'low'
