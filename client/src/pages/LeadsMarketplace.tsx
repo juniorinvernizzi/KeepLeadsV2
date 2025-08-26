@@ -69,7 +69,7 @@ export default function LeadsMarketplace() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="w-4/5 mx-auto py-8">
+        <div className="w-9/10 mx-auto py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-slate-200 rounded w-1/3 mb-4"></div>
             <div className="h-4 bg-slate-200 rounded w-1/2 mb-8"></div>
