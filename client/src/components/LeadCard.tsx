@@ -61,9 +61,7 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
 
   const purchaseMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest(`/api/leads/${lead.id}/purchase`, {
-        method: "POST",
-      });
+      return await apiRequest("POST", `/api/leads/${lead.id}/purchase`);
     },
     onSuccess: () => {
       toast({

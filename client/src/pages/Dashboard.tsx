@@ -8,6 +8,7 @@ import {
   TrendingUp, 
   Users, 
   ShoppingCart, 
+  ShoppingBag,
   CreditCard,
   FileText,
   Target,

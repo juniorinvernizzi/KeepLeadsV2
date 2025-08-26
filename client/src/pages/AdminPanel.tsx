@@ -119,15 +119,9 @@ export default function AdminPanel() {
       };
 
       if (editingLead) {
-        return apiRequest(`/api/admin/leads/${editingLead.id}`, {
-          method: "PUT",
-          body: JSON.stringify(leadData),
-        });
+        return apiRequest("PUT", `/api/admin/leads/${editingLead.id}`, leadData);
       } else {
-        return apiRequest("/api/admin/leads", {
-          method: "POST", 
-          body: JSON.stringify(leadData),
-        });
+        return apiRequest("POST", "/api/admin/leads", leadData);
       }
     },
     onSuccess: () => {
@@ -153,9 +147,7 @@ export default function AdminPanel() {
   // Mutation for deleting leads  
   const deleteMutation = useMutation({
     mutationFn: async (leadId: string) => {
-      return apiRequest(`/api/admin/leads/${leadId}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/admin/leads/${leadId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/leads"] });
@@ -742,7 +734,7 @@ export default function AdminPanel() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Operadora</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || undefined}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione a operadora" />
@@ -852,7 +844,7 @@ export default function AdminPanel() {
                       <FormItem>
                         <FormLabel>Campanha</FormLabel>
                         <FormControl>
-                          <Input placeholder="Campanha Verão" {...field} />
+                          <Input placeholder="Campanha Verão" {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -931,7 +923,8 @@ export default function AdminPanel() {
                         <Textarea 
                           placeholder="Observações sobre o lead..." 
                           className="min-h-[80px]"
-                          {...field} 
+                          {...field}
+                          value={field.value || ""} 
                         />
                       </FormControl>
                       <FormMessage />
