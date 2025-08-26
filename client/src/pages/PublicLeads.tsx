@@ -361,35 +361,7 @@ export default function PublicLeads() {
             </Button>
           </div>
           
-          {/* State Categories */}
-          <div className="border-t border-slate-200 pt-4">
-            <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm font-medium text-slate-600 mr-4">Leads por Estado:</span>
-              <Button
-                variant={filters.city === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleFilterChange("city", "all")}
-                className="text-xs"
-              >
-                Todos ({leads.length})
-              </Button>
-              {Array.from(new Set(leads.map(lead => lead.state))).sort().map(state => {
-                const stateLeadCount = leads.filter(lead => lead.state === state).length;
-                return (
-                  <Button
-                    key={state}
-                    variant={filters.city === state ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleFilterChange("city", state)}
-                    className="text-xs"
-                  >
-                    <MapPin className="w-3 h-3 mr-1" />
-                    {state} ({stateLeadCount})
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
+          
         </div>
       </header>
 
