@@ -54,7 +54,7 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
   const queryClient = useQueryClient();
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showSensitiveInfo, setShowSensitiveInfo] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const company = companies.find(c => c.id === lead.insuranceCompanyId) || {
     id: lead.insuranceCompanyId,
@@ -196,7 +196,11 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
 
   return (
     <>
-      <Card className="w-full max-w-sm bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-0" data-testid={`card-lead-${lead.id}`}>
+      <Card 
+        className="w-full max-w-sm bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border-0 cursor-pointer" 
+        data-testid={`card-lead-${lead.id}`}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <div className="flex h-44">
           {/* Left side - Company Logo/Branding */}
           <div 
@@ -234,33 +238,13 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
           </div>
 
           {/* Right side - Lead Information */}
-          <div className="flex-1 p-4 flex flex-col justify-between">
+          <div className="flex-1 p-4 flex flex-col justify-between relative">
             {/* Header */}
             <div>
               <h3 className="text-lg font-bold text-gray-900 mb-1">
                 {company?.name || 'Operadora'}
               </h3>
               <p className="text-sm text-gray-500 mb-3">Plano de Saúde</p>
-              
-              {/* Lead basic info */}
-              <div className="space-y-1 text-xs text-gray-600">
-                <div className="flex items-center">
-                  <MapPin className="w-3 h-3 mr-1" />
-                  <span data-testid={`text-location-${lead.id}`}>
-                    {lead.city}, {lead.state}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  <span>{lead.age} anos</span>
-                </div>
-                <div className="flex items-center">
-                  <User className="w-3 h-3 mr-1" />
-                  <span className="text-gray-400" data-testid={`text-lead-info-${lead.id}`}>
-                    {maskSensitiveInfo(lead.name, 'name')}
-                  </span>
-                </div>
-              </div>
             </div>
 
             {/* Price and Action */}
@@ -273,7 +257,10 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
               
               {canPurchase ? (
                 <Button
-                  onClick={() => setShowPurchaseModal(true)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPurchaseModal(true);
+                  }}
                   disabled={!hasSufficientCredits}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl text-sm tracking-wide transition-all duration-200"
                   data-testid={`button-purchase-${lead.id}`}
@@ -297,57 +284,94 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
           </div>
         </div>
 
-        {/* Expandable details */}
-        {showSensitiveInfo && (
+        {/* Expandable details - Information that shows when clicked */}
+        {isExpanded && (
           <div className="border-t border-gray-100 p-4 bg-gray-50">
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Email:</span>
-                <span className="text-gray-400 font-medium">
-                  {maskSensitiveInfo(lead.email, 'email')}
-                </span>
+            <div className="space-y-3">
+              {/* Basic Lead Information - Available to everyone */}
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center space-x-2">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Localização</p>
+                    <p className="font-medium" data-testid={`text-location-${lead.id}`}>
+                      {lead.city}, {lead.state}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Idade</p>
+                    <p className="font-medium">{lead.age} anos</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <CreditCard className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Tipo de Plano</p>
+                    <p className="font-medium capitalize">{lead.planType}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Star className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Orçamento</p>
+                    <p className="font-medium">
+                      R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Telefone:</span>
-                <span className="text-gray-400 font-medium" data-testid={`text-phone-masked-${lead.id}`}>
-                  {maskSensitiveInfo(lead.phone, 'phone')}
-                </span>
+
+              {/* Separator */}
+              <div className="border-t border-gray-200 pt-3">
+                <h4 className="text-sm font-semibold text-gray-700 mb-2">Informações de Contato</h4>
+                
+                {/* Masked Personal Information */}
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500 flex items-center">
+                      <User className="w-4 h-4 mr-1" />
+                      Nome:
+                    </span>
+                    <span className="text-gray-400 font-medium" data-testid={`text-lead-info-${lead.id}`}>
+                      {maskSensitiveInfo(lead.name, 'name')}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Email:</span>
+                    <span className="text-gray-400 font-medium">
+                      {maskSensitiveInfo(lead.email, 'email')}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500 flex items-center">
+                      <Phone className="w-4 h-4 mr-1" />
+                      Telefone:
+                    </span>
+                    <span className="text-gray-400 font-medium" data-testid={`text-phone-masked-${lead.id}`}>
+                      {maskSensitiveInfo(lead.phone, 'phone')}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Purchase notice */}
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-xs text-amber-700 text-center flex items-center justify-center">
+                    <span className="mr-1">🔒</span>
+                    Informações completas disponíveis após a compra
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Orçamento:</span>
-                <span className="font-medium text-gray-700">
-                  R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}
-                </span>
-              </div>
-            </div>
-            
-            <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-              <p className="text-xs text-amber-700 text-center">
-                🔒 Informações completas disponíveis após a compra
-              </p>
             </div>
           </div>
         )}
-
-        {/* Toggle details button */}
-        <div className="border-t border-gray-100 p-2">
-          <button
-            onClick={() => setShowSensitiveInfo(!showSensitiveInfo)}
-            className="w-full flex items-center justify-center py-2 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            {showSensitiveInfo ? (
-              <>
-                <EyeOff className="w-4 h-4 mr-2" />
-                <span className="text-sm">Ocultar detalhes</span>
-              </>
-            ) : (
-              <>
-                <Eye className="w-4 h-4 mr-2" />
-                <span className="text-sm">Ver mais detalhes</span>
-              </>
-            )}
-          </button>
-        </div>
       </Card>
 
       <PurchaseModal
