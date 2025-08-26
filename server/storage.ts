@@ -76,7 +76,7 @@ export class DatabaseStorage implements IStorage {
       .insert(users)
       .values(userData)
       .onConflictDoUpdate({
-        target: users.id,
+        target: users.email,
         set: {
           ...userData,
           updatedAt: new Date(),
@@ -105,7 +105,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteLead(id: string): Promise<boolean> {
     const result = await db.delete(leads).where(eq(leads.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getLeads(filters?: {
@@ -167,7 +167,7 @@ export class DatabaseStorage implements IStorage {
       query = query.where(and(...conditions));
     }
 
-    return query.orderBy(desc(leads.createdAt));
+    return await query.orderBy(desc(leads.createdAt));
   }
 
   async getLeadById(id: string): Promise<Lead | undefined> {
