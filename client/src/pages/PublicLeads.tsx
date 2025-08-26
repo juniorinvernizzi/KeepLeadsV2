@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { MapPin, Calendar, CreditCard, User, Star, Eye, EyeOff, Phone } from "lucide-react";
+import LeadInfoModal from "@/components/LeadInfoModal";
 
 interface Lead {
   id: string;
