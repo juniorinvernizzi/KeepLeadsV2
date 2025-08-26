@@ -97,7 +97,7 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
             </div>
 
             {/* Company Logo */}
-            <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm mb-2">
+            <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-sm mb-2 border border-white/20">
               {company?.logo ? (
                 <img 
                   src={company.logo.startsWith('@assets/') ? 
@@ -105,7 +105,8 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
                     company.logo
                   } 
                   alt={company.name}
-                  className="w-12 h-12 object-contain filter brightness-0 invert"
+                  className="w-14 h-14 object-contain"
+                  style={{ filter: 'brightness(0) invert(1)' }}
                 />
               ) : (
                 <span className="text-white font-bold text-2xl">
@@ -148,7 +149,7 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl text-sm tracking-wide transition-all duration-200"
                 data-testid={`button-login-to-buy-${lead.id}`}
               >
-                FAZER LOGIN PARA COMPRAR
+                COMPRAR
               </Button>
             </div>
 
@@ -227,36 +228,16 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
         )}
 
         {/* Action buttons at bottom */}
-        <div className="border-t border-gray-100 p-2 flex space-x-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsExpanded(!isExpanded);
-            }}
-            className="flex-1 flex items-center justify-center py-2 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            {isExpanded ? (
-              <>
-                <EyeOff className="w-4 h-4 mr-2" />
-                <span className="text-sm">Ocultar</span>
-              </>
-            ) : (
-              <>
-                <Eye className="w-4 h-4 mr-2" />
-                <span className="text-sm">Expandir</span>
-              </>
-            )}
-          </button>
-          
+        <div className="border-t border-gray-100 p-2">
           <button
             onClick={(e) => {
               e.stopPropagation();
               setShowInfoModal(true);
             }}
-            className="flex-1 flex items-center justify-center py-2 text-purple-600 hover:text-purple-700 transition-colors"
+            className="w-full flex items-center justify-center py-2 text-purple-600 hover:text-purple-700 transition-colors"
           >
-            <Star className="w-4 h-4 mr-2" />
-            <span className="text-sm">Popup</span>
+            <Eye className="w-4 h-4 mr-2" />
+            <span className="text-sm">Ver detalhes</span>
           </button>
         </div>
       </Card>
