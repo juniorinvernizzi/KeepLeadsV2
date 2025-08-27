@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Star, MapPin, Phone, Mail, Users, TrendingUp, Calendar, DollarSign, Building } from "lucide-react";
 
 interface PurchasedLead {
   id: string;
@@ -23,8 +24,15 @@ interface PurchasedLead {
     city: string;
     state: string;
     insuranceCompanyId: string;
+    planType: string;
+    budgetMin: string;
+    budgetMax: string;
+    availableLives: number;
     source: string;
     campaign: string;
+    quality: string;
+    notes: string;
+    createdAt: string;
   };
 }
 
@@ -68,6 +76,20 @@ export default function MyLeads() {
       "porto-seguro": "bg-blue-100 text-blue-800",
     };
     return colors[companyId] || "bg-gray-100 text-gray-800";
+  };
+
+  const getQualityColor = (quality: string) => {
+    const colors: Record<string, string> = {
+      "high": "bg-green-100 text-green-800 border-green-200",
+      "medium": "bg-yellow-100 text-yellow-800 border-yellow-200", 
+      "low": "bg-red-100 text-red-800 border-red-200",
+    };
+    return colors[quality] || "bg-gray-100 text-gray-800 border-gray-200";
+  };
+
+  const formatBudgetRange = (min: string, max: string) => {
+    if (!min || !max) return "Não informado";
+    return `R$ ${parseFloat(min).toFixed(2)} - R$ ${parseFloat(max).toFixed(2)}`;
   };
 
   const getStatusBadge = (status: string) => {
@@ -184,14 +206,11 @@ export default function MyLeads() {
           </Card>
         </div>
 
-        {/* Purchased Leads Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Histórico de Compras</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {purchases.length === 0 ? (
-              <div className="text-center py-12">
+        {/* Purchased Leads Cards */}
+        {purchases.length === 0 ? (
+          <Card>
+            <CardContent className="p-12">
+              <div className="text-center">
                 <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
                   <svg className="w-8 h-8 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
@@ -210,86 +229,171 @@ export default function MyLeads() {
                   Ver Marketplace
                 </Button>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        Lead
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        Operadora
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        Contato
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        Preço
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        Data Compra
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-slate-200">
-                    {purchases.map((purchase) => {
-                      const statusBadge = getStatusBadge(purchase.status);
-                      return (
-                        <tr key={purchase.id} className="hover:bg-slate-50" data-testid={`row-purchase-${purchase.id}`}>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                                <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                              <div>
-                                <div className="text-sm font-medium text-slate-900" data-testid={`text-lead-name-${purchase.id}`}>
-                                  {purchase.lead.name}
-                                </div>
-                                <div className="text-sm text-slate-500">
-                                  {purchase.lead.age} anos • {purchase.lead.city}, {purchase.lead.state}
-                                </div>
-                              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-slate-800">Detalhes Completos dos Leads</h2>
+              <Badge className="bg-green-100 text-green-800 border-green-200">
+                ✓ Informações Desbloqueadas
+              </Badge>
+            </div>
+            
+            <div className="grid gap-6">
+              {purchases.map((purchase) => {
+                const statusBadge = getStatusBadge(purchase.status);
+                const daysSincePurchase = Math.floor((Date.now() - new Date(purchase.purchasedAt).getTime()) / (1000 * 60 * 60 * 24));
+                
+                return (
+                  <Card key={purchase.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-green-500" data-testid={`card-purchase-${purchase.id}`}>
+                    <CardHeader className="pb-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <Users className="w-6 h-6 text-green-600" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-slate-900" data-testid={`text-lead-name-${purchase.id}`}>
+                              {purchase.lead.name}
+                            </h3>
+                            <div className="flex items-center space-x-3 text-sm text-slate-500">
+                              <span>{purchase.lead.age} anos</span>
+                              <span>•</span>
+                              <span>{purchase.lead.city}, {purchase.lead.state}</span>
                             </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className={getCompanyColor(purchase.lead.insuranceCompanyId)}>
-                              {getCompanyName(purchase.lead.insuranceCompanyId)}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-slate-900" data-testid={`text-phone-${purchase.id}`}>
-                              {purchase.lead.phone}
-                            </div>
-                            <div className="text-sm text-slate-500" data-testid={`text-email-${purchase.id}`}>
-                              {purchase.lead.email}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" data-testid={`text-price-${purchase.id}`}>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-green-600" data-testid={`text-price-${purchase.id}`}>
                             R$ {purchase.price}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500" data-testid={`text-date-${purchase.id}`}>
-                            {formatDistanceToNow(new Date(purchase.purchasedAt), { addSuffix: true, locale: ptBR })}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge className={statusBadge.className} data-testid={`text-status-${purchase.id}`}>
-                              {statusBadge.label}
-                            </Badge>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                          </div>
+                          <div className="text-sm text-slate-500" data-testid={`text-date-${purchase.id}`}>
+                            Comprado {daysSincePurchase === 0 ? 'hoje' : `há ${daysSincePurchase} dias`}
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-6">
+                      {/* Status and Quality */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <Badge className={statusBadge.className} data-testid={`text-status-${purchase.id}`}>
+                            {statusBadge.label}
+                          </Badge>
+                          <Badge className={getQualityColor(purchase.lead.quality)} data-testid={`text-quality-${purchase.id}`}>
+                            <Star className="w-3 h-3 mr-1" />
+                            {purchase.lead.quality === 'high' ? 'Alta Qualidade' :
+                             purchase.lead.quality === 'medium' ? 'Qualidade Média' : 'Baixa Qualidade'}
+                          </Badge>
+                        </div>
+                        <Badge className={getCompanyColor(purchase.lead.insuranceCompanyId)}>
+                          <Building className="w-3 h-3 mr-1" />
+                          {getCompanyName(purchase.lead.insuranceCompanyId)}
+                        </Badge>
+                      </div>
+
+                      {/* Contact Information */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div className="text-center">
+                          <div className="flex items-center justify-center mb-2">
+                            <Phone className="w-4 h-4 text-green-600 mr-2" />
+                            <span className="text-sm font-medium text-green-800">Telefone</span>
+                          </div>
+                          <p className="font-semibold text-slate-900" data-testid={`text-phone-${purchase.id}`}>
+                            {purchase.lead.phone}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <div className="flex items-center justify-center mb-2">
+                            <Mail className="w-4 h-4 text-green-600 mr-2" />
+                            <span className="text-sm font-medium text-green-800">E-mail</span>
+                          </div>
+                          <p className="font-semibold text-slate-900 break-all" data-testid={`text-email-${purchase.id}`}>
+                            {purchase.lead.email}
+                          </p>
+                        </div>
+                        <div className="text-center">
+                          <div className="flex items-center justify-center mb-2">
+                            <MapPin className="w-4 h-4 text-green-600 mr-2" />
+                            <span className="text-sm font-medium text-green-800">Localização</span>
+                          </div>
+                          <p className="font-semibold text-slate-900">
+                            {purchase.lead.city}, {purchase.lead.state}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Lead Details */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center text-sm font-medium text-slate-600">
+                            <Users className="w-4 h-4 mr-2" />
+                            Tipo de Plano
+                          </div>
+                          <p className="font-semibold text-slate-900 capitalize">
+                            {purchase.lead.planType === 'individual' ? 'Individual' :
+                             purchase.lead.planType === 'family' ? 'Familiar' : 
+                             purchase.lead.planType === 'business' ? 'Empresarial' : purchase.lead.planType}
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center text-sm font-medium text-slate-600">
+                            <DollarSign className="w-4 h-4 mr-2" />
+                            Orçamento
+                          </div>
+                          <p className="font-semibold text-slate-900">
+                            {formatBudgetRange(purchase.lead.budgetMin, purchase.lead.budgetMax)}
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center text-sm font-medium text-slate-600">
+                            <Users className="w-4 h-4 mr-2" />
+                            Vidas Disponíveis
+                          </div>
+                          <p className="font-semibold text-slate-900">
+                            {purchase.lead.availableLives} vida{purchase.lead.availableLives > 1 ? 's' : ''}
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center text-sm font-medium text-slate-600">
+                            <TrendingUp className="w-4 h-4 mr-2" />
+                            Origem
+                          </div>
+                          <p className="font-semibold text-slate-900">
+                            {purchase.lead.source}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Campaign and Notes */}
+                      {(purchase.lead.campaign || purchase.lead.notes) && (
+                        <div className="space-y-3 pt-4 border-t border-slate-200">
+                          {purchase.lead.campaign && (
+                            <div>
+                              <span className="text-sm font-medium text-slate-600">Campanha: </span>
+                              <span className="text-slate-900">{purchase.lead.campaign}</span>
+                            </div>
+                          )}
+                          {purchase.lead.notes && (
+                            <div>
+                              <span className="text-sm font-medium text-slate-600">Observações: </span>
+                              <span className="text-slate-900">{purchase.lead.notes}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
