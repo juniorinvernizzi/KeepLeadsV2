@@ -169,27 +169,27 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
 
         <CardContent className="p-6">
           {/* Informações principais em grid moderno */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-100">
-              <div className="flex items-center space-x-2 mb-1">
-                <User className="w-4 h-4 text-blue-600" />
+              <div className="flex items-center space-x-1 mb-1">
+                <User className="w-3 h-3 text-blue-600" />
                 <span className="text-xs font-medium text-blue-600">Idade</span>
               </div>
               <p className="text-lg font-bold text-gray-900">{lead.age} anos</p>
             </div>
             
             <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-3 border border-emerald-100">
-              <div className="flex items-center space-x-2 mb-1">
-                <Users className="w-4 h-4 text-emerald-600" />
+              <div className="flex items-center space-x-1 mb-1">
+                <Users className="w-3 h-3 text-emerald-600" />
                 <span className="text-xs font-medium text-emerald-600">Vidas</span>
               </div>
               <p className="text-lg font-bold text-gray-900">{lead.availableLives}</p>
             </div>
             
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-3 border border-orange-100 col-span-2">
-              <div className="flex items-center space-x-2 mb-1">
-                <CreditCard className="w-4 h-4 text-orange-600" />
-                <span className="text-xs font-medium text-orange-600">Tipo de Plano</span>
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-3 border border-orange-100">
+              <div className="flex items-center space-x-1 mb-1">
+                <CreditCard className="w-3 h-3 text-orange-600" />
+                <span className="text-xs font-medium text-orange-600">Plano</span>
               </div>
               <p className="text-lg font-bold text-gray-900 capitalize">{lead.planType}</p>
             </div>
