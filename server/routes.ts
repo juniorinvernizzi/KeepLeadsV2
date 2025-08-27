@@ -361,9 +361,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Purchase lead
-  app.post('/api/leads/:id/purchase', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/leads/:id/purchase', isSimpleAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const leadId = req.params.id;
       
       // Get lead details
@@ -446,9 +446,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user's purchased leads
-  app.get('/api/my-leads', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/my-leads', isSimpleAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const purchases = await storage.getUserPurchases(userId);
       
       // Get lead details for each purchase
@@ -502,9 +502,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/transactions', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/transactions', isSimpleAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const transactions = await storage.getUserTransactions(userId);
       res.json(transactions);
     } catch (error) {
@@ -525,7 +525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get('/api/admin/users', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/admin/users', isSimpleAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
@@ -542,7 +542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/admin/stats', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/admin/stats', isSimpleAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
@@ -560,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin lead management routes
-  app.get('/api/admin/leads', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/admin/leads', isSimpleAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
@@ -577,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/leads', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/admin/leads', isSimpleAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
@@ -595,7 +595,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/admin/leads/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.put('/api/admin/leads/:id', isSimpleAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
@@ -616,7 +616,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/leads/:id', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.delete('/api/admin/leads/:id', isSimpleAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
@@ -637,7 +637,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Integration settings routes
-  app.get('/api/admin/integrations', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/admin/integrations', isSimpleAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
@@ -662,7 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/integrations', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/admin/integrations', isSimpleAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
@@ -678,7 +678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/integrations/test-webhook', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/admin/integrations/test-webhook', isSimpleAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
