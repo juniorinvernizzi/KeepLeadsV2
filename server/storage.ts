@@ -247,6 +247,10 @@ export class DatabaseStorage implements IStorage {
     return newCompany;
   }
 
+  async getAllLeads(): Promise<Lead[]> {
+    return db.select().from(leads).orderBy(desc(leads.createdAt));
+  }
+
   // Admin operations
   async getAllUsers(): Promise<User[]> {
     return db.select().from(users).orderBy(desc(users.createdAt));

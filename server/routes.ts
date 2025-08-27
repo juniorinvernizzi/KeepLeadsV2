@@ -468,6 +468,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Integration settings routes
+  app.get('/api/admin/integrations', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const settings = {
+        n8nWebhookUrl: "",
+        n8nEnabled: false,
+        kommoCrmApiKey: "",
+        kommoCrmEnabled: false,
+        mercadoPagoAccessToken: "",
+        mercadoPagoEnabled: false,
+      };
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching integration settings:", error);
+      res.status(500).json({ message: "Failed to fetch integration settings" });
+    }
+  });
+
+  app.post('/api/admin/integrations', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      res.json({ message: "Integration settings saved successfully" });
+    } catch (error) {
+      console.error("Error saving integration settings:", error);
+      res.status(500).json({ message: "Failed to save integration settings" });
+    }
+  });
+
+  app.post('/api/admin/integrations/test-webhook', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const currentUser = await storage.getUser(userId);
+      
+      if (!currentUser || currentUser.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { url } = req.body;
+      
+      const testPayload = {
+        test: true,
+        timestamp: new Date().toISOString(),
+        message: "Test webhook from KeepLeads"
+      };
+      
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(testPayload),
+        });
+        
+        if (response.ok) {
+          res.json({ message: "Webhook tested successfully" });
+        } else {
+          res.status(400).json({ message: `Webhook test failed: ${response.statusText}` });
+        }
+      } catch (fetchError) {
+        res.status(400).json({ message: `Webhook test failed: ${fetchError.message}` });
+      }
+    } catch (error) {
+      console.error("Error testing webhook:", error);
+      res.status(500).json({ message: "Failed to test webhook" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

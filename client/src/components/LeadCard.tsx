@@ -82,7 +82,7 @@ export default function LeadCard({
         description: "O lead foi adicionado aos seus leads comprados.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/simple-auth/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/my-leads"] });
       setShowPurchaseModal(false);
       onPurchase();

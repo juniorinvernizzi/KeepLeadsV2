@@ -27,6 +27,7 @@ import {
   FolderOpen,
   ChevronDown
 } from "lucide-react";
+import { Link as LinkIcon } from "lucide-react";
 
 interface LayoutProps {
   children: ReactNode;
@@ -77,6 +78,11 @@ export default function Layout({ children }: LayoutProps) {
         path: "/admin/manage-leads", 
         label: "Gerenciar Leads", 
         icon: <FolderOpen className="w-5 h-5" />
+      },
+      {
+        path: "/integrations", 
+        label: "Integrações", 
+        icon: <LinkIcon className="w-5 h-5" />
       },
       {
         path: "/admin", 

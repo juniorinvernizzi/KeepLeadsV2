@@ -13,6 +13,7 @@ import MyLeads from "@/pages/MyLeads";
 import Credits from "@/pages/Credits";
 import AdminPanel from "@/pages/AdminPanel";
 import ManageLeads from "@/pages/ManageLeads";
+import Integrations from "@/pages/Integrations";
 import PublicLeads from "@/pages/PublicLeads";
 
 function Router() {
@@ -46,6 +47,7 @@ function Router() {
           <Route path="/credits" component={Credits} />
           <Route path="/admin" component={AdminPanel} />
           <Route path="/admin/manage-leads" component={ManageLeads} />
+          <Route path="/integrations" component={Integrations} />
         </>
       ) : (
         <>
@@ -55,6 +57,7 @@ function Router() {
           <Route path="/credits" component={Login} />
           <Route path="/admin" component={Login} />
           <Route path="/admin/manage-leads" component={Login} />
+          <Route path="/integrations" component={Login} />
         </>
       )}
       <Route component={NotFound} />

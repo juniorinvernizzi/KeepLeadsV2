@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Star, MapPin, Phone, Mail, Users, TrendingUp, Calendar, DollarSign, Building } from "lucide-react";
+import { Star, MapPin, Phone, Mail, Users, TrendingUp, Calendar, DollarSign, Building, Eye, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
 
 interface PurchasedLead {
   id: string;
@@ -38,6 +41,8 @@ interface PurchasedLead {
 
 export default function MyLeads() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [expandedLead, setExpandedLead] = useState<string | null>(null);
   
   const { data: purchases = [], isLoading } = useQuery<PurchasedLead[]>({
     queryKey: ["/api/my-leads"],
@@ -92,6 +97,52 @@ export default function MyLeads() {
     return `R$ ${parseFloat(min).toFixed(2)} - R$ ${parseFloat(max).toFixed(2)}`;
   };
 
+  const maskSensitiveInfo = (text: string, type: 'email' | 'phone' | 'name'): string => {
+    switch (type) {
+      case 'email':
+        const [name, domain] = text.split('@');
+        return `${name.slice(0, 2)}***@${domain}`;
+      case 'phone':
+        return text.slice(0, 5) + '****-****';
+      case 'name':
+        const names = text.split(' ');
+        return `${names[0]} ${'*'.repeat(names.slice(1).join(' ').length)}`;
+      default:
+        return text;
+    }
+  };
+
+  const handleExportToExcel = async () => {
+    try {
+      const response = await apiRequest("GET", "/api/my-leads/export");
+      
+      // Create blob and download
+      const blob = new Blob([response as string], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `meus-leads-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Exportação concluída",
+        description: "Seus leads foram exportados com sucesso para Excel.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro na exportação",
+        description: "Não foi possível exportar os leads. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; className: string }> = {
       active: { label: "Ativo", className: "bg-green-100 text-green-800" },
@@ -124,9 +175,20 @@ export default function MyLeads() {
     <Layout>
       <div className="w-9/10 mx-auto py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2" data-testid="text-page-title">
-            Meus Leads
-          </h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold text-slate-800" data-testid="text-page-title">
+              Meus Leads
+            </h1>
+            <Button
+              onClick={handleExportToExcel}
+              variant="outline"
+              className="flex items-center space-x-2"
+              data-testid="button-export-excel"
+            >
+              <Download className="w-4 h-4" />
+              <span>Exportar Excel</span>
+            </Button>
+          </div>
           <p className="text-slate-600">Leads que você já comprou e seus detalhes completos</p>
         </div>
 
@@ -255,7 +317,7 @@ export default function MyLeads() {
                           </div>
                           <div>
                             <h3 className="text-lg font-semibold text-slate-900" data-testid={`text-lead-name-${purchase.id}`}>
-                              {purchase.lead.name}
+                              {expandedLead === purchase.id ? purchase.lead.name : maskSensitiveInfo(purchase.lead.name, 'name')}
                             </h3>
                             <div className="flex items-center space-x-3 text-sm text-slate-500">
                               <span>{purchase.lead.age} anos</span>
@@ -264,13 +326,22 @@ export default function MyLeads() {
                             </div>
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right space-y-2">
                           <div className="text-lg font-bold text-green-600" data-testid={`text-price-${purchase.id}`}>
                             R$ {purchase.price}
                           </div>
                           <div className="text-sm text-slate-500" data-testid={`text-date-${purchase.id}`}>
                             Comprado {daysSincePurchase === 0 ? 'hoje' : `há ${daysSincePurchase} dias`}
                           </div>
+                          <Button
+                            size="sm"
+                            variant={expandedLead === purchase.id ? "secondary" : "default"}
+                            onClick={() => setExpandedLead(expandedLead === purchase.id ? null : purchase.id)}
+                            data-testid={`button-toggle-details-${purchase.id}`}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            {expandedLead === purchase.id ? 'Ocultar' : 'Ver Detalhes'}
+                          </Button>
                         </div>
                       </div>
                     </CardHeader>
@@ -295,97 +366,133 @@ export default function MyLeads() {
                       </div>
 
                       {/* Contact Information */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                        <div className="text-center">
-                          <div className="flex items-center justify-center mb-2">
-                            <Phone className="w-4 h-4 text-green-600 mr-2" />
-                            <span className="text-sm font-medium text-green-800">Telefone</span>
+                      {expandedLead === purchase.id ? (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                          <div className="text-center">
+                            <div className="flex items-center justify-center mb-2">
+                              <Phone className="w-4 h-4 text-green-600 mr-2" />
+                              <span className="text-sm font-medium text-green-800">Telefone</span>
+                            </div>
+                            <p className="font-semibold text-slate-900" data-testid={`text-phone-${purchase.id}`}>
+                              {purchase.lead.phone}
+                            </p>
                           </div>
-                          <p className="font-semibold text-slate-900" data-testid={`text-phone-${purchase.id}`}>
-                            {purchase.lead.phone}
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <div className="flex items-center justify-center mb-2">
-                            <Mail className="w-4 h-4 text-green-600 mr-2" />
-                            <span className="text-sm font-medium text-green-800">E-mail</span>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center mb-2">
+                              <Mail className="w-4 h-4 text-green-600 mr-2" />
+                              <span className="text-sm font-medium text-green-800">E-mail</span>
+                            </div>
+                            <p className="font-semibold text-slate-900 break-all" data-testid={`text-email-${purchase.id}`}>
+                              {purchase.lead.email}
+                            </p>
                           </div>
-                          <p className="font-semibold text-slate-900 break-all" data-testid={`text-email-${purchase.id}`}>
-                            {purchase.lead.email}
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <div className="flex items-center justify-center mb-2">
-                            <MapPin className="w-4 h-4 text-green-600 mr-2" />
-                            <span className="text-sm font-medium text-green-800">Localização</span>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center mb-2">
+                              <MapPin className="w-4 h-4 text-green-600 mr-2" />
+                              <span className="text-sm font-medium text-green-800">Localização</span>
+                            </div>
+                            <p className="font-semibold text-slate-900">
+                              {purchase.lead.city}, {purchase.lead.state}
+                            </p>
                           </div>
-                          <p className="font-semibold text-slate-900">
-                            {purchase.lead.city}, {purchase.lead.state}
-                          </p>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="text-center">
+                            <div className="flex items-center justify-center mb-2">
+                              <Phone className="w-4 h-4 text-gray-400 mr-2" />
+                              <span className="text-sm font-medium text-gray-600">Telefone</span>
+                            </div>
+                            <p className="font-semibold text-slate-900" data-testid={`text-phone-${purchase.id}`}>
+                              {maskSensitiveInfo(purchase.lead.phone, 'phone')}
+                            </p>
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center mb-2">
+                              <Mail className="w-4 h-4 text-gray-400 mr-2" />
+                              <span className="text-sm font-medium text-gray-600">E-mail</span>
+                            </div>
+                            <p className="font-semibold text-slate-900 break-all" data-testid={`text-email-${purchase.id}`}>
+                              {maskSensitiveInfo(purchase.lead.email, 'email')}
+                            </p>
+                          </div>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center mb-2">
+                              <MapPin className="w-4 h-4 text-gray-400 mr-2" />
+                              <span className="text-sm font-medium text-gray-600">Localização</span>
+                            </div>
+                            <p className="font-semibold text-slate-900">
+                              {purchase.lead.city}, {purchase.lead.state}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
-                      {/* Lead Details */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm font-medium text-slate-600">
-                            <Users className="w-4 h-4 mr-2" />
-                            Tipo de Plano
+                      {/* Lead Details - Only show when expanded */}
+                      {expandedLead === purchase.id && (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center text-sm font-medium text-slate-600">
+                                <Users className="w-4 h-4 mr-2" />
+                                Tipo de Plano
+                              </div>
+                              <p className="font-semibold text-slate-900 capitalize">
+                                {purchase.lead.planType === 'individual' ? 'Individual' :
+                                 purchase.lead.planType === 'family' ? 'Familiar' : 
+                                 purchase.lead.planType === 'business' ? 'Empresarial' : purchase.lead.planType}
+                              </p>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex items-center text-sm font-medium text-slate-600">
+                                <DollarSign className="w-4 h-4 mr-2" />
+                                Orçamento
+                              </div>
+                              <p className="font-semibold text-slate-900">
+                                {formatBudgetRange(purchase.lead.budgetMin, purchase.lead.budgetMax)}
+                              </p>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex items-center text-sm font-medium text-slate-600">
+                                <Users className="w-4 h-4 mr-2" />
+                                Vidas Disponíveis
+                              </div>
+                              <p className="font-semibold text-slate-900">
+                                {purchase.lead.availableLives} vida{purchase.lead.availableLives > 1 ? 's' : ''}
+                              </p>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex items-center text-sm font-medium text-slate-600">
+                                <TrendingUp className="w-4 h-4 mr-2" />
+                                Origem
+                              </div>
+                              <p className="font-semibold text-slate-900">
+                                {purchase.lead.source}
+                              </p>
+                            </div>
                           </div>
-                          <p className="font-semibold text-slate-900 capitalize">
-                            {purchase.lead.planType === 'individual' ? 'Individual' :
-                             purchase.lead.planType === 'family' ? 'Familiar' : 
-                             purchase.lead.planType === 'business' ? 'Empresarial' : purchase.lead.planType}
-                          </p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm font-medium text-slate-600">
-                            <DollarSign className="w-4 h-4 mr-2" />
-                            Orçamento
-                          </div>
-                          <p className="font-semibold text-slate-900">
-                            {formatBudgetRange(purchase.lead.budgetMin, purchase.lead.budgetMax)}
-                          </p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm font-medium text-slate-600">
-                            <Users className="w-4 h-4 mr-2" />
-                            Vidas Disponíveis
-                          </div>
-                          <p className="font-semibold text-slate-900">
-                            {purchase.lead.availableLives} vida{purchase.lead.availableLives > 1 ? 's' : ''}
-                          </p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm font-medium text-slate-600">
-                            <TrendingUp className="w-4 h-4 mr-2" />
-                            Origem
-                          </div>
-                          <p className="font-semibold text-slate-900">
-                            {purchase.lead.source}
-                          </p>
-                        </div>
-                      </div>
 
-                      {/* Campaign and Notes */}
-                      {(purchase.lead.campaign || purchase.lead.notes) && (
-                        <div className="space-y-3 pt-4 border-t border-slate-200">
-                          {purchase.lead.campaign && (
-                            <div>
-                              <span className="text-sm font-medium text-slate-600">Campanha: </span>
-                              <span className="text-slate-900">{purchase.lead.campaign}</span>
+                          {/* Campaign and Notes */}
+                          {(purchase.lead.campaign || purchase.lead.notes) && (
+                            <div className="space-y-3 pt-4 border-t border-slate-200">
+                              {purchase.lead.campaign && (
+                                <div>
+                                  <span className="text-sm font-medium text-slate-600">Campanha: </span>
+                                  <span className="text-slate-900">{purchase.lead.campaign}</span>
+                                </div>
+                              )}
+                              {purchase.lead.notes && (
+                                <div>
+                                  <span className="text-sm font-medium text-slate-600">Observações: </span>
+                                  <span className="text-slate-900">{purchase.lead.notes}</span>
+                                </div>
+                              )}
                             </div>
                           )}
-                          {purchase.lead.notes && (
-                            <div>
-                              <span className="text-sm font-medium text-slate-600">Observações: </span>
-                              <span className="text-slate-900">{purchase.lead.notes}</span>
-                            </div>
-                          )}
-                        </div>
+                        </>
                       )}
                     </CardContent>
                   </Card>
