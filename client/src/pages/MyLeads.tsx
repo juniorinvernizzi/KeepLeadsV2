@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Star, MapPin, Phone, Mail, Users, TrendingUp, Calendar, DollarSign, Building, Eye, Download } from "lucide-react";
+import { Star, MapPin, Phone, Mail, Users, TrendingUp, Calendar, DollarSign, Building, Eye, Download, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useState } from "react";
@@ -42,7 +42,7 @@ interface PurchasedLead {
 export default function MyLeads() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [expandedLead, setExpandedLead] = useState<string | null>(null);
+  const [selectedLead, setSelectedLead] = useState<PurchasedLead | null>(null);
   
   const { data: purchases = [], isLoading } = useQuery<PurchasedLead[]>({
     queryKey: ["/api/my-leads"],
@@ -97,20 +97,6 @@ export default function MyLeads() {
     return `R$ ${parseFloat(min).toFixed(2)} - R$ ${parseFloat(max).toFixed(2)}`;
   };
 
-  const maskSensitiveInfo = (text: string, type: 'email' | 'phone' | 'name'): string => {
-    switch (type) {
-      case 'email':
-        const [name, domain] = text.split('@');
-        return `${name.slice(0, 2)}***@${domain}`;
-      case 'phone':
-        return text.slice(0, 5) + '****-****';
-      case 'name':
-        const names = text.split(' ');
-        return `${names[0]} ${'*'.repeat(names.slice(1).join(' ').length)}`;
-      default:
-        return text;
-    }
-  };
 
   const handleExportToExcel = async () => {
     try {
@@ -268,236 +254,273 @@ export default function MyLeads() {
           </Card>
         </div>
 
-        {/* Purchased Leads Cards */}
+        {/* Leads Grid */}
         {purchases.length === 0 ? (
-          <Card>
-            <CardContent className="p-12">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
-                  <svg className="w-8 h-8 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-slate-900 mb-2" data-testid="text-no-purchases">
-                  Nenhum lead comprado ainda
-                </h3>
-                <p className="text-slate-500 mb-4">
-                  Vá para o marketplace e comece a comprar leads qualificados.
-                </p>
-                <Button 
-                  onClick={() => window.location.href = "/leads"}
-                  data-testid="button-go-marketplace"
-                >
-                  Ver Marketplace
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-slate-800">Detalhes Completos dos Leads</h2>
-              <Badge className="bg-green-100 text-green-800 border-green-200">
-                ✓ Informações Desbloqueadas
-              </Badge>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+              <Users className="w-8 h-8 text-slate-400" />
             </div>
-            
-            <div className="grid gap-6">
-              {purchases.map((purchase) => {
-                const statusBadge = getStatusBadge(purchase.status);
-                const daysSincePurchase = Math.floor((Date.now() - new Date(purchase.purchasedAt).getTime()) / (1000 * 60 * 60 * 24));
-                
+            <h3 className="text-lg font-medium text-slate-900 mb-2">Nenhum lead comprado</h3>
+            <p className="text-slate-500 mb-4">
+              Você ainda não comprou nenhum lead. Visite o marketplace para encontrar leads.
+            </p>
+            <Button 
+              onClick={() => window.location.href = "/leads"}
+              data-testid="button-go-to-marketplace"
+            >
+              Ir para Marketplace
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {purchases.map((purchase) => {
+                const daysSincePurchase = Math.floor(
+                  (new Date().getTime() - new Date(purchase.purchasedAt).getTime()) / (1000 * 60 * 60 * 24)
+                );
+                const { label: statusLabel, className: statusClass } = getStatusBadge(purchase.status);
+
                 return (
-                  <Card key={purchase.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-green-500" data-testid={`card-purchase-${purchase.id}`}>
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                            <Users className="w-6 h-6 text-green-600" />
+                  <Card 
+                    key={purchase.id} 
+                    className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group border-0 bg-white"
+                    onClick={() => setSelectedLead(purchase)}
+                    data-testid={`card-lead-${purchase.id}`}
+                  >
+                    {/* Card Header with gradient */}
+                    <div className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                            <Users className="w-5 h-5 text-white" />
                           </div>
                           <div>
-                            <h3 className="text-lg font-semibold text-slate-900" data-testid={`text-lead-name-${purchase.id}`}>
-                              {expandedLead === purchase.id ? purchase.lead.name : maskSensitiveInfo(purchase.lead.name, 'name')}
+                            <h3 className="font-semibold text-white text-sm">
+                              {getCompanyName(purchase.lead.insuranceCompanyId)}
                             </h3>
-                            <div className="flex items-center space-x-3 text-sm text-slate-500">
-                              <span>{purchase.lead.age} anos</span>
-                              <span>•</span>
-                              <span>{purchase.lead.city}, {purchase.lead.state}</span>
-                            </div>
+                            <p className="text-xs text-purple-100">Plano de Saúde</p>
                           </div>
                         </div>
-                        <div className="text-right space-y-2">
-                          <div className="text-lg font-bold text-green-600" data-testid={`text-price-${purchase.id}`}>
-                            R$ {purchase.price}
-                          </div>
-                          <div className="text-sm text-slate-500" data-testid={`text-date-${purchase.id}`}>
-                            Comprado {daysSincePurchase === 0 ? 'hoje' : `há ${daysSincePurchase} dias`}
-                          </div>
-                          <Button
-                            size="sm"
-                            variant={expandedLead === purchase.id ? "secondary" : "default"}
-                            onClick={() => setExpandedLead(expandedLead === purchase.id ? null : purchase.id)}
-                            data-testid={`button-toggle-details-${purchase.id}`}
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            {expandedLead === purchase.id ? 'Ocultar' : 'Ver Detalhes'}
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-6">
-                      {/* Status and Quality */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <Badge className={statusBadge.className} data-testid={`text-status-${purchase.id}`}>
-                            {statusBadge.label}
-                          </Badge>
-                          <Badge className={getQualityColor(purchase.lead.quality)} data-testid={`text-quality-${purchase.id}`}>
-                            <Star className="w-3 h-3 mr-1" />
-                            {purchase.lead.quality === 'high' ? 'Alta Qualidade' :
-                             purchase.lead.quality === 'medium' ? 'Qualidade Média' : 'Baixa Qualidade'}
-                          </Badge>
-                        </div>
-                        <Badge className={getCompanyColor(purchase.lead.insuranceCompanyId)}>
-                          <Building className="w-3 h-3 mr-1" />
-                          {getCompanyName(purchase.lead.insuranceCompanyId)}
+                        <Badge className={getQualityColor(purchase.lead.quality)} style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}>
+                          <Star className="w-3 h-3 mr-1" />
+                          {purchase.lead.quality === 'high' ? 'Premium' : 
+                           purchase.lead.quality === 'medium' ? 'Padrão' : 'Básico'}
                         </Badge>
                       </div>
 
-                      {/* Contact Information */}
-                      {expandedLead === purchase.id ? (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                          <div className="text-center">
-                            <div className="flex items-center justify-center mb-2">
-                              <Phone className="w-4 h-4 text-green-600 mr-2" />
-                              <span className="text-sm font-medium text-green-800">Telefone</span>
-                            </div>
-                            <p className="font-semibold text-slate-900" data-testid={`text-phone-${purchase.id}`}>
-                              {purchase.lead.phone}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <div className="flex items-center justify-center mb-2">
-                              <Mail className="w-4 h-4 text-green-600 mr-2" />
-                              <span className="text-sm font-medium text-green-800">E-mail</span>
-                            </div>
-                            <p className="font-semibold text-slate-900 break-all" data-testid={`text-email-${purchase.id}`}>
-                              {purchase.lead.email}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <div className="flex items-center justify-center mb-2">
-                              <MapPin className="w-4 h-4 text-green-600 mr-2" />
-                              <span className="text-sm font-medium text-green-800">Localização</span>
-                            </div>
-                            <p className="font-semibold text-slate-900">
-                              {purchase.lead.city}, {purchase.lead.state}
-                            </p>
-                          </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2 text-purple-100">
+                          <MapPin className="w-4 h-4" />
+                          <span className="text-sm font-medium">
+                            {purchase.lead.city}, {purchase.lead.state}
+                          </span>
                         </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                          <div className="text-center">
-                            <div className="flex items-center justify-center mb-2">
-                              <Phone className="w-4 h-4 text-gray-400 mr-2" />
-                              <span className="text-sm font-medium text-gray-600">Telefone</span>
-                            </div>
-                            <p className="font-semibold text-slate-900" data-testid={`text-phone-${purchase.id}`}>
-                              {maskSensitiveInfo(purchase.lead.phone, 'phone')}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <div className="flex items-center justify-center mb-2">
-                              <Mail className="w-4 h-4 text-gray-400 mr-2" />
-                              <span className="text-sm font-medium text-gray-600">E-mail</span>
-                            </div>
-                            <p className="font-semibold text-slate-900 break-all" data-testid={`text-email-${purchase.id}`}>
-                              {maskSensitiveInfo(purchase.lead.email, 'email')}
-                            </p>
-                          </div>
-                          <div className="text-center">
-                            <div className="flex items-center justify-center mb-2">
-                              <MapPin className="w-4 h-4 text-gray-400 mr-2" />
-                              <span className="text-sm font-medium text-gray-600">Localização</span>
-                            </div>
-                            <p className="font-semibold text-slate-900">
-                              {purchase.lead.city}, {purchase.lead.state}
-                            </p>
-                          </div>
+                        <div className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
+                          <span className="text-xs text-white font-medium">{purchase.lead.age} anos</span>
                         </div>
-                      )}
+                      </div>
+                    </div>
 
-                      {/* Lead Details - Only show when expanded */}
-                      {expandedLead === purchase.id && (
-                        <>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div className="space-y-2">
-                              <div className="flex items-center text-sm font-medium text-slate-600">
-                                <Users className="w-4 h-4 mr-2" />
-                                Tipo de Plano
-                              </div>
-                              <p className="font-semibold text-slate-900 capitalize">
-                                {purchase.lead.planType === 'individual' ? 'Individual' :
-                                 purchase.lead.planType === 'family' ? 'Familiar' : 
-                                 purchase.lead.planType === 'business' ? 'Empresarial' : purchase.lead.planType}
-                              </p>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <div className="flex items-center text-sm font-medium text-slate-600">
-                                <DollarSign className="w-4 h-4 mr-2" />
-                                Orçamento
-                              </div>
-                              <p className="font-semibold text-slate-900">
-                                {formatBudgetRange(purchase.lead.budgetMin, purchase.lead.budgetMax)}
-                              </p>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <div className="flex items-center text-sm font-medium text-slate-600">
-                                <Users className="w-4 h-4 mr-2" />
-                                Vidas Disponíveis
-                              </div>
-                              <p className="font-semibold text-slate-900">
-                                {purchase.lead.availableLives} vida{purchase.lead.availableLives > 1 ? 's' : ''}
-                              </p>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <div className="flex items-center text-sm font-medium text-slate-600">
-                                <TrendingUp className="w-4 h-4 mr-2" />
-                                Origem
-                              </div>
-                              <p className="font-semibold text-slate-900">
-                                {purchase.lead.source}
-                              </p>
-                            </div>
-                          </div>
+                    <CardContent className="p-4">
+                      {/* Basic Info */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600">Tipo de Plano</span>
+                          <span className="text-sm font-medium text-slate-900 capitalize">
+                            {purchase.lead.planType === 'individual' ? 'Individual' :
+                             purchase.lead.planType === 'family' ? 'Familiar' : 
+                             purchase.lead.planType === 'business' ? 'Empresarial' : purchase.lead.planType}
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600">Vidas Disponíveis</span>
+                          <span className="text-sm font-medium text-slate-900">
+                            {purchase.lead.availableLives} vida{purchase.lead.availableLives > 1 ? 's' : ''}
+                          </span>
+                        </div>
 
-                          {/* Campaign and Notes */}
-                          {(purchase.lead.campaign || purchase.lead.notes) && (
-                            <div className="space-y-3 pt-4 border-t border-slate-200">
-                              {purchase.lead.campaign && (
-                                <div>
-                                  <span className="text-sm font-medium text-slate-600">Campanha: </span>
-                                  <span className="text-slate-900">{purchase.lead.campaign}</span>
-                                </div>
-                              )}
-                              {purchase.lead.notes && (
-                                <div>
-                                  <span className="text-sm font-medium text-slate-600">Observações: </span>
-                                  <span className="text-slate-900">{purchase.lead.notes}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </>
-                      )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600">Origem</span>
+                          <span className="text-sm font-medium text-slate-900">
+                            {purchase.lead.source}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Divider */}
+                      <div className="border-t border-slate-100 my-4"></div>
+
+                      {/* Purchase Info */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-lg font-bold text-green-600" data-testid={`text-price-${purchase.id}`}>
+                            R$ {purchase.price}
+                          </p>
+                          <p className="text-xs text-slate-500" data-testid={`text-date-${purchase.id}`}>
+                            Comprado {daysSincePurchase === 0 ? 'hoje' : `há ${daysSincePurchase} dias`}
+                          </p>
+                        </div>
+                        <Badge className={statusClass}>
+                          {statusLabel}
+                        </Badge>
+                      </div>
+
+                      {/* Click indicator */}
+                      <div className="flex items-center justify-center mt-4 text-slate-400 group-hover:text-slate-600 transition-colors">
+                        <Eye className="w-4 h-4 mr-2" />
+                        <span className="text-xs">Clique para ver detalhes</span>
+                      </div>
                     </CardContent>
                   </Card>
                 );
               })}
+          </div>
+        )}
+
+        {/* Lead Details Modal */}
+        {selectedLead && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">{selectedLead.lead.name}</h2>
+                  <p className="text-slate-600">{selectedLead.lead.city}, {selectedLead.lead.state}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedLead(null)}
+                  className="rounded-full"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {/* Contact Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Informações de Contato</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <Phone className="w-4 h-4 text-green-600 mr-2" />
+                        <span className="text-sm font-medium text-green-800">Telefone</span>
+                      </div>
+                      <p className="font-semibold text-slate-900">{selectedLead.lead.phone}</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <Mail className="w-4 h-4 text-green-600 mr-2" />
+                        <span className="text-sm font-medium text-green-800">E-mail</span>
+                      </div>
+                      <p className="font-semibold text-slate-900 break-all">{selectedLead.lead.email}</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="flex items-center justify-center mb-2">
+                        <MapPin className="w-4 h-4 text-green-600 mr-2" />
+                        <span className="text-sm font-medium text-green-800">Localização</span>
+                      </div>
+                      <p className="font-semibold text-slate-900">{selectedLead.lead.city}, {selectedLead.lead.state}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lead Details */}
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Detalhes do Lead</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center text-sm font-medium text-slate-600">
+                        <Users className="w-4 h-4 mr-2" />
+                        Tipo de Plano
+                      </div>
+                      <p className="font-semibold text-slate-900 capitalize">
+                        {selectedLead.lead.planType === 'individual' ? 'Individual' :
+                         selectedLead.lead.planType === 'family' ? 'Familiar' : 
+                         selectedLead.lead.planType === 'business' ? 'Empresarial' : selectedLead.lead.planType}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center text-sm font-medium text-slate-600">
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        Orçamento
+                      </div>
+                      <p className="font-semibold text-slate-900">
+                        {formatBudgetRange(selectedLead.lead.budgetMin, selectedLead.lead.budgetMax)}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center text-sm font-medium text-slate-600">
+                        <Users className="w-4 h-4 mr-2" />
+                        Vidas Disponíveis
+                      </div>
+                      <p className="font-semibold text-slate-900">
+                        {selectedLead.lead.availableLives} vida{selectedLead.lead.availableLives > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center text-sm font-medium text-slate-600">
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Origem
+                      </div>
+                      <p className="font-semibold text-slate-900">
+                        {selectedLead.lead.source}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Campaign and Notes */}
+                {(selectedLead.lead.campaign || selectedLead.lead.notes) && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-4">Informações Adicionais</h3>
+                    <div className="space-y-3 p-4 bg-slate-50 rounded-lg">
+                      {selectedLead.lead.campaign && (
+                        <div>
+                          <span className="text-sm font-medium text-slate-600">Campanha: </span>
+                          <span className="text-slate-900">{selectedLead.lead.campaign}</span>
+                        </div>
+                      )}
+                      {selectedLead.lead.notes && (
+                        <div>
+                          <span className="text-sm font-medium text-slate-600">Observações: </span>
+                          <span className="text-slate-900">{selectedLead.lead.notes}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Purchase Info */}
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Informações da Compra</h3>
+                  <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <span className="text-sm font-medium text-green-800">Valor Pago</span>
+                        <p className="text-lg font-bold text-green-600">R$ {selectedLead.price}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-green-800">Data da Compra</span>
+                        <p className="font-semibold text-slate-900">
+                          {new Date(selectedLead.purchasedAt).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-green-800">Status</span>
+                        <div className="mt-1">
+                          <Badge className={getStatusBadge(selectedLead.status).className}>
+                            {getStatusBadge(selectedLead.status).label}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
