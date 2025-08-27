@@ -175,7 +175,7 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
                 <User className="w-3 h-3 text-blue-600" />
                 <span className="text-xs font-medium text-blue-600">Idade</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">{lead.age} anos</p>
+              <p className="text-sm font-bold text-gray-900">{lead.age} anos</p>
             </div>
             
             <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-3 border border-emerald-100">
@@ -183,7 +183,7 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
                 <Users className="w-3 h-3 text-emerald-600" />
                 <span className="text-xs font-medium text-emerald-600">Vidas</span>
               </div>
-              <p className="text-lg font-bold text-gray-900">{lead.availableLives}</p>
+              <p className="text-sm font-bold text-gray-900">{lead.availableLives}</p>
             </div>
             
             <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-3 border border-orange-100">
@@ -191,7 +191,7 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
                 <CreditCard className="w-3 h-3 text-orange-600" />
                 <span className="text-xs font-medium text-orange-600">Plano</span>
               </div>
-              <p className="text-lg font-bold text-gray-900 capitalize">{lead.planType}</p>
+              <p className="text-sm font-bold text-gray-900 capitalize">{lead.planType}</p>
             </div>
           </div>
 
@@ -200,7 +200,7 @@ export default function LeadCard({ lead, companies, onPurchase }: LeadCardProps)
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
             <div className="relative text-center">
               <p className="text-xs text-gray-400 mb-1">Valor do lead</p>
-              <div className="text-3xl font-bold text-white mb-1" data-testid={`text-price-${lead.id}`}>
+              <div className="text-2xl font-bold text-white mb-1" data-testid={`text-price-${lead.id}`}>
                 R$ {parseFloat(lead.price).toFixed(2)}
               </div>
               <p className="text-xs text-gray-400">Orçamento: R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}</p>
