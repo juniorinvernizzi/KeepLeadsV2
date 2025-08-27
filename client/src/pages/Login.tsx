@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Target, Eye, EyeOff } from "lucide-react";
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showPassword, setShowPassword] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,11 +27,16 @@ export default function Login() {
       return await apiRequest("POST", "/api/simple-login", data);
     },
     onSuccess: () => {
+      // Invalidate auth query to trigger re-fetch
+      queryClient.invalidateQueries({ queryKey: ["/api/simple-auth/user"] });
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo ao KeepLeads",
       });
-      setLocation("/");
+      // Small delay to allow query to update
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     },
     onError: (error: Error) => {
       toast({
@@ -46,11 +52,16 @@ export default function Login() {
       return await apiRequest("POST", "/api/simple-register", data);
     },
     onSuccess: () => {
+      // Invalidate auth query to trigger re-fetch
+      queryClient.invalidateQueries({ queryKey: ["/api/simple-auth/user"] });
       toast({
         title: "Conta criada com sucesso!",
         description: "Bem-vindo ao KeepLeads",
       });
-      setLocation("/");
+      // Small delay to allow query to update
+      setTimeout(() => {
+        setLocation("/");
+      }, 100);
     },
     onError: (error: Error) => {
       toast({

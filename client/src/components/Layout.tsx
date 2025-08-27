@@ -212,7 +212,17 @@ export default function Layout({ children }: LayoutProps) {
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 className="cursor-pointer text-red-600 hover:bg-red-50"
-                onClick={() => window.location.href = '/api/logout'}
+                onClick={async () => {
+                  try {
+                    await fetch('/api/simple-logout', { 
+                      method: 'POST',
+                      credentials: 'include'
+                    });
+                    window.location.href = '/login';
+                  } catch (error) {
+                    window.location.href = '/login';
+                  }
+                }}
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Sair</span>
