@@ -19,6 +19,8 @@ import {
   BarChart3,
   Eye
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface User {
   id: string;
