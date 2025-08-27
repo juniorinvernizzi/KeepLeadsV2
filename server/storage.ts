@@ -19,8 +19,10 @@ import { db } from "./db";
 import { eq, desc, asc, and, or, like, gte, lte, sql } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations (mandatory for Replit Auth)
+  // User operations
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: UpsertUser): Promise<User>;
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Lead operations
@@ -71,6 +73,16 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(userData: UpsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(userData).returning();
+    return user;
+  }
+
   async upsertUser(userData: UpsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
@@ -117,7 +129,6 @@ export class DatabaseStorage implements IStorage {
     maxPrice?: number;
     status?: string;
   }): Promise<Lead[]> {
-    let query = db.select().from(leads);
     const conditions: any[] = [];
 
     if (filters) {
@@ -164,10 +175,10 @@ export class DatabaseStorage implements IStorage {
     }
 
     if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+      return await db.select().from(leads).where(and(...conditions)).orderBy(desc(leads.createdAt));
     }
 
-    return await query.orderBy(desc(leads.createdAt));
+    return await db.select().from(leads).orderBy(desc(leads.createdAt));
   }
 
   async getLeadById(id: string): Promise<Lead | undefined> {

@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
+import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import LeadsMarketplace from "@/pages/LeadsMarketplace";
 import MyLeads from "@/pages/MyLeads";
@@ -34,6 +35,7 @@ function Router() {
       {/* Public routes - always accessible */}
       <Route path="/leads-publicos" component={PublicLeads} />
       <Route path="/public-leads" component={PublicLeads} />
+      <Route path="/login" component={Login} />
       
       {/* Authenticated routes */}
       {isAuthenticated ? (
@@ -47,12 +49,12 @@ function Router() {
         </>
       ) : (
         <>
-          <Route path="/" component={Landing} />
-          <Route path="/leads" component={Landing} />
-          <Route path="/my-leads" component={Landing} />
-          <Route path="/credits" component={Landing} />
-          <Route path="/admin" component={Landing} />
-          <Route path="/admin/manage-leads" component={Landing} />
+          <Route path="/" component={Login} />
+          <Route path="/leads" component={Login} />
+          <Route path="/my-leads" component={Login} />
+          <Route path="/credits" component={Login} />
+          <Route path="/admin" component={Login} />
+          <Route path="/admin/manage-leads" component={Login} />
         </>
       )}
       <Route component={NotFound} />

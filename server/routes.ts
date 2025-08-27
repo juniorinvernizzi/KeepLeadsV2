@@ -2,9 +2,10 @@ import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertLeadSchema, insertCreditTransactionSchema } from "@shared/schema";
+import { insertLeadSchema, insertCreditTransactionSchema, insertUserSchema } from "@shared/schema";
 import { sendLeadPurchaseNotification, sendAdminPurchaseNotification } from "./emailService";
 import { z } from "zod";
+import crypto from "crypto";
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -17,11 +18,132 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
+// Simple auth middleware
+const isSimpleAuthenticated = (req: any, res: any, next: any) => {
+  if (req.session?.userId) {
+    return next();
+  }
+  return res.status(401).json({ message: "Unauthorized" });
+};
+
+// Hash password function
+const hashPassword = (password: string): string => {
+  return crypto.createHash('sha256').update(password).digest('hex');
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Auth routes
+  // Simple login routes
+  app.post('/api/simple-login', async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const hashedPassword = hashPassword(password);
+      if (user.password !== hashedPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Set session
+      (req.session as any).userId = user.id;
+      (req.session as any).user = user;
+      
+      res.json({ 
+        success: true, 
+        user: { 
+          id: user.id, 
+          email: user.email, 
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          credits: user.credits
+        } 
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.post('/api/simple-register', async (req, res) => {
+    try {
+      const { email, password, firstName, lastName } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email and password required" });
+      }
+
+      // Check if user exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      const hashedPassword = hashPassword(password);
+      const newUser = await storage.createUser({
+        email,
+        password: hashedPassword,
+        firstName: firstName || '',
+        lastName: lastName || '',
+        role: 'client'
+      });
+
+      // Set session
+      (req.session as any).userId = newUser.id;
+      (req.session as any).user = newUser;
+
+      res.json({ 
+        success: true, 
+        user: { 
+          id: newUser.id, 
+          email: newUser.email, 
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          role: newUser.role,
+          credits: newUser.credits
+        } 
+      });
+    } catch (error) {
+      console.error("Register error:", error);
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  app.post('/api/simple-logout', (req, res) => {
+    req.session?.destroy((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ success: true });
+    });
+  });
+
+  app.get('/api/simple-auth/user', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Auth routes (original)
   app.get('/api/auth/user', isAuthenticated, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = req.user!.claims.sub;
