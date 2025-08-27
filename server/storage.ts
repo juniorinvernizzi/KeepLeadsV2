@@ -237,6 +237,13 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
+  async updateUserProfile(userId: string, profileData: { firstName?: string; lastName?: string; email?: string }): Promise<void> {
+    await db
+      .update(users)
+      .set({ ...profileData, updatedAt: new Date() })
+      .where(eq(users.id, userId));
+  }
+
   // Insurance company operations
   async getInsuranceCompanies(): Promise<InsuranceCompany[]> {
     return db.select().from(insuranceCompanies).orderBy(asc(insuranceCompanies.name));

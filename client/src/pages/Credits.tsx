@@ -49,7 +49,7 @@ export default function Credits() {
         title: "Créditos adicionados!",
         description: "Os créditos foram adicionados com sucesso à sua conta.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/simple-auth/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       setShowPaymentModal(false);
       setSelectedAmount(null);

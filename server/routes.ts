@@ -158,6 +158,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Profile update route
+  app.put('/api/profile', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { firstName, lastName, email } = req.body;
+      
+      await storage.updateUserProfile(userId, { firstName, lastName, email });
+      
+      const updatedUser = await storage.getUser(userId);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  // Mercado Pago payment routes
+  app.post('/api/payment/create-preference', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const { MercadoPagoConfig, Preference } = await import('mercadopago');
+      
+      const client = new MercadoPagoConfig({
+        accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+        options: { timeout: 5000 }
+      });
+
+      const preference = new Preference(client);
+      
+      const { amount, paymentMethod } = req.body;
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const preferenceData: any = {
+        items: [
+          {
+            id: `credits_${Date.now()}`,
+            title: `Créditos KeepLeads - R$ ${amount.toFixed(2)}`,
+            unit_price: amount,
+            quantity: 1,
+            currency_id: 'BRL',
+          }
+        ],
+        payer: {
+          email: user.email || 'user@keepleads.com',
+          first_name: user.firstName || 'Usuario',
+          last_name: user.lastName || 'KeepLeads',
+        },
+        payment_methods: {
+          excluded_payment_types: paymentMethod === 'credit_card' ? [{ id: 'ticket' }] : [],
+          excluded_payment_methods: [],
+          installments: 12,
+        },
+        back_urls: {
+          success: `${req.protocol}://${req.get('host')}/credits?status=success`,
+          failure: `${req.protocol}://${req.get('host')}/credits?status=failure`,
+          pending: `${req.protocol}://${req.get('host')}/credits?status=pending`,
+        },
+        auto_return: 'approved' as const,
+        external_reference: `user_${userId}_credits_${Date.now()}`,
+        notification_url: `${req.protocol}://${req.get('host')}/api/payment/webhook`,
+      };
+
+      const result = await preference.create({ body: preferenceData });
+      
+      res.json({
+        preferenceId: result.id,
+        initPoint: result.init_point,
+        sandboxInitPoint: result.sandbox_init_point,
+      });
+    } catch (error) {
+      console.error("Error creating payment preference:", error);
+      res.status(500).json({ message: "Failed to create payment preference" });
+    }
+  });
+
+  // Webhook to handle payment notifications
+  app.post('/api/payment/webhook', async (req, res) => {
+    try {
+      const { MercadoPagoConfig, Payment } = await import('mercadopago');
+      
+      const client = new MercadoPagoConfig({
+        accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
+        options: { timeout: 5000 }
+      });
+
+      const payment = new Payment(client);
+      
+      const { type, data } = req.body;
+      
+      if (type === 'payment' && data?.id) {
+        const paymentInfo = await payment.get({ id: data.id });
+        
+        if (paymentInfo.status === 'approved') {
+          const externalReference = paymentInfo.external_reference;
+          const userId = externalReference?.split('_')[1];
+          const amount = paymentInfo.transaction_amount;
+          
+          if (userId && amount) {
+            const user = await storage.getUser(userId);
+            if (user) {
+              const newBalance = (parseFloat(user.credits) + amount).toString();
+              
+              // Update user credits
+              await storage.updateUserCredits(userId, newBalance);
+              
+              // Add transaction record
+              await storage.addCreditTransaction({
+                userId,
+                type: 'deposit',
+                amount: amount.toString(),
+                description: `Depósito via ${paymentInfo.payment_method?.type || 'desconhecido'}`,
+                balanceBefore: user.credits,
+                balanceAfter: newBalance,
+                paymentMethod: paymentInfo.payment_method?.type || null,
+                paymentId: paymentInfo.id?.toString() || null,
+              });
+            }
+          }
+        }
+      }
+      
+      res.status(200).json({ received: true });
+    } catch (error) {
+      console.error("Error processing webhook:", error);
+      res.status(500).json({ message: "Webhook processing failed" });
+    }
+  });
+
+  // Manual credit addition (for development/testing)
+  app.post('/api/credits/add', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.session.userId;
+      const { amount, paymentMethod, paymentId } = req.body;
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const newBalance = (parseFloat(user.credits) + amount).toString();
+      
+      // Update user credits
+      await storage.updateUserCredits(userId, newBalance);
+      
+      // Add transaction record
+      await storage.addCreditTransaction({
+        userId,
+        type: 'deposit',
+        amount: amount.toString(),
+        description: `Depósito via ${paymentMethod}`,
+        balanceBefore: user.credits,
+        balanceAfter: newBalance,
+        paymentMethod,
+        paymentId,
+      });
+      
+      const updatedUser = await storage.getUser(userId);
+      res.json({ success: true, user: updatedUser });
+    } catch (error) {
+      console.error("Error adding credits:", error);
+      res.status(500).json({ message: "Failed to add credits" });
+    }
+  });
+
   // Lead routes
   app.get('/api/leads', async (req, res) => {
     try {

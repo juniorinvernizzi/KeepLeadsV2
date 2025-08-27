@@ -115,32 +115,25 @@ export default function Dashboard() {
       <Layout>
         <div className="w-9/10 mx-auto py-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Dashboard Administrativo
-              </h1>
-              <p className="text-gray-600">
-                Gerencie leads, usuários e monitore o desempenho da plataforma
-              </p>
-            </div>
-            
-            <Button className="bg-purple-600 hover:bg-purple-700">
-              <Filter className="w-4 h-4 mr-2" />
-              Filtrar
-            </Button>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Meu Dashboard
+            </h1>
+            <p className="text-gray-600">
+              Acompanhe suas compras, saldo e atividades na plataforma
+            </p>
           </div>
 
-          {/* Admin Stats */}
+          {/* User Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-100 text-sm font-medium">Total Usuários</p>
-                    <p className="text-3xl font-bold">{adminStats?.totalUsers || "0"}</p>
+                    <p className="text-blue-100 text-sm font-medium">Leads Comprados</p>
+                    <p className="text-3xl font-bold">{userPurchases.length}</p>
                   </div>
-                  <Users className="w-8 h-8 text-blue-200" />
+                  <ShoppingCart className="w-8 h-8 text-blue-200" />
                 </div>
               </CardContent>
             </Card>
@@ -149,10 +142,10 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-green-100 text-sm font-medium">Leads Vendidos</p>
-                    <p className="text-3xl font-bold">{adminStats?.soldLeads || "0"}</p>
+                    <p className="text-green-100 text-sm font-medium">Saldo Atual</p>
+                    <p className="text-3xl font-bold">R$ {userCredits.toFixed(0)}</p>
                   </div>
-                  <ShoppingCart className="w-8 h-8 text-green-200" />
+                  <DollarSign className="w-8 h-8 text-green-200" />
                 </div>
               </CardContent>
             </Card>
@@ -161,10 +154,10 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-sm font-medium">Receita Total</p>
-                    <p className="text-3xl font-bold">R$ {parseFloat(adminStats?.totalRevenue || "0").toFixed(0)}</p>
+                    <p className="text-purple-100 text-sm font-medium">Total Investido</p>
+                    <p className="text-3xl font-bold">R$ {totalSpent.toFixed(0)}</p>
                   </div>
-                  <DollarSign className="w-8 h-8 text-purple-200" />
+                  <Target className="w-8 h-8 text-purple-200" />
                 </div>
               </CardContent>
             </Card>
@@ -173,74 +166,69 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-orange-100 text-sm font-medium">Total Leads</p>
-                    <p className="text-3xl font-bold">{adminStats?.totalLeads || "0"}</p>
+                    <p className="text-orange-100 text-sm font-medium">Transações</p>
+                    <p className="text-3xl font-bold">{transactions.length}</p>
                   </div>
-                  <Target className="w-8 h-8 text-orange-200" />
+                  <Users className="w-8 h-8 text-orange-200" />
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Recent Leads Section */}
+          {/* Recent Purchases Section */}
           <Card className="mb-8">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-xl font-semibold">Leads Recentes</CardTitle>
-                <p className="text-gray-600 text-sm">Últimos leads adicionados à plataforma</p>
+                <CardTitle className="text-xl font-semibold">Compras Recentes</CardTitle>
+                <p className="text-gray-600 text-sm">Seus últimos leads comprados</p>
               </div>
-              <Link href="/admin">
+              <Link href="/my-leads">
                 <Button variant="outline" size="sm">
                   Ver todos
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {recentLeads.map((lead) => {
-                  const company = companies.find(c => c.id === lead.insuranceCompanyId);
-                  return (
-                    <Card key={lead.id} className="border border-gray-200 hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-3 mb-3">
-                          <div 
-                            className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-semibold text-sm"
-                            style={{ backgroundColor: company?.color || '#6366f1' }}
-                          >
-                            {company?.name?.charAt(0) || 'L'}
+            <CardContent className="p-6">
+              {recentPurchases.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+                    <ShoppingCart className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-slate-900 mb-2">Nenhuma compra ainda</h3>
+                  <p className="text-slate-500 mb-4">Comece comprando leads no marketplace</p>
+                  <Button onClick={() => window.location.href = "/leads"}>
+                    Ver Marketplace
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentPurchases.map((purchase) => {
+                    const company = companies.find(c => c.id === purchase.lead?.insuranceCompanyId);
+                    return (
+                      <div key={purchase.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <Users className="w-6 h-6 text-green-600" />
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 truncate">{lead.name}</p>
-                            <p className="text-sm text-gray-500">{company?.name}</p>
-                          </div>
-                          <Badge 
-                            variant={lead.quality === 'A' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {lead.quality}
-                          </Badge>
-                        </div>
-                        
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Localização:</span>
-                            <span className="font-medium">{lead.city}, {lead.state}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Idade:</span>
-                            <span className="font-medium">{lead.age} anos</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Preço:</span>
-                            <span className="font-bold text-green-600">R$ {parseFloat(lead.price).toFixed(2)}</span>
+                          <div>
+                            <h3 className="font-medium text-gray-900">{purchase.lead?.name}</h3>
+                            <p className="text-sm text-gray-500">
+                              {purchase.lead?.city}/{purchase.lead?.state} • {company?.name || 'N/A'}
+                            </p>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
+                        <div className="text-right">
+                          <p className="font-bold text-green-600">R$ {parseFloat(purchase.price).toFixed(2)}</p>
+                          <p className="text-sm text-gray-500">
+                            {formatDistanceToNow(new Date(purchase.purchasedAt), { addSuffix: true, locale: ptBR })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

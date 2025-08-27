@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -25,28 +27,60 @@ export default function PaymentModal({
   const [expiryDate, setExpiryDate] = useState("");
   const [cvv, setCvv] = useState("");
   const [cardName, setCardName] = useState("");
+  const { toast } = useToast();
 
   const handlePayment = async () => {
     if (paymentMethod === "credit_card") {
       if (!cardNumber || !expiryDate || !cvv || !cardName) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Por favor, preencha todos os campos do cartão.",
+          variant: "destructive",
+        });
         return;
       }
     }
 
     setIsProcessing(true);
     
-    // Simulate payment processing
-    setTimeout(() => {
-      const paymentId = `mp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      onPaymentComplete(paymentId);
+    try {
+      // Create payment preference with Mercado Pago
+      const response = await apiRequest("POST", "/api/payment/create-preference", {
+        amount,
+        paymentMethod,
+      });
+
+      if ((response as any).initPoint) {
+        // For development, we'll redirect to Mercado Pago
+        // In production, you might want to open in a new window or embed the checkout
+        window.open((response as any).initPoint, '_blank');
+        
+        // For now, simulate successful payment after opening checkout
+        setTimeout(() => {
+          const paymentId = `mp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          onPaymentComplete(paymentId);
+          setIsProcessing(false);
+          
+          // Reset form
+          setCardNumber("");
+          setExpiryDate("");
+          setCvv("");
+          setCardName("");
+          
+          toast({
+            title: "Redirecionamento realizado",
+            description: "Você foi redirecionado para o Mercado Pago. Complete o pagamento na nova aba.",
+          });
+        }, 2000);
+      }
+    } catch (error: any) {
       setIsProcessing(false);
-      
-      // Reset form
-      setCardNumber("");
-      setExpiryDate("");
-      setCvv("");
-      setCardName("");
-    }, 2000);
+      toast({
+        title: "Erro no pagamento",
+        description: error.message || "Não foi possível processar o pagamento. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatCardNumber = (value: string) => {

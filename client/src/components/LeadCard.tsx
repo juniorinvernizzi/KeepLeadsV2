@@ -81,9 +81,13 @@ export default function LeadCard({
         title: "Lead comprado com sucesso!",
         description: "O lead foi adicionado aos seus leads comprados.",
       });
+      // Invalidate all related queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/simple-auth/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/my-leads"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+      // Also refetch immediately to ensure fresh data
+      queryClient.refetchQueries({ queryKey: ["/api/simple-auth/user"] });
       setShowPurchaseModal(false);
       onPurchase();
     },

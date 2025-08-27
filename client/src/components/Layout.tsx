@@ -211,7 +211,7 @@ export default function Layout({ children }: LayoutProps) {
                 </p>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
+              <DropdownMenuItem className="cursor-pointer" onClick={() => window.location.href = "/profile/edit"}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Editar Perfil</span>
               </DropdownMenuItem>
