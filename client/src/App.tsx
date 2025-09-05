@@ -53,8 +53,8 @@ function Router() {
         </>
       ) : (
         <>
-          <Route path="/" component={Login} />
-          <Route path="/leads" component={Login} />
+          <Route path="/" component={PublicLeads} />
+          <Route path="/leads" component={PublicLeads} />
           <Route path="/my-leads" component={Login} />
           <Route path="/credits" component={Login} />
           <Route path="/admin" component={Login} />
