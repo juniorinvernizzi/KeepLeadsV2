@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,8 +19,10 @@ interface FilterBarProps {
 }
 
 export default function FilterBar({ filters, onFiltersChange, companies }: FilterBarProps) {
-  const [localFilters, setLocalFilters] = useState(filters);
-  const [priceRange, setPriceRange] = useState([0, 200]);
+  const priceRange = [
+    parseInt(filters.minPrice) || 0,
+    parseInt(filters.maxPrice) || 200
+  ];
 
   const cities = [
     "São Paulo",
@@ -45,22 +46,17 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
   ];
 
   const handleFilterChange = (key: string, value: string) => {
-    const newFilters = { ...localFilters, [key]: value };
-    setLocalFilters(newFilters);
+    const newFilters = { ...filters, [key]: value };
+    onFiltersChange(newFilters);
   };
 
   const handlePriceRangeChange = (values: number[]) => {
-    setPriceRange(values);
     const newFilters = { 
-      ...localFilters, 
+      ...filters, 
       minPrice: values[0].toString(),
       maxPrice: values[1].toString()
     };
-    setLocalFilters(newFilters);
-  };
-
-  const applyFilters = () => {
-    onFiltersChange(localFilters);
+    onFiltersChange(newFilters);
   };
 
   const clearFilters = () => {
@@ -72,8 +68,6 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
       minPrice: "",
       maxPrice: "",
     };
-    setLocalFilters(emptyFilters);
-    setPriceRange([0, 200]);
     onFiltersChange(emptyFilters);
   };
 
@@ -88,7 +82,7 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
                 id="search"
                 type="text"
                 placeholder="Nome, telefone, email..."
-                value={localFilters.search}
+                value={filters.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
                 className="pl-10"
                 data-testid="input-search"
@@ -101,7 +95,7 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
           
           <div className="space-y-2">
             <Label htmlFor="company">Operadora</Label>
-            <Select value={localFilters.insuranceCompany} onValueChange={(value) => handleFilterChange("insuranceCompany", value)}>
+            <Select value={filters.insuranceCompany} onValueChange={(value) => handleFilterChange("insuranceCompany", value)}>
               <SelectTrigger data-testid="select-company">
                 <SelectValue placeholder="Todas as operadoras" />
               </SelectTrigger>
@@ -118,7 +112,7 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
           
           <div className="space-y-2">
             <Label htmlFor="ageRange">Faixa Etária</Label>
-            <Select value={localFilters.ageRange} onValueChange={(value) => handleFilterChange("ageRange", value)}>
+            <Select value={filters.ageRange} onValueChange={(value) => handleFilterChange("ageRange", value)}>
               <SelectTrigger data-testid="select-age-range">
                 <SelectValue placeholder="Todas as idades" />
               </SelectTrigger>
@@ -135,7 +129,7 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
           
           <div className="space-y-2">
             <Label htmlFor="city">Cidade</Label>
-            <Select value={localFilters.city} onValueChange={(value) => handleFilterChange("city", value)}>
+            <Select value={filters.city} onValueChange={(value) => handleFilterChange("city", value)}>
               <SelectTrigger data-testid="select-city">
                 <SelectValue placeholder="Todas as cidades" />
               </SelectTrigger>
@@ -173,14 +167,8 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button onClick={applyFilters} data-testid="button-apply-filters">
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd" />
-              </svg>
-              Filtrar
-            </Button>
             <Button variant="outline" onClick={clearFilters} data-testid="button-clear-filters">
-              Limpar
+              Limpar filtros
             </Button>
           </div>
         </div>
