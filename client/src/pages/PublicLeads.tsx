@@ -165,14 +165,7 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              // Detect if we're in Replit preview (iframe)
-              if (window.parent !== window) {
-                // Open in new tab for Replit preview
-                window.open("/api/login", "_blank");
-              } else {
-                // Normal redirect for other environments
-                window.location.href = "/api/login";
-              }
+              window.location.href = "/login";
             }}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg text-sm transition-all duration-200"
             data-testid={`button-login-to-buy-${lead.id}`}
@@ -356,9 +349,21 @@ export default function PublicLeads() {
               <span className="text-xl font-bold text-slate-800">KeepLeads</span>
             </div>
             
-            <Button onClick={() => window.location.href = "/api/login"}>
-              Fazer Login
-            </Button>
+            <div className="flex items-center space-x-3">
+              <Button 
+                variant="outline"
+                onClick={() => window.location.href = "/login"}
+                data-testid="button-register"
+              >
+                Cadastrar
+              </Button>
+              <Button 
+                onClick={() => window.location.href = "/login"}
+                data-testid="button-login"
+              >
+                Fazer Login
+              </Button>
+            </div>
           </div>
           
           
@@ -515,8 +520,9 @@ export default function PublicLeads() {
           <Button 
             size="lg" 
             variant="secondary"
-            onClick={() => window.location.href = "/api/login"}
+            onClick={() => window.location.href = "/login"}
             className="bg-white text-primary hover:bg-slate-50"
+            data-testid="button-login-cta"
           >
             Fazer Login / Cadastrar
           </Button>
