@@ -589,7 +589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin routes
   app.get('/api/admin/users', isSimpleAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser || currentUser.role !== "admin") {
@@ -606,7 +606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/admin/stats', isSimpleAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser || currentUser.role !== "admin") {
@@ -624,7 +624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin lead management routes
   app.get('/api/admin/leads', isSimpleAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser || currentUser.role !== "admin") {
@@ -641,7 +641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/leads', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser || currentUser.role !== "admin") {
@@ -659,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/admin/leads/:id', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser || currentUser.role !== "admin") {
@@ -680,7 +680,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/admin/leads/:id', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser || currentUser.role !== "admin") {
@@ -701,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Integration settings routes
   app.get('/api/admin/integrations', isSimpleAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser || currentUser.role !== "admin") {
@@ -726,7 +726,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/integrations', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser || currentUser.role !== "admin") {
@@ -742,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/integrations/test-webhook', isSimpleAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user!.claims.sub;
+      const userId = req.session.userId;
       const currentUser = await storage.getUser(userId);
       
       if (!currentUser || currentUser.role !== "admin") {

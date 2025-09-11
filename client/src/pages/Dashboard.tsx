@@ -77,7 +77,7 @@ interface Company {
 
 export default function Dashboard() {
   const { data: user } = useQuery<User>({
-    queryKey: ["/api/auth/user"],
+    queryKey: ["/api/simple-auth/user"],
   });
 
   const { data: userPurchases = [] } = useQuery<Purchase[]>({
