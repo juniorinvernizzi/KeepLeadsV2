@@ -23,6 +23,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: UpsertUser): Promise<User>;
+  updateUser(userId: string, updateData: { email?: string; firstName?: string; lastName?: string; role?: string; credits?: string }): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Lead operations
@@ -98,10 +99,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Lead operations  
-  async getAllLeads(): Promise<Lead[]> {
-    return db.select().from(leads).orderBy(desc(leads.createdAt));
-  }
+  // Lead operations
 
   async updateLead(id: string, data: InsertLead): Promise<Lead | undefined> {
     const [lead] = await db
@@ -235,6 +233,18 @@ export class DatabaseStorage implements IStorage {
       .update(users)
       .set({ credits: newBalance, updatedAt: new Date() })
       .where(eq(users.id, userId));
+  }
+
+  async updateUser(userId: string, updateData: { email?: string; firstName?: string; lastName?: string; role?: string; credits?: string }): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        ...updateData, 
+        updatedAt: new Date() 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
   }
 
   async updateUserProfile(userId: string, profileData: { firstName?: string; lastName?: string; email?: string }): Promise<void> {

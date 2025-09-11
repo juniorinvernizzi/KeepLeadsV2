@@ -5,7 +5,7 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { insertLeadSchema, insertCreditTransactionSchema, insertUserSchema } from "@shared/schema";
 import { sendLeadPurchaseNotification, sendAdminPurchaseNotification } from "./emailService";
 import { z } from "zod";
-import crypto from "crypto";
+import bcrypt from "bcrypt";
 
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -26,9 +26,62 @@ const isSimpleAuthenticated = (req: any, res: any, next: any) => {
   return res.status(401).json({ message: "Unauthorized" });
 };
 
-// Hash password function
-const hashPassword = (password: string): string => {
-  return crypto.createHash('sha256').update(password).digest('hex');
+// Secure password hashing functions
+const SALT_ROUNDS = 12;
+
+const hashPassword = async (password: string): Promise<string> => {
+  return await bcrypt.hash(password, SALT_ROUNDS);
+};
+
+const comparePassword = async (password: string, hash: string): Promise<boolean> => {
+  return await bcrypt.compare(password, hash);
+};
+
+// Admin access middleware
+const requireAdmin = async (req: any, res: any, next: any) => {
+  try {
+    if (!req.session?.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const currentUser = await storage.getUser(req.session.userId);
+    if (!currentUser || currentUser.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    
+    req.currentUser = currentUser;
+    return next();
+  } catch (error) {
+    console.error("Admin verification error:", error);
+    return res.status(500).json({ message: "Failed to verify admin access" });
+  }
+};
+
+// Helper function to sanitize user data (remove sensitive fields)
+const sanitizeUser = (user: any) => {
+  const { password, ...sanitizedUser } = user;
+  return sanitizedUser;
+};
+
+// Credit handling helper functions for type consistency
+const parseCredits = (credits: string | number): number => {
+  if (typeof credits === 'number') return credits;
+  const parsed = parseFloat(credits || '0');
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+const formatCredits = (amount: number): string => {
+  return amount.toFixed(2);
+};
+
+const addCredits = (currentCredits: string, amount: number): string => {
+  const current = parseCredits(currentCredits);
+  return formatCredits(current + amount);
+};
+
+const subtractCredits = (currentCredits: string, amount: number): string => {
+  const current = parseCredits(currentCredits);
+  return formatCredits(Math.max(0, current - amount));
 };
 
 // CSRF Protection Middleware
@@ -111,8 +164,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const hashedPassword = hashPassword(password);
-      if (user.password !== hashedPassword) {
+      const isPasswordValid = await comparePassword(password, user.password || '');
+      if (!isPasswordValid) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
@@ -122,14 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json({ 
         success: true, 
-        user: { 
-          id: user.id, 
-          email: user.email, 
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          credits: user.credits
-        } 
+        user: sanitizeUser(user)
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -151,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "User already exists" });
       }
 
-      const hashedPassword = hashPassword(password);
+      const hashedPassword = await hashPassword(password);
       const newUser = await storage.createUser({
         email,
         password: hashedPassword,
@@ -166,14 +212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ 
         success: true, 
-        user: { 
-          id: newUser.id, 
-          email: newUser.email, 
-          firstName: newUser.firstName,
-          lastName: newUser.lastName,
-          role: newUser.role,
-          credits: newUser.credits
-        } 
+        user: sanitizeUser(newUser)
       });
     } catch (error) {
       console.error("Register error:", error);
@@ -324,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (userId && amount) {
             const user = await storage.getUser(userId);
             if (user) {
-              const newBalance = (parseFloat(user.credits) + amount).toString();
+              const newBalance = addCredits(user.credits, amount);
               
               // Update user credits
               await storage.updateUserCredits(userId, newBalance);
@@ -363,7 +402,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      const newBalance = (parseFloat(user.credits) + amount).toString();
+      const newBalance = addCredits(user.credits, amount);
       
       // Update user credits
       await storage.updateUserCredits(userId, newBalance);
@@ -445,8 +484,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user has sufficient credits
-      const userCredits = parseFloat(user.credits);
-      const leadPrice = parseFloat(lead.price);
+      const userCredits = parseCredits(user.credits);
+      const leadPrice = parseCredits(lead.price);
       
       if (userCredits < leadPrice) {
         return res.status(400).json({ message: "Insufficient credits" });
@@ -460,7 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Deduct credits
-      const newBalance = (userCredits - leadPrice).toFixed(2);
+      const newBalance = subtractCredits(user.credits, leadPrice);
       await storage.updateUserCredits(userId, newBalance);
       
       // Add credit transaction
@@ -543,7 +582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      const newBalance = (parseFloat(user.credits) + amount).toFixed(2);
+      const newBalance = addCredits(user.credits, amount);
       await storage.updateUserCredits(userId, newBalance);
       
       await storage.addCreditTransaction({
@@ -587,32 +626,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get('/api/admin/users', isSimpleAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/users', requireAdmin, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
-      const currentUser = await storage.getUser(userId);
-      
-      if (!currentUser || currentUser.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-      
       const users = await storage.getAllUsers();
-      res.json(users);
+      const sanitizedUsers = users.map(user => sanitizeUser(user));
+      res.json(sanitizedUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
     }
   });
 
-  app.get('/api/admin/stats', isSimpleAuthenticated, async (req: any, res) => {
+  // Create new user (admin only)
+  app.post('/api/admin/users', requireAdmin, csrfProtection, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
-      const currentUser = await storage.getUser(userId);
       
-      if (!currentUser || currentUser.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
+      const { email, password, firstName, lastName, role, credits } = req.body;
+      
+      // Validate required fields
+      if (!email || !password || !firstName || !lastName || !role) {
+        return res.status(400).json({ message: "Missing required fields" });
       }
       
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "User with this email already exists" });
+      }
+      
+      // Hash password securely
+      const hashedPassword = await hashPassword(password);
+      
+      // Create new user
+      const newUser = await storage.createUser({
+        email,
+        password: hashedPassword,
+        firstName,
+        lastName,
+        role,
+        credits: credits || "0",
+      });
+      
+      res.json(sanitizeUser(newUser));
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  // Update user (admin only)
+  app.put('/api/admin/users/:id', requireAdmin, csrfProtection, async (req: any, res) => {
+    try {
+      const targetUserId = req.params.id;
+      
+      const { email, firstName, lastName, role, credits } = req.body;
+      
+      // Check if target user exists
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Update user
+      const updatedUser = await storage.updateUser(targetUserId, {
+        email: email || targetUser.email,
+        firstName: firstName || targetUser.firstName,
+        lastName: lastName || targetUser.lastName,
+        role: role || targetUser.role,
+        credits: credits !== undefined ? credits : targetUser.credits,
+      });
+      
+      res.json(sanitizeUser(updatedUser));
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.get('/api/admin/stats', requireAdmin, async (req: any, res) => {
+    try {
       const stats = await storage.getUserStats();
       res.json(stats);
     } catch (error) {
@@ -622,15 +714,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin lead management routes
-  app.get('/api/admin/leads', isSimpleAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/leads', requireAdmin, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
-      const currentUser = await storage.getUser(userId);
-      
-      if (!currentUser || currentUser.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
-      
       const allLeads = await storage.getAllLeads();
       res.json(allLeads);
     } catch (error) {
@@ -639,14 +724,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/leads', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
+  app.post('/api/admin/leads', requireAdmin, csrfProtection, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
-      const currentUser = await storage.getUser(userId);
-      
-      if (!currentUser || currentUser.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       
       const validatedData = insertLeadSchema.parse(req.body);
       const lead = await storage.createLead(validatedData);
@@ -657,14 +736,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/admin/leads/:id', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
+  app.put('/api/admin/leads/:id', requireAdmin, csrfProtection, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
-      const currentUser = await storage.getUser(userId);
-      
-      if (!currentUser || currentUser.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       
       const validatedData = insertLeadSchema.parse(req.body);
       const lead = await storage.updateLead(req.params.id, validatedData);
@@ -678,14 +751,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/leads/:id', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
+  app.delete('/api/admin/leads/:id', requireAdmin, csrfProtection, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
-      const currentUser = await storage.getUser(userId);
-      
-      if (!currentUser || currentUser.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       
       const success = await storage.deleteLead(req.params.id);
       if (!success) {
@@ -699,14 +766,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Integration settings routes
-  app.get('/api/admin/integrations', isSimpleAuthenticated, async (req: any, res) => {
+  app.get('/api/admin/integrations', requireAdmin, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
-      const currentUser = await storage.getUser(userId);
-      
-      if (!currentUser || currentUser.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       
       const settings = {
         n8nWebhookUrl: "",
@@ -724,14 +785,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/integrations', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
+  app.post('/api/admin/integrations', requireAdmin, csrfProtection, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
-      const currentUser = await storage.getUser(userId);
-      
-      if (!currentUser || currentUser.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       
       res.json({ message: "Integration settings saved successfully" });
     } catch (error) {
@@ -740,14 +795,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/integrations/test-webhook', isSimpleAuthenticated, async (req: any, res) => {
+  app.post('/api/admin/integrations/test-webhook', requireAdmin, async (req: any, res) => {
     try {
-      const userId = req.session.userId;
-      const currentUser = await storage.getUser(userId);
-      
-      if (!currentUser || currentUser.role !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
       
       const { url } = req.body;
       

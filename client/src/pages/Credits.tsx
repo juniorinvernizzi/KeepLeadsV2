@@ -40,6 +40,34 @@ export default function Credits() {
     enabled: !!user,
   });
 
+  // Check for payment status from URL params
+  const urlParams = new URLSearchParams(window.location.search);
+  const paymentStatus = urlParams.get('status');
+  
+  // Show toast based on payment status
+  if (paymentStatus) {
+    if (paymentStatus === 'success') {
+      toast({
+        title: "Pagamento aprovado!",
+        description: "Seus créditos foram adicionados com sucesso.",
+      });
+    } else if (paymentStatus === 'failure') {
+      toast({
+        title: "Pagamento cancelado",
+        description: "O pagamento foi cancelado. Tente novamente se necessário.",
+        variant: "destructive",
+      });
+    } else if (paymentStatus === 'pending') {
+      toast({
+        title: "Pagamento pendente",
+        description: "Seu pagamento está sendo processado. Os créditos serão adicionados em breve.",
+      });
+    }
+    
+    // Clean URL after showing toast
+    window.history.replaceState({}, '', '/credits');
+  }
+
   const addCreditsMutation = useMutation({
     mutationFn: async (data: { amount: number; paymentMethod: string; paymentId: string }) => {
       return await apiRequest("POST", "/api/credits/add", data);
@@ -101,12 +129,9 @@ export default function Credits() {
   };
 
   const handlePaymentComplete = (paymentId: string) => {
-    const amount = getAmountToAdd();
-    addCreditsMutation.mutate({
-      amount,
-      paymentMethod,
-      paymentId,
-    });
+    // This function is now obsolete since we redirect to Mercado Pago
+    // The webhook will handle credit addition automatically
+    console.log("Payment completed:", paymentId);
   };
 
   const getTransactionIcon = (type: string) => {

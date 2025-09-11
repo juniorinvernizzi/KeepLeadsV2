@@ -30,17 +30,6 @@ export default function PaymentModal({
   const { toast } = useToast();
 
   const handlePayment = async () => {
-    if (paymentMethod === "credit_card") {
-      if (!cardNumber || !expiryDate || !cvv || !cardName) {
-        toast({
-          title: "Campos obrigatórios",
-          description: "Por favor, preencha todos os campos do cartão.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
     setIsProcessing(true);
     
     try {
@@ -48,30 +37,14 @@ export default function PaymentModal({
       const response = await apiRequest("POST", "/api/payment/create-preference", {
         amount,
         paymentMethod,
+        description: `Compra de R$ ${amount.toFixed(2)} em créditos`,
       });
 
       if ((response as any).initPoint) {
-        // For development, we'll redirect to Mercado Pago
-        // In production, you might want to open in a new window or embed the checkout
-        window.open((response as any).initPoint, '_blank');
-        
-        // For now, simulate successful payment after opening checkout
-        setTimeout(() => {
-          const paymentId = `mp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          onPaymentComplete(paymentId);
-          setIsProcessing(false);
-          
-          // Reset form
-          setCardNumber("");
-          setExpiryDate("");
-          setCvv("");
-          setCardName("");
-          
-          toast({
-            title: "Redirecionamento realizado",
-            description: "Você foi redirecionado para o Mercado Pago. Complete o pagamento na nova aba.",
-          });
-        }, 2000);
+        // Redirect to Mercado Pago checkout (same window)
+        window.location.href = (response as any).initPoint;
+      } else {
+        throw new Error("Não foi possível criar o pagamento");
       }
     } catch (error: any) {
       setIsProcessing(false);
@@ -119,77 +92,23 @@ export default function PaymentModal({
             </div>
           </div>
 
-          {/* Payment Form */}
-          {paymentMethod === "credit_card" ? (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="cardNumber">Número do cartão</Label>
-                <Input
-                  id="cardNumber"
-                  type="text"
-                  placeholder="1234 5678 9012 3456"
-                  value={cardNumber}
-                  onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
-                  maxLength={19}
-                  data-testid="input-card-number"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="expiryDate">Validade</Label>
-                  <Input
-                    id="expiryDate"
-                    type="text"
-                    placeholder="MM/AA"
-                    value={expiryDate}
-                    onChange={(e) => setExpiryDate(formatExpiryDate(e.target.value))}
-                    maxLength={5}
-                    data-testid="input-expiry-date"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cvv">CVV</Label>
-                  <Input
-                    id="cvv"
-                    type="text"
-                    placeholder="123"
-                    value={cvv}
-                    onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    maxLength={4}
-                    data-testid="input-cvv"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="cardName">Nome no cartão</Label>
-                <Input
-                  id="cardName"
-                  type="text"
-                  placeholder="João Silva"
-                  value={cardName}
-                  onChange={(e) => setCardName(e.target.value)}
-                  data-testid="input-card-name"
-                />
-              </div>
+          {/* Payment Info */}
+          <div className="text-center py-8">
+            <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2v1h12V6H4zm0 3v5h12V9H4z" clipRule="evenodd" />
+              </svg>
             </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M3 4a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 13a1 1 0 011-1h3a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1v-3zM13 3a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1V4a1 1 0 00-1-1h-3z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-slate-900 mb-2">Pagamento via PIX</h3>
-              <p className="text-slate-600 mb-4">
-                Você será redirecionado para o ambiente seguro do Mercado Pago para finalizar o pagamento.
-              </p>
-              <Badge className="bg-green-100 text-green-800">
-                Aprovação instantânea
-              </Badge>
-            </div>
-          )}
+            <h3 className="text-lg font-medium text-slate-900 mb-2">
+              {paymentMethod === "pix" ? "Pagamento via PIX" : "Pagamento via Cartão"}
+            </h3>
+            <p className="text-slate-600 mb-4">
+              Você será redirecionado para o ambiente seguro do Mercado Pago para finalizar o pagamento.
+            </p>
+            <Badge className={paymentMethod === "pix" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
+              {paymentMethod === "pix" ? "Aprovação instantânea" : "Parcelamento disponível"}
+            </Badge>
+          </div>
 
           {/* Security Notice */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -215,7 +134,7 @@ export default function PaymentModal({
             <Button
               className="flex-1"
               onClick={handlePayment}
-              disabled={isProcessing || (paymentMethod === "credit_card" && (!cardNumber || !expiryDate || !cvv || !cardName))}
+              disabled={isProcessing}
               data-testid="button-process-payment"
             >
               {isProcessing ? (
@@ -226,9 +145,9 @@ export default function PaymentModal({
               ) : (
                 <>
                   <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2v1h12V6H4zm0 3v5h12V9H4z" clipRule="evenodd" />
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832L14 10.202a1 1 0 000-1.404l-4.445-2.63z" clipRule="evenodd" />
                   </svg>
-                  Pagar R$ {amount.toFixed(2)}
+                  Ir para Mercado Pago
                 </>
               )}
             </Button>

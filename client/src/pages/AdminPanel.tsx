@@ -47,11 +47,27 @@ const leadFormSchema = insertLeadSchema.extend({
 
 type LeadFormData = z.infer<typeof leadFormSchema>;
 
+// Form schema for user creation/editing
+const userFormSchema = z.object({
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
+  firstName: z.string().min(1, "Nome é obrigatório"),
+  lastName: z.string().min(1, "Sobrenome é obrigatório"),
+  role: z.enum(["admin", "manager", "client"], {
+    required_error: "Selecione um tipo de usuário",
+  }),
+  credits: z.string().optional(),
+});
+
+type UserFormData = z.infer<typeof userFormSchema>;
+
 export default function AdminPanel() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadFormSchema),
@@ -73,6 +89,18 @@ export default function AdminPanel() {
       status: "available",
       price: "",
       notes: "",
+    },
+  });
+
+  const userForm = useForm<UserFormData>({
+    resolver: zodResolver(userFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      firstName: "",
+      lastName: "",
+      role: "client",
+      credits: "0",
     },
   });
 
@@ -166,6 +194,40 @@ export default function AdminPanel() {
     },
   });
 
+  // Mutation for creating/updating users
+  const userMutation = useMutation({
+    mutationFn: async (data: UserFormData) => {
+      const userData = {
+        ...data,
+        credits: data.credits ? parseFloat(data.credits) : 0,
+      };
+
+      if (editingUser) {
+        return apiRequest("PUT", `/api/admin/users/${editingUser.id}`, userData);
+      } else {
+        return apiRequest("POST", "/api/admin/users", userData);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setShowUserModal(false);
+      setEditingUser(null);
+      userForm.reset();
+      toast({
+        title: "Sucesso",
+        description: editingUser ? "Usuário atualizado com sucesso!" : "Usuário criado com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: `Falha ao ${editingUser ? "atualizar" : "criar"} usuário: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEditLead = (lead: Lead) => {
     setEditingLead(lead);
     form.reset({
@@ -198,6 +260,36 @@ export default function AdminPanel() {
 
   const onSubmit = (data: LeadFormData) => {
     leadMutation.mutate(data);
+  };
+
+  const onUserSubmit = (data: UserFormData) => {
+    userMutation.mutate(data);
+  };
+
+  const handleAddUser = () => {
+    setEditingUser(null);
+    userForm.reset({
+      email: "",
+      password: "",
+      firstName: "",
+      lastName: "",
+      role: "client",
+      credits: "0",
+    });
+    setShowUserModal(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    userForm.reset({
+      email: user.email,
+      password: "", // Don't show current password
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role as "admin" | "manager" | "client",
+      credits: user.credits,
+    });
+    setShowUserModal(true);
   };
 
   // Don't render for non-admin users
@@ -329,7 +421,7 @@ export default function AdminPanel() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Gerenciar Usuários</CardTitle>
-                  <Button data-testid="button-add-user">
+                  <Button onClick={handleAddUser} data-testid="button-add-user">
                     <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
                     </svg>
@@ -399,10 +491,16 @@ export default function AdminPanel() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <Badge 
-                                className={user.role === "admin" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"}
+                                className={
+                                  user.role === "admin" 
+                                    ? "bg-purple-100 text-purple-800" 
+                                    : user.role === "manager"
+                                    ? "bg-orange-100 text-orange-800"
+                                    : "bg-blue-100 text-blue-800"
+                                }
                                 data-testid={`text-user-role-${user.id}`}
                               >
-                                {user.role === "admin" ? "Administrador" : "Cliente"}
+                                {user.role === "admin" ? "Administrador" : user.role === "manager" ? "Gerente" : "Cliente"}
                               </Badge>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" data-testid={`text-user-credits-${user.id}`}>
@@ -412,10 +510,21 @@ export default function AdminPanel() {
                               {new Date(user.createdAt).toLocaleDateString('pt-BR')}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              <Button variant="ghost" size="sm" className="text-primary hover:text-primary-dark mr-2" data-testid={`button-edit-user-${user.id}`}>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-primary hover:text-primary-dark mr-2" 
+                                onClick={() => handleEditUser(user)}
+                                data-testid={`button-edit-user-${user.id}`}
+                              >
                                 Editar
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-800" data-testid={`button-suspend-user-${user.id}`}>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-red-600 hover:text-red-800" 
+                                data-testid={`button-suspend-user-${user.id}`}
+                              >
                                 Suspender
                               </Button>
                             </td>
@@ -497,6 +606,169 @@ export default function AdminPanel() {
             </TabsContent>
           </Tabs>
         </Card>
+
+        {/* User Modal */}
+        <Dialog open={showUserModal} onOpenChange={setShowUserModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>
+                {editingUser ? "Editar Usuário" : "Adicionar Novo Usuário"}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <Form {...userForm}>
+              <form onSubmit={userForm.handleSubmit(onUserSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={userForm.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl>
+                          <Input placeholder="João" {...field} data-testid="input-user-firstname" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={userForm.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sobrenome</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Silva" {...field} data-testid="input-user-lastname" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={userForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="joao@exemplo.com" {...field} data-testid="input-user-email" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {!editingUser && (
+                  <FormField
+                    control={userForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Senha</FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Mínimo 6 caracteres" {...field} data-testid="input-user-password" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={userForm.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Usuário</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger data-testid="select-user-role">
+                              <SelectValue placeholder="Selecionar tipo" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="client">Cliente</SelectItem>
+                            <SelectItem value="manager">Gerente</SelectItem>
+                            <SelectItem value="admin">Administrador</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={userForm.control}
+                    name="credits"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Créditos Iniciais</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0" 
+                            step="0.01"
+                            placeholder="0.00" 
+                            {...field} 
+                            data-testid="input-user-credits" 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Permissions Info */}
+                <div className="bg-slate-50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-slate-900 mb-2">Permissões por Tipo:</h4>
+                  <div className="space-y-2 text-sm text-slate-600">
+                    <div>
+                      <strong>Cliente:</strong> Dashboard, Marketplace, Meus Leads, Adicionar Crédito
+                    </div>
+                    <div>
+                      <strong>Gerente:</strong> Todas as permissões de Cliente + Relatórios
+                    </div>
+                    <div>
+                      <strong>Administrador:</strong> Todas as permissões + Painel Admin
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowUserModal(false)}
+                    className="flex-1"
+                    data-testid="button-cancel-user"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={userMutation.isPending}
+                    className="flex-1"
+                    data-testid="button-save-user"
+                  >
+                    {userMutation.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Salvando...
+                      </>
+                    ) : (
+                      editingUser ? "Atualizar" : "Criar Usuário"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
 
         {/* Lead Modal */}
         <Dialog open={showLeadModal} onOpenChange={setShowLeadModal}>
