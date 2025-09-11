@@ -182,7 +182,7 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
           <div className="flex items-center space-x-4">
             <span className="text-sm text-slate-600">Preço:</span>
             <div className="flex items-center space-x-4">
-              <div className="w-32">
+              <div className="w-48">
                 <Slider
                   value={priceRange}
                   onValueChange={handlePriceRangeChange}
