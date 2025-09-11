@@ -7,7 +7,6 @@ import { Slider } from "@/components/ui/slider";
 
 interface FilterBarProps {
   filters: {
-    search: string;
     insuranceCompany: string;
     ageRange: string;
     city: string;
@@ -61,7 +60,6 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
 
   const clearFilters = () => {
     const emptyFilters = {
-      search: "",
       insuranceCompany: "all",
       ageRange: "all",
       city: "all",
@@ -74,25 +72,7 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
   return (
     <Card className="mb-8">
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-          <div className="space-y-2">
-            <Label htmlFor="search">Buscar</Label>
-            <div className="relative">
-              <Input
-                id="search"
-                type="text"
-                placeholder="Nome, telefone, email..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
-                className="pl-10"
-                data-testid="input-search"
-              />
-              <svg className="absolute left-3 top-3 w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
-            </div>
-          </div>
-          
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div className="space-y-2">
             <Label htmlFor="company">Operadora</Label>
             <Select value={filters.insuranceCompany} onValueChange={(value) => handleFilterChange("insuranceCompany", value)}>
