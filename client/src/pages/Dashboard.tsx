@@ -14,7 +14,6 @@ import {
   Target,
   ArrowRight,
   DollarSign,
-  Filter,
   Star,
   BarChart3,
   Eye
@@ -274,20 +273,13 @@ export default function Dashboard() {
     <Layout>
       <div className="w-9/10 mx-auto py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Dashboard
-            </h1>
-            <p className="text-gray-600">
-              Bem-vindo de volta, {user?.firstName || user?.email?.split('@')[0] || 'usuário'}! Aqui está um resumo da sua atividade.
-            </p>
-          </div>
-          
-          <Button className="bg-purple-600 hover:bg-purple-700">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtrar
-          </Button>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Dashboard
+          </h1>
+          <p className="text-gray-600">
+            Bem-vindo de volta, {user?.firstName || user?.email?.split('@')[0] || 'usuário'}! Aqui está um resumo da sua atividade.
+          </p>
         </div>
 
         {/* Stats Grid */}
