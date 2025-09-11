@@ -10,6 +10,8 @@ interface FilterBarProps {
     insuranceCompany: string;
     ageRange: string;
     city: string;
+    planType: string;
+    livesCount: string;
     minPrice: string;
     maxPrice: string;
   };
@@ -44,6 +46,21 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
     { value: "60-120", label: "60+ anos" },
   ];
 
+  const planTypes = [
+    { value: "individual", label: "Individual" },
+    { value: "familiar", label: "Familiar" },
+    { value: "empresarial", label: "Empresarial" },
+    { value: "coletivo", label: "Coletivo" },
+  ];
+
+  const livesOptions = [
+    { value: "1", label: "1 vida" },
+    { value: "2", label: "2 vidas" },
+    { value: "3-5", label: "3-5 vidas" },
+    { value: "6-10", label: "6-10 vidas" },
+    { value: "11+", label: "11+ vidas" },
+  ];
+
   const handleFilterChange = (key: string, value: string) => {
     const newFilters = { ...filters, [key]: value };
     onFiltersChange(newFilters);
@@ -63,6 +80,8 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
       insuranceCompany: "all",
       ageRange: "all",
       city: "all",
+      planType: "all",
+      livesCount: "all",
       minPrice: "",
       maxPrice: "",
     };
@@ -72,7 +91,7 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
   return (
     <Card className="mb-8">
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
           <div className="space-y-2">
             <Label htmlFor="company">Operadora</Label>
             <Select value={filters.insuranceCompany} onValueChange={(value) => handleFilterChange("insuranceCompany", value)}>
@@ -118,6 +137,40 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
                 {cities.map((city) => (
                   <SelectItem key={city} value={city}>
                     {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="planType">Tipo de Plano</Label>
+            <Select value={filters.planType} onValueChange={(value) => handleFilterChange("planType", value)}>
+              <SelectTrigger data-testid="select-plan-type">
+                <SelectValue placeholder="Todos os tipos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os tipos</SelectItem>
+                {planTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="livesCount">Quantidade de Vidas</Label>
+            <Select value={filters.livesCount} onValueChange={(value) => handleFilterChange("livesCount", value)}>
+              <SelectTrigger data-testid="select-lives-count">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {livesOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>

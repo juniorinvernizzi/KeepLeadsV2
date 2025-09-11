@@ -35,6 +35,8 @@ export default function LeadsMarketplace() {
     insuranceCompany: "all",
     ageRange: "all",
     city: "all",
+    planType: "all",
+    livesCount: "all",
     minPrice: "",
     maxPrice: "",
   });
@@ -148,6 +150,8 @@ export default function LeadsMarketplace() {
                 insuranceCompany: "all",
                 ageRange: "all", 
                 city: "all",
+                planType: "all",
+                livesCount: "all",
                 minPrice: "",
                 maxPrice: "",
               })}
