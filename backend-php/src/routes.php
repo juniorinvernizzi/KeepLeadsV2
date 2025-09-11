@@ -39,6 +39,7 @@ $app->post('/api/leads/{id}/purchase', [$leadController, 'purchaseLead']);
 $app->get('/api/my-leads', [$userController, 'getMyLeads']); 
 $app->get('/api/transactions', [$userController, 'getTransactions']);
 $app->put('/api/user/profile', [$userController, 'updateProfile']);
+$app->put('/api/profile', [$userController, 'updateProfile']); // Alias for frontend compatibility
 
 // Insurance companies
 $app->get('/api/insurance-companies', [$leadController, 'getInsuranceCompanies']);

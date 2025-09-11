@@ -54,12 +54,14 @@ $app->add(function ($request, $handler) {
 // Configure session cookies for cross-origin compatibility
 $isProduction = ($_ENV['APP_ENV'] ?? 'development') === 'production';
 $isHttps = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on';
+// Check for HTTPS behind proxy (cPanel/Cloudflare)
+$isHttpsProxy = isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https';
 
 session_set_cookie_params([
     'lifetime' => 0,           // Session expires when browser closes
     'path' => '/',
     'domain' => '',            // Let PHP determine the domain
-    'secure' => $isProduction && $isHttps, // Require HTTPS in production
+    'secure' => $isProduction ? true : ($isHttps || $isHttpsProxy), // Force secure in production
     'httponly' => true,        // Prevent JavaScript access for security
     'samesite' => $isProduction ? 'None' : 'Lax' // Allow cross-origin in production, Lax for dev
 ]);
