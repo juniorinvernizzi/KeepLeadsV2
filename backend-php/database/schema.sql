@@ -6,7 +6,7 @@ USE keepleads;
 
 -- Users table
 CREATE TABLE users (
-    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    id CHAR(36) PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255),
     first_name VARCHAR(255),
@@ -29,7 +29,7 @@ CREATE TABLE sessions (
 
 -- Insurance companies table
 CREATE TABLE insurance_companies (
-    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    id CHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     logo VARCHAR(500),
     color VARCHAR(7) NOT NULL DEFAULT '#7C3AED',
@@ -38,7 +38,7 @@ CREATE TABLE insurance_companies (
 
 -- Leads table
 CREATE TABLE leads (
-    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    id CHAR(36) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(50) NOT NULL,
@@ -69,7 +69,7 @@ CREATE TABLE leads (
 
 -- Lead purchases table
 CREATE TABLE lead_purchases (
-    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    id CHAR(36) PRIMARY KEY,
     lead_id CHAR(36) NOT NULL,
     user_id CHAR(36) NOT NULL,
     price DECIMAL(10,2) NOT NULL,
@@ -84,7 +84,7 @@ CREATE TABLE lead_purchases (
 
 -- Credit transactions table  
 CREATE TABLE credit_transactions (
-    id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    id CHAR(36) PRIMARY KEY,
     user_id CHAR(36) NOT NULL,
     type VARCHAR(20) NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
@@ -97,7 +97,8 @@ CREATE TABLE credit_transactions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_transactions_user_id (user_id),
     INDEX idx_transactions_type (type),
-    INDEX idx_transactions_created_at (created_at)
+    INDEX idx_transactions_created_at (created_at),
+    UNIQUE KEY unique_payment_id (payment_id)
 );
 
 -- Insert default insurance companies
@@ -108,9 +109,9 @@ INSERT INTO insurance_companies (id, name, color) VALUES
 ('unimed-012', 'Unimed', '#228B22');
 
 -- Insert default admin user (password: admin123)
-INSERT INTO users (email, password, first_name, last_name, role, credits) VALUES
-('admin@admin.com.br', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'Sistema', 'admin', 1000.00);
+INSERT INTO users (id, email, password, first_name, last_name, role, credits) VALUES
+('admin-uuid-123', 'admin@admin.com.br', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'Sistema', 'admin', 1000.00);
 
 -- Insert default client user (password: cliente123) 
-INSERT INTO users (email, password, first_name, last_name, role, credits) VALUES
-('cliente@cliente.com.br', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Cliente', 'Teste', 'client', 100.00);
+INSERT INTO users (id, email, password, first_name, last_name, role, credits) VALUES
+('client-uuid-456', 'cliente@cliente.com.br', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Cliente', 'Teste', 'client', 100.00);

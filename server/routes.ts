@@ -31,6 +31,68 @@ const hashPassword = (password: string): string => {
   return crypto.createHash('sha256').update(password).digest('hex');
 };
 
+// CSRF Protection Middleware
+const csrfProtection = (req: any, res: any, next: any) => {
+  const method = req.method;
+  
+  // Only apply CSRF protection to state-changing methods
+  if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+    return next();
+  }
+
+  const origin = req.get('Origin');
+  const referer = req.get('Referer');
+  
+  // Get host information
+  const host = req.get('Host');
+  const protocol = req.get('X-Forwarded-Proto') || req.protocol || 'https';
+  
+  // Define allowed origins
+  const allowedOrigins = [
+    'http://localhost:5000',
+    'http://localhost:3000', 
+    'http://127.0.0.1:5000',
+    'http://127.0.0.1:3000'
+  ];
+  
+  // Add current host to allowed origins if available
+  if (host) {
+    allowedOrigins.push(`${protocol}://${host}`);
+    allowedOrigins.push(`https://${host}`);
+    allowedOrigins.push(`http://${host}`);
+  }
+  
+  // Check Origin header first (more reliable)
+  if (origin) {
+    if (allowedOrigins.includes(origin)) {
+      return next();
+    }
+  }
+  
+  // Fallback to Referer header if Origin is not present
+  if (referer) {
+    const refererOrigin = new URL(referer).origin;
+    if (allowedOrigins.includes(refererOrigin)) {
+      return next();
+    }
+  }
+  
+  // Special handling for webhooks and external API calls
+  const path = req.path;
+  if (path === '/api/payment/webhook') {
+    // Allow webhooks from external sources (MercadoPago)
+    return next();
+  }
+  
+  // Log the blocked request for debugging
+  console.warn(`CSRF: Blocked request to ${method} ${path} from origin: ${origin || 'none'}, referer: ${referer || 'none'}`);
+  
+  return res.status(403).json({ 
+    message: "CSRF protection: Invalid origin",
+    code: "CSRF_ERROR"
+  });
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -75,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/simple-register', async (req, res) => {
+  app.post('/api/simple-register', csrfProtection, async (req, res) => {
     try {
       const { email, password, firstName, lastName } = req.body;
       
@@ -119,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/simple-logout', (req, res) => {
+  app.post('/api/simple-logout', csrfProtection, (req, res) => {
     req.session?.destroy((err) => {
       if (err) {
         console.error("Logout error:", err);
@@ -159,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Profile update route
-  app.put('/api/profile', isSimpleAuthenticated, async (req: any, res) => {
+  app.put('/api/profile', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       const { firstName, lastName, email } = req.body;
@@ -175,7 +237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Mercado Pago payment routes
-  app.post('/api/payment/create-preference', isSimpleAuthenticated, async (req: any, res) => {
+  app.post('/api/payment/create-preference', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
       const { MercadoPagoConfig, Preference } = await import('mercadopago');
       
@@ -291,7 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Manual credit addition (for development/testing)
-  app.post('/api/credits/add', isSimpleAuthenticated, async (req: any, res) => {
+  app.post('/api/credits/add', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       const { amount, paymentMethod, paymentId } = req.body;
@@ -361,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Purchase lead
-  app.post('/api/leads/:id/purchase', isSimpleAuthenticated, async (req: any, res) => {
+  app.post('/api/leads/:id/purchase', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       const leadId = req.params.id;
@@ -467,7 +529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credit routes
-  app.post('/api/credits/add', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/credits/add', isAuthenticated, csrfProtection, async (req: AuthenticatedRequest, res) => {
     try {
       const userId = req.user!.claims.sub;
       const { amount, paymentMethod, paymentId } = req.body;
@@ -577,7 +639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/leads', isSimpleAuthenticated, async (req: any, res) => {
+  app.post('/api/admin/leads', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
@@ -595,7 +657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/admin/leads/:id', isSimpleAuthenticated, async (req: any, res) => {
+  app.put('/api/admin/leads/:id', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
@@ -616,7 +678,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/admin/leads/:id', isSimpleAuthenticated, async (req: any, res) => {
+  app.delete('/api/admin/leads/:id', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);
@@ -662,7 +724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/integrations', isSimpleAuthenticated, async (req: any, res) => {
+  app.post('/api/admin/integrations', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const currentUser = await storage.getUser(userId);

@@ -34,9 +34,14 @@ class AuthController {
             } elseif (hash('sha256', $data['password']) === $user->password) {
                 // Legacy SHA256 support - rehash to bcrypt
                 $newHash = password_hash($data['password'], PASSWORD_DEFAULT);
-                $user->password = $newHash;
-                // Update password in database would go here
-                $isValidPassword = true;
+                if ($user->updatePassword($newHash)) {
+                    $user->password = $newHash;
+                    $isValidPassword = true;
+                } else {
+                    // If password update fails, still allow login but log the error
+                    error_log("Failed to update password hash for user: " . $user->id);
+                    $isValidPassword = true;
+                }
             }
 
             if (!$isValidPassword) {

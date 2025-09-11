@@ -24,14 +24,28 @@ class User {
         $this->conn = $database->getConnection();
     }
 
+    private function generateUUID() {
+        return sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+    }
+
     public function create() {
+        $this->id = $this->generateUUID();
+        
         $query = "INSERT INTO " . $this->table . " 
-                  SET email=:email, password=:password, first_name=:first_name, 
+                  SET id=:id, email=:email, password=:password, first_name=:first_name, 
                       last_name=:last_name, role=:role, credits=:credits, 
                       created_at=NOW(), updated_at=NOW()";
 
         $stmt = $this->conn->prepare($query);
 
+        $stmt->bindParam(":id", $this->id);
         $stmt->bindParam(":email", $this->email);
         $stmt->bindParam(":password", $this->password);
         $stmt->bindParam(":first_name", $this->first_name);
@@ -39,12 +53,7 @@ class User {
         $stmt->bindParam(":role", $this->role);
         $stmt->bindParam(":credits", $this->credits);
 
-        if ($stmt->execute()) {
-            $this->id = $this->conn->lastInsertId();
-            return true;
-        }
-        
-        return false;
+        return $stmt->execute();
     }
 
     public function findByEmail($email) {
@@ -119,6 +128,16 @@ class User {
         $stmt->bindParam(":first_name", $this->first_name);
         $stmt->bindParam(":last_name", $this->last_name);
         $stmt->bindParam(":profile_image_url", $this->profile_image_url);
+        $stmt->bindParam(":id", $this->id);
+        
+        return $stmt->execute();
+    }
+
+    public function updatePassword($newPassword) {
+        $query = "UPDATE " . $this->table . " SET password = :password, updated_at = NOW() WHERE id = :id";
+        
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":password", $newPassword);
         $stmt->bindParam(":id", $this->id);
         
         return $stmt->execute();

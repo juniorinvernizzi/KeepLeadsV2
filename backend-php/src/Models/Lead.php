@@ -34,6 +34,17 @@ class Lead {
         $this->conn = $database->getConnection();
     }
 
+    private function generateUUID() {
+        return sprintf(
+            '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+            mt_rand(0, 0xffff),
+            mt_rand(0, 0x0fff) | 0x4000,
+            mt_rand(0, 0x3fff) | 0x8000,
+            mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+        );
+    }
+
     public function getLeads($filters = []) {
         $query = "SELECT l.*, ic.name as insurance_company_name, ic.color as insurance_company_color 
                   FROM " . $this->table . " l 
@@ -140,8 +151,13 @@ class Lead {
     }
 
     public function create() {
+        // Generate UUID for the new lead
+        if (!$this->id) {
+            $this->id = $this->generateUUID();
+        }
+
         $query = "INSERT INTO " . $this->table . " 
-                  SET name=:name, email=:email, phone=:phone, age=:age, city=:city, 
+                  SET id=:id, name=:name, email=:email, phone=:phone, age=:age, city=:city, 
                       state=:state, insurance_company_id=:insurance_company_id, 
                       plan_type=:plan_type, budget_min=:budget_min, budget_max=:budget_max,
                       available_lives=:available_lives, source=:source, campaign=:campaign,
@@ -150,6 +166,7 @@ class Lead {
 
         $stmt = $this->conn->prepare($query);
 
+        $stmt->bindParam(":id", $this->id);
         $stmt->bindParam(":name", $this->name);
         $stmt->bindParam(":email", $this->email);
         $stmt->bindParam(":phone", $this->phone);
@@ -169,7 +186,6 @@ class Lead {
         $stmt->bindParam(":notes", $this->notes);
 
         if ($stmt->execute()) {
-            $this->id = $this->conn->lastInsertId();
             return true;
         }
 

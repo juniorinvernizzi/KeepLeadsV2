@@ -116,24 +116,49 @@ class PaymentController {
             error_log("Mercado Pago webhook received: " . json_encode($data));
 
             if (!isset($data['type']) || $data['type'] !== 'payment') {
+                error_log("Webhook ignored - not a payment notification: " . ($data['type'] ?? 'unknown'));
                 $response->getBody()->write('OK');
                 return $response->withStatus(200);
             }
 
             $paymentId = $data['data']['id'] ?? null;
             if (!$paymentId) {
+                error_log("Webhook ignored - no payment ID found");
                 $response->getBody()->write('OK');
                 return $response->withStatus(200);
             }
 
-            // Get payment details from Mercado Pago
-            $payment = \MercadoPago\Payment::find_by_id($paymentId);
+            // Check if we already processed this payment to avoid duplicates
+            $database = new \Database();
+            $conn = $database->getConnection();
             
-            if (!$payment) {
-                error_log("Payment not found: " . $paymentId);
+            $checkQuery = "SELECT id FROM credit_transactions WHERE payment_id = :payment_id LIMIT 1";
+            $checkStmt = $conn->prepare($checkQuery);
+            $checkStmt->bindParam(':payment_id', $paymentId);
+            $checkStmt->execute();
+            
+            if ($checkStmt->rowCount() > 0) {
+                error_log("Payment already processed: " . $paymentId);
                 $response->getBody()->write('OK');
                 return $response->withStatus(200);
             }
+
+            // Get payment details from Mercado Pago API
+            try {
+                $payment = \MercadoPago\Payment::find_by_id($paymentId);
+            } catch (\Exception $e) {
+                error_log("Failed to fetch payment from Mercado Pago API: " . $e->getMessage());
+                $response->getBody()->write('ERROR');
+                return $response->withStatus(500);
+            }
+            
+            if (!$payment) {
+                error_log("Payment not found in Mercado Pago: " . $paymentId);
+                $response->getBody()->write('OK');
+                return $response->withStatus(200);
+            }
+
+            error_log("Processing payment $paymentId with status: " . $payment->status);
 
             // Process only approved payments
             if ($payment->status === 'approved') {
@@ -155,43 +180,63 @@ class PaymentController {
                 $userId = $parts[0];
                 $amount = (float)$parts[1];
 
-                // Update user credits
-                $user = new User();
-                if ($user->findById($userId)) {
+                // Validate amount matches payment to prevent tampering
+                if (abs((float)$payment->transaction_amount - $amount) > 0.01) {
+                    error_log("Amount mismatch - Expected: $amount, Got: " . $payment->transaction_amount);
+                    $response->getBody()->write('ERROR');
+                    return $response->withStatus(400);
+                }
+
+                // Use database transaction for atomicity
+                $conn->beginTransaction();
+                
+                try {
+                    $user = new User();
+                    if (!$user->findById($userId)) {
+                        throw new \Exception("User not found: " . $userId);
+                    }
+
                     $currentCredits = (float)$user->credits;
                     $newCredits = $currentCredits + $amount;
                     
-                    if ($user->updateCredits($newCredits)) {
-                        // Add credit transaction
-                        $database = new \Database();
-                        $conn = $database->getConnection();
-
-                        $query = "INSERT INTO credit_transactions 
-                                  SET user_id = :user_id, type = 'deposit', amount = :amount, 
-                                      description = :description, balance_before = :balance_before,
-                                      balance_after = :balance_after, payment_method = 'mercado_pago',
-                                      payment_id = :payment_id, created_at = NOW()";
-
-                        $stmt = $conn->prepare($query);
-                        $stmt->bindParam(':user_id', $userId);
-                        $stmt->bindParam(':amount', $amount);
-                        $stmt->bindValue(':description', 'Depósito via Mercado Pago');
-                        $stmt->bindParam(':balance_before', $currentCredits);
-                        $stmt->bindParam(':balance_after', $newCredits);
-                        $stmt->bindParam(':payment_id', $paymentId);
-                        
-                        $stmt->execute();
-
-                        error_log("Credits added successfully for user $userId: $amount");
+                    if (!$user->updateCredits($newCredits)) {
+                        throw new \Exception("Failed to update user credits");
                     }
+
+                    // Create credit transaction using the CreditTransaction model
+                    $creditTransaction = new \KeepLeads\Models\CreditTransaction();
+                    $creditTransaction->user_id = $userId;
+                    $creditTransaction->type = 'deposit';
+                    $creditTransaction->amount = $amount;
+                    $creditTransaction->description = 'Depósito via Mercado Pago';
+                    $creditTransaction->balance_before = $currentCredits;
+                    $creditTransaction->balance_after = $newCredits;
+                    $creditTransaction->payment_method = 'mercado_pago';
+                    $creditTransaction->payment_id = $paymentId;
+                    
+                    if (!$creditTransaction->create()) {
+                        throw new \Exception("Failed to create credit transaction record");
+                    }
+
+                    $conn->commit();
+                    error_log("Successfully processed payment $paymentId: Added $amount credits to user $userId (Balance: $currentCredits -> $newCredits)");
+
+                } catch (\Exception $e) {
+                    $conn->rollBack();
+                    error_log("Transaction failed for payment $paymentId: " . $e->getMessage());
+                    $response->getBody()->write('ERROR');
+                    return $response->withStatus(500);
                 }
+                
+            } else {
+                error_log("Payment not approved - Status: " . $payment->status . " for payment: " . $paymentId);
             }
 
             $response->getBody()->write('OK');
             return $response->withStatus(200);
 
         } catch (\Exception $e) {
-            error_log("Webhook error: " . $e->getMessage());
+            error_log("Webhook processing error: " . $e->getMessage());
             $response->getBody()->write('ERROR');
             return $response->withStatus(500);
         }
