@@ -7,7 +7,7 @@ import { sendLeadPurchaseNotification, sendAdminPurchaseNotification } from "./e
 import { z } from "zod";
 import bcrypt from "bcrypt";
 
-interface AuthenticatedRequest extends Request {
+interface ReplitAuthenticatedRequest extends Request {
   user?: {
     claims: {
       sub: string;
@@ -17,6 +17,8 @@ interface AuthenticatedRequest extends Request {
     };
   };
 }
+
+// Note: Using 'any' for middleware parameters to avoid Express type conflicts
 
 // Simple auth middleware
 const isSimpleAuthenticated = (req: any, res: any, next: any) => {
@@ -245,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auth routes (original)
-  app.get('/api/auth/user', isAuthenticated, async (req: AuthenticatedRequest, res) => {
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const user = await storage.getUser(userId);
@@ -517,21 +519,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get company details for email
         const companies = await storage.getInsuranceCompanies();
         const company = companies.find(c => c.id === lead.insuranceCompanyId) || {
-          id: lead.insuranceCompanyId,
-          name: lead.insuranceCompanyId,
+          id: lead.insuranceCompanyId || '',
+          name: lead.insuranceCompanyId || '',
           color: "#7C3AED"
         };
         
         // Update user object with new balance for email
-        const updatedUser = { ...user, credits: newBalance };
+        const updatedUser = { 
+          ...user, 
+          credits: newBalance,
+          firstName: user.firstName || '',
+          lastName: user.lastName || ''
+        };
+        
+        // Convert lead to email-compatible format
+        const emailCompatibleLead = {
+          ...lead,
+          insuranceCompanyId: lead.insuranceCompanyId || '',
+          budgetMin: lead.budgetMin || '',
+          budgetMax: lead.budgetMax || '',
+          campaign: lead.campaign || '',
+          notes: lead.notes || '',
+          createdAt: lead.createdAt?.toISOString() || new Date().toISOString(),
+          updatedAt: lead.updatedAt?.toISOString() || new Date().toISOString()
+        };
         
         // Send notification to user (async, don't wait)
-        sendLeadPurchaseNotification(updatedUser, lead, company).catch(error => {
+        sendLeadPurchaseNotification(updatedUser, emailCompatibleLead, company).catch(error => {
           console.error('Failed to send user email notification:', error);
         });
         
         // Send notification to admin (async, don't wait)
-        sendAdminPurchaseNotification(updatedUser, lead, company).catch(error => {
+        sendAdminPurchaseNotification(updatedUser, emailCompatibleLead, company).catch(error => {
           console.error('Failed to send admin email notification:', error);
         });
       } catch (emailError) {
@@ -568,7 +587,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credit routes
-  app.post('/api/credits/add', isAuthenticated, csrfProtection, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/credits/add', isAuthenticated, csrfProtection, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const { amount, paymentMethod, paymentId } = req.body;
@@ -821,7 +840,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           res.status(400).json({ message: `Webhook test failed: ${response.statusText}` });
         }
       } catch (fetchError) {
-        res.status(400).json({ message: `Webhook test failed: ${fetchError.message}` });
+        const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
+        res.status(400).json({ message: `Webhook test failed: ${errorMessage}` });
       }
     } catch (error) {
       console.error("Error testing webhook:", error);
