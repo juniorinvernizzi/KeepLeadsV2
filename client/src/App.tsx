@@ -4,6 +4,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { CookieConsentProvider } from "@/hooks/useCookieConsent";
+import { CookieBanner } from "@/components/cookies/CookieBanner";
+import { AnalyticsInitializer } from "@/components/cookies/AnalyticsInitializer";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Login from "@/pages/Login";
@@ -16,6 +19,7 @@ import ManageLeads from "@/pages/ManageLeads";
 import Integrations from "@/pages/Integrations";
 import EditProfile from "@/pages/EditProfile";
 import PublicLeads from "@/pages/PublicLeads";
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -37,6 +41,7 @@ function Router() {
       {/* Public routes - always accessible */}
       <Route path="/leads-publicos" component={PublicLeads} />
       <Route path="/public-leads" component={PublicLeads} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/login" component={Login} />
       
       {/* Authenticated routes */}
@@ -71,10 +76,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <CookieConsentProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+          <CookieBanner />
+          <AnalyticsInitializer />
+        </TooltipProvider>
+      </CookieConsentProvider>
     </QueryClientProvider>
   );
 }
