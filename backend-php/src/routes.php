@@ -24,6 +24,25 @@ $app->get('/', function (Request $request, Response $response) {
     return $response->withHeader('Content-Type', 'application/json');
 });
 
+// API Health check for compatibility with frontend
+$app->get('/api', function (Request $request, Response $response) {
+    $response->getBody()->write(json_encode([
+        'message' => 'KeepLeads API PHP',
+        'status' => 'running',
+        'version' => '1.0.0'
+    ]));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+// Handle HEAD requests for health checks
+$app->map(['HEAD'], '/', function (Request $request, Response $response) {
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+$app->map(['HEAD'], '/api', function (Request $request, Response $response) {
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
 // Authentication routes  
 $app->post('/api/simple-login', [$authController, 'login']);
 $app->post('/api/simple-register', [$authController, 'register']);
