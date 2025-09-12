@@ -107,7 +107,7 @@ $app->add(function ($request, $handler) {
     return $handler->handle($request);
 });
 
-// Import routes
+// Import routes with $app context
 require __DIR__ . '/../src/routes.php';
 
 $app->run();

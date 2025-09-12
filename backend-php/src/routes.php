@@ -7,6 +7,8 @@ use KeepLeads\Controllers\UserController;
 use KeepLeads\Controllers\PaymentController;
 use KeepLeads\Controllers\AdminController;
 
+// This file expects $app to be defined in the including context
+
 // Initialize controllers
 $authController = new AuthController();
 $leadController = new LeadController();
