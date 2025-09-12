@@ -114,7 +114,12 @@ function removeAnalytics() {
     delete (window as any).dataLayer;
   }
 
-  console.log('🗑️ Google Analytics removed');
+  // Delete Google Analytics cookies
+  deleteCookiesByPrefix('_ga');
+  deleteCookiesByPrefix('_gid');
+  deleteCookiesByPrefix('_gat');
+  
+  console.log('🗑️ Google Analytics removed and cookies cleared');
   analyticsLoaded = false;
 }
 
@@ -134,7 +139,12 @@ function removeMarketing() {
     delete (window as any)._fbq;
   }
 
-  console.log('🗑️ Facebook Pixel removed');
+  // Delete Facebook Pixel cookies
+  deleteCookiesByPrefix('_fbp');
+  deleteCookiesByPrefix('_fbc');
+  deleteCookiesByPrefix('fr');
+
+  console.log('🗑️ Facebook Pixel removed and cookies cleared');
   marketingLoaded = false;
 }
 
@@ -153,7 +163,11 @@ function removeFunctional() {
   //   delete (window as any)._hjSettings;
   // }
 
-  console.log('🗑️ Functional tracking removed');
+  // Delete functional cookies (example for Hotjar)
+  // deleteCookiesByPrefix('_hjid');
+  // deleteCookiesByPrefix('_hjFirstSeen');
+
+  console.log('🗑️ Functional tracking removed and cookies cleared');
   functionalLoaded = false;
 }
 
@@ -284,6 +298,60 @@ export const events = {
   searchPerformed: (searchTerm: string, filters: Record<string, any>) => 
     trackEvent('search', { search_term: searchTerm, ...filters }),
 };
+
+/**
+ * Helper function to delete cookies by prefix
+ */
+function deleteCookiesByPrefix(prefix: string) {
+  const cookies = document.cookie.split(';');
+  
+  for (let cookie of cookies) {
+    const eqPos = cookie.indexOf('=');
+    const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+    
+    if (name.startsWith(prefix)) {
+      // Delete for current domain
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      
+      // Delete for parent domain
+      const domain = window.location.hostname;
+      const domainParts = domain.split('.');
+      if (domainParts.length > 1) {
+        const parentDomain = '.' + domainParts.slice(-2).join('.');
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=${parentDomain}`;
+      }
+      
+      // Delete for current domain with dot prefix
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=.${domain}`;
+    }
+  }
+}
+
+/**
+ * Clear all non-essential cookies
+ */
+export function clearAllNonEssentialCookies() {
+  // Google Analytics cookies
+  deleteCookiesByPrefix('_ga');
+  deleteCookiesByPrefix('_gid');
+  deleteCookiesByPrefix('_gat');
+  
+  // Facebook Pixel cookies
+  deleteCookiesByPrefix('_fbp');
+  deleteCookiesByPrefix('_fbc');
+  deleteCookiesByPrefix('fr');
+  
+  // Hotjar cookies (example)
+  deleteCookiesByPrefix('_hjid');
+  deleteCookiesByPrefix('_hjFirstSeen');
+  
+  // Other common tracking cookies
+  deleteCookiesByPrefix('_utm');
+  deleteCookiesByPrefix('__hstc');
+  deleteCookiesByPrefix('hubspotutk');
+  
+  console.log('🧹 All non-essential cookies cleared');
+}
 
 // Initialize tracking on first load (will check preferences)
 if (typeof window !== 'undefined') {

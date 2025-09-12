@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { CookieConsentProvider } from "@/hooks/useCookieConsent";
 import { CookieBanner } from "@/components/cookies/CookieBanner";
+import { CookieSettings } from "@/components/cookies/CookieSettings";
 import { AnalyticsInitializer } from "@/components/cookies/AnalyticsInitializer";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
@@ -81,6 +82,7 @@ function App() {
           <Toaster />
           <Router />
           <CookieBanner />
+          <CookieSettings />
           <AnalyticsInitializer />
         </TooltipProvider>
       </CookieConsentProvider>

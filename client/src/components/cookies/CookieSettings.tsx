@@ -8,28 +8,23 @@ import { useCookieConsent, COOKIE_CATEGORIES, type CookiePreferences } from "@/h
 import { Shield, BarChart3, Target, Zap, Info, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 
-interface CookieSettingsProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export function CookieSettings({ isOpen, onClose }: CookieSettingsProps) {
-  const { state, updatePreferences, acceptAll, acceptEssentialOnly } = useCookieConsent();
+export function CookieSettings() {
+  const { state, updatePreferences, acceptAll, acceptEssentialOnly, closeSettings } = useCookieConsent();
   const [tempPreferences, setTempPreferences] = useState<CookiePreferences>(state.preferences);
 
   const handleSave = () => {
     updatePreferences(tempPreferences);
-    onClose();
+    closeSettings();
   };
 
   const handleAcceptAll = () => {
     acceptAll();
-    onClose();
+    closeSettings();
   };
 
   const handleEssentialOnly = () => {
     acceptEssentialOnly();
-    onClose();
+    closeSettings();
   };
 
   const toggleCategory = (category: keyof CookiePreferences) => {
@@ -64,7 +59,7 @@ export function CookieSettings({ isOpen, onClose }: CookieSettingsProps) {
   const enabledCount = Object.values(tempPreferences).filter(Boolean).length;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={state.showSettingsModal} onOpenChange={closeSettings}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="modal-cookie-settings">
         <DialogHeader>
           <DialogTitle className="text-xl">🍪 Configurações de Cookies</DialogTitle>

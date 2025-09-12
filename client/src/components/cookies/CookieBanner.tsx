@@ -7,8 +7,7 @@ import { Link } from "wouter";
 import { Cookie, Settings, Shield, X } from "lucide-react";
 
 export function CookieBanner() {
-  const { state, acceptAll, acceptEssentialOnly } = useCookieConsent();
-  const [showSettings, setShowSettings] = useState(false);
+  const { state, acceptAll, acceptEssentialOnly, openSettings } = useCookieConsent();
 
   // Don't show banner if user has already chosen preferences
   if (!state.showBanner || state.hasChosenPreferences) {
@@ -51,7 +50,7 @@ export function CookieBanner() {
                 <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                   <Button
                     variant="outline"
-                    onClick={() => setShowSettings(true)}
+                    onClick={openSettings}
                     className="w-full sm:w-auto text-sm"
                     data-testid="button-customize-cookies"
                   >
@@ -91,11 +90,6 @@ export function CookieBanner() {
         </Card>
       </div>
 
-      {/* Modal de configurações */}
-      <CookieSettings 
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-      />
 
       {/* Overlay para garantir que o conteúdo não fique por baixo */}
       <div className="h-20 md:h-24" aria-hidden="true" />

@@ -10,6 +10,7 @@ export interface CookiePreferences {
 export interface CookieConsentState {
   hasChosenPreferences: boolean;
   showBanner: boolean;
+  showSettingsModal: boolean;
   preferences: CookiePreferences;
 }
 
@@ -39,6 +40,7 @@ const defaultPreferences: CookiePreferences = {
 const initialState: CookieConsentState = {
   hasChosenPreferences: false,
   showBanner: true,
+  showSettingsModal: false,
   preferences: defaultPreferences,
 };
 
@@ -57,6 +59,7 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
           setState({
             hasChosenPreferences: true,
             showBanner: false,
+            showSettingsModal: false,
             preferences: {
               essential: true, // Always true
               analytics: parsed.preferences.analytics || false,
@@ -96,11 +99,12 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
       functional: true,
     };
     
-    setState({
+    setState(prev => ({
+      ...prev,
       hasChosenPreferences: true,
       showBanner: false,
       preferences: allAccepted,
-    });
+    }));
     
     savePreferences(allAccepted);
     
@@ -120,11 +124,12 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
       functional: false,
     };
     
-    setState({
+    setState(prev => ({
+      ...prev,
       hasChosenPreferences: true,
       showBanner: false,
       preferences: essentialOnly,
-    });
+    }));
     
     savePreferences(essentialOnly);
     
@@ -137,6 +142,7 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
   };
 
   const updatePreferences = (newPreferences: Partial<CookiePreferences>) => {
+    const previousPreferences = state.preferences;
     const updatedPreferences: CookiePreferences = {
       ...state.preferences,
       ...newPreferences,
@@ -148,12 +154,27 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
       preferences: updatedPreferences,
       hasChosenPreferences: true,
       showBanner: false,
+      showSettingsModal: false,
     }));
     
     savePreferences(updatedPreferences);
     
-    // Trigger analytics changes
+    // Clear cookies if any category was disabled
     if (typeof window !== 'undefined') {
+      const wasDisabled = (
+        (previousPreferences.analytics && !updatedPreferences.analytics) ||
+        (previousPreferences.marketing && !updatedPreferences.marketing) ||
+        (previousPreferences.functional && !updatedPreferences.functional)
+      );
+      
+      if (wasDisabled) {
+        // Dynamic import to ensure function is available
+        import('@/lib/analytics').then(({ clearAllNonEssentialCookies }) => {
+          clearAllNonEssentialCookies();
+        });
+      }
+      
+      // Trigger analytics changes
       window.dispatchEvent(new CustomEvent('cookieConsentChanged', { 
         detail: { preferences: updatedPreferences } 
       }));
@@ -161,11 +182,11 @@ export function CookieConsentProvider({ children }: { children: React.ReactNode 
   };
 
   const openSettings = () => {
-    setState(prev => ({ ...prev, showBanner: true }));
+    setState(prev => ({ ...prev, showSettingsModal: true }));
   };
 
   const closeSettings = () => {
-    setState(prev => ({ ...prev, showBanner: false }));
+    setState(prev => ({ ...prev, showSettingsModal: false }));
   };
 
   const hasConsent = (category: keyof CookiePreferences): boolean => {

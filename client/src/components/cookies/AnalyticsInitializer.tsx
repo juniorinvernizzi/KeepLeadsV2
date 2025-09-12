@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useCookieConsent } from '@/hooks/useCookieConsent';
-import { initializeTracking, events } from '@/lib/analytics';
+import { initializeTracking, clearAllNonEssentialCookies } from '@/lib/analytics';
 import { useLocation } from 'wouter';
 
 /**
@@ -11,14 +11,21 @@ export function AnalyticsInitializer() {
   const { state, hasConsent } = useCookieConsent();
   const [location] = useLocation();
 
-  // Initialize tracking when preferences change
+  // Initialize tracking when preferences change or on mount
   useEffect(() => {
     if (state.hasChosenPreferences) {
-      initializeTracking({
+      const preferences = {
         analytics: hasConsent('analytics'),
         marketing: hasConsent('marketing'), 
         functional: hasConsent('functional'),
-      });
+      };
+      
+      initializeTracking(preferences);
+      
+      // If any category was disabled, clear cookies to be safe
+      if (!preferences.analytics || !preferences.marketing || !preferences.functional) {
+        clearAllNonEssentialCookies();
+      }
     }
   }, [state.hasChosenPreferences, state.preferences, hasConsent]);
 
@@ -27,7 +34,11 @@ export function AnalyticsInitializer() {
     if (hasConsent('analytics')) {
       // Extract page name from path for cleaner tracking
       const pageName = location === '/' ? 'dashboard' : location.replace('/', '');
-      events.pageViewed(pageName);
+      
+      // Import and call tracking function only if analytics enabled
+      import('@/lib/analytics').then(({ events }) => {
+        events.pageViewed(pageName);
+      });
     }
   }, [location, hasConsent]);
 
@@ -47,7 +58,9 @@ export function withAnalytics<T extends object>(
 
     useEffect(() => {
       if (hasConsent('analytics') && pageInfo?.name) {
-        events.pageViewed(pageInfo.name);
+        import('@/lib/analytics').then(({ events }) => {
+          events.pageViewed(pageInfo.name!);
+        });
       }
     }, [hasConsent]);
 
@@ -64,13 +77,14 @@ export function useAnalytics() {
   return {
     trackEvent: (eventName: string, parameters?: Record<string, any>) => {
       if (hasConsent('analytics')) {
-        events.pageViewed(eventName);
+        import('@/lib/analytics').then(({ trackEvent }) => {
+          trackEvent(eventName, parameters);
+        });
       }
     },
     
     trackConversion: (eventName: string, parameters?: Record<string, any>) => {
       if (hasConsent('marketing')) {
-        // Only track conversions if marketing cookies are enabled
         import('@/lib/analytics').then(({ trackConversion }) => {
           trackConversion(eventName, parameters);
         });
@@ -79,19 +93,25 @@ export function useAnalytics() {
     
     trackLeadView: (leadId: string, category: string) => {
       if (hasConsent('analytics')) {
-        events.leadViewed(leadId, category);
+        import('@/lib/analytics').then(({ events }) => {
+          events.leadViewed(leadId, category);
+        });
       }
     },
     
     trackLeadPurchase: (leadId: string, value: number) => {
-      if (hasConsent('analytics')) {
-        events.leadPurchased(leadId, value);
+      if (hasConsent('marketing')) {
+        import('@/lib/analytics').then(({ events }) => {
+          events.leadPurchased(leadId, value);
+        });
       }
     },
     
     trackCreditsAdded: (amount: number, method: string) => {
       if (hasConsent('analytics')) {
-        events.creditsAdded(amount, method);
+        import('@/lib/analytics').then(({ events }) => {
+          events.creditsAdded(amount, method);
+        });
       }
     },
     
