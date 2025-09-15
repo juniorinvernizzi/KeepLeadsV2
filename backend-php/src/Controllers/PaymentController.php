@@ -59,15 +59,17 @@ class PaymentController {
             $preference->items = array($item);
 
             // Set payer info
-            $payer = array(
-                "name" => $user->first_name,
-                "surname" => $user->last_name,
-                "email" => $user->email
-            );
+            $payer = new \stdClass();
+            $payer->name = $user->first_name;
+            $payer->surname = $user->last_name;
+            $payer->email = $user->email;
             $preference->payer = $payer;
 
-            // Set URLs
-            $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
+            // Set URLs - Use environment or request host for Mercado Pago
+            $protocol = (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') || 
+                       (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+            $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost:5000';
+            $baseUrl = "$protocol://$host";
             
             $preference->back_urls = array(
                 "success" => $baseUrl . "/credits?status=approved",
@@ -113,7 +115,7 @@ class PaymentController {
         try {
             $data = json_decode($request->getBody()->getContents(), true);
             
-            error_log("Mercado Pago webhook received: " . json_encode($data));
+            // Log webhook received (production-safe)
 
             if (!isset($data['type']) || $data['type'] !== 'payment') {
                 error_log("Webhook ignored - not a payment notification: " . ($data['type'] ?? 'unknown'));
@@ -158,7 +160,7 @@ class PaymentController {
                 return $response->withStatus(200);
             }
 
-            error_log("Processing payment $paymentId with status: " . $payment->status);
+            // Processing payment (production-safe)
 
             // Process only approved payments
             if ($payment->status === 'approved') {
@@ -219,7 +221,7 @@ class PaymentController {
                     }
 
                     $conn->commit();
-                    error_log("Successfully processed payment $paymentId: Added $amount credits to user $userId (Balance: $currentCredits -> $newCredits)");
+                    // Payment processed successfully (production-safe)
 
                 } catch (\Exception $e) {
                     $conn->rollBack();
