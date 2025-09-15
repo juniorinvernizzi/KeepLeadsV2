@@ -318,15 +318,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           installments: 12,
         },
         back_urls: {
-          success: `${req.protocol}://${req.get('host')}/credits?status=success`,
-          failure: `${req.protocol}://${req.get('host')}/credits?status=failure`,
-          pending: `${req.protocol}://${req.get('host')}/credits?status=pending`,
+          success: `https://fc09caa2-6723-48de-ac2d-2e5743aa8b86-00-13sj9i4zh2zds.picard.replit.dev/credits?status=success`,
+          failure: `https://fc09caa2-6723-48de-ac2d-2e5743aa8b86-00-13sj9i4zh2zds.picard.replit.dev/credits?status=failure`,
+          pending: `https://fc09caa2-6723-48de-ac2d-2e5743aa8b86-00-13sj9i4zh2zds.picard.replit.dev/credits?status=pending`,
         },
-        auto_return: 'approved' as const,
+        auto_return: 'approved',
         external_reference: `user_${userId}_credits_${Date.now()}`,
-        notification_url: `${req.protocol}://${req.get('host')}/api/payment/webhook`,
+        notification_url: `https://fc09caa2-6723-48de-ac2d-2e5743aa8b86-00-13sj9i4zh2zds.picard.replit.dev/api/payment/webhook`,
       };
 
+      console.log('🔍 DEBUG: Mercado Pago preference data:', JSON.stringify(preferenceData, null, 2));
+      console.log('🔍 DEBUG: Host:', req.get('host'));
+      console.log('🔍 DEBUG: Protocol:', req.protocol);
+      
       const result = await preference.create({ body: preferenceData });
       
       res.json({
