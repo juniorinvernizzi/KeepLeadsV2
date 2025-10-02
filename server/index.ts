@@ -29,74 +29,86 @@ phpProcess.on("error", (err) => {
 
 console.log("✅ PHP backend started on port 5001");
 
-// Proxy API requests to PHP server
+// Setup API proxy BEFORE Vite to intercept /api requests
 app.use('/api', createProxyMiddleware({
-  target: 'http://127.0.0.1:5001',
-  changeOrigin: false, // Keep original host
-  secure: false,
-  pathRewrite: {
-    '^/api': '/api' // Keep /api prefix for PHP routes
-  },
-  onError: (err, req, res) => {
-    console.error('Proxy error:', err.message);
-    if (!res.headersSent) {
-      res.status(500).json({ message: 'Backend service unavailable' });
-    }
-  },
-  onProxyReq: (proxyReq, req) => {
-    // Forward all relevant headers
-    if (req.headers.cookie) {
-      proxyReq.setHeader('Cookie', req.headers.cookie);
-    }
-    if (req.headers.origin) {
-      proxyReq.setHeader('Origin', req.headers.origin);
-    }
-    if (req.headers['x-forwarded-for']) {
-      proxyReq.setHeader('X-Forwarded-For', req.headers['x-forwarded-for']);
-    }
-    if (req.headers['x-forwarded-proto']) {
-      proxyReq.setHeader('X-Forwarded-Proto', req.headers['x-forwarded-proto']);
-    }
-    if (req.headers['x-forwarded-host']) {
-      proxyReq.setHeader('X-Forwarded-Host', req.headers['x-forwarded-host']);
-    }
-    // Set forwarded headers for PHP to detect correct protocol/host
-    proxyReq.setHeader('X-Forwarded-Proto', 'https');
-    proxyReq.setHeader('X-Forwarded-Host', 'fc09caa2-6723-48de-ac2d-2e5743aa8b86-00-13sj9i4zh2zds.picard.replit.dev');
-  }
-}));
-
-app.use((req, res, next) => {
-  const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
-
-  res.on("finish", () => {
-    const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+    target: 'http://127.0.0.1:5001',
+    changeOrigin: false,
+    secure: false,
+    pathRewrite: {
+      '^/api': '' // Remove /api prefix
+    },
+    timeout: 30000,
+    proxyTimeout: 30000,
+    onError: (err, req, res) => {
+      console.error('Proxy error:', err.message);
+      if (!res.headersSent) {
+        res.status(500).json({ message: 'Backend service unavailable' });
       }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+    },
+    onProxyReq: (proxyReq, req) => {
+      // Set Origin header for CSRF protection
+      const origin = req.headers.origin || 'http://localhost:5000';
+      proxyReq.setHeader('Origin', origin);
+      
+      // Forward cookies
+      if (req.headers.cookie) {
+        proxyReq.setHeader('Cookie', req.headers.cookie);
       }
-
-      log(logLine);
+      
+      // Forward referer
+      if (req.headers.referer) {
+        proxyReq.setHeader('Referer', req.headers.referer);
+      }
+      
+      // Set forwarded headers for PHP
+      proxyReq.setHeader('X-Forwarded-Proto', 'https');
+      proxyReq.setHeader('X-Forwarded-Host', 'fc09caa2-6723-48de-ac2d-2e5743aa8b86-00-13sj9i4zh2zds.picard.replit.dev');
+      
+      console.log(`[Proxy] ${req.method} ${req.url} -> http://127.0.0.1:5001${proxyReq.path}`);
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      console.log(`[Proxy Response] ${proxyRes.statusCode} for ${req.method} ${req.url}`);
     }
-  });
-
-  next();
-});
+  }));
 
 (async () => {
+  // Setup vite in development and serve static in production AFTER proxy
+  if (app.get("env") === "development") {
+    await setupVite(app);
+  } else {
+    serveStatic(app);
+  }
+
+  app.use((req, res, next) => {
+    const start = Date.now();
+    const path = req.path;
+    let capturedJsonResponse: Record<string, any> | undefined = undefined;
+
+    const originalResJson = res.json;
+    res.json = function (bodyJson, ...args) {
+      capturedJsonResponse = bodyJson;
+      return originalResJson.apply(res, [bodyJson, ...args]);
+    };
+
+    res.on("finish", () => {
+      const duration = Date.now() - start;
+      if (path.startsWith("/api")) {
+        let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
+        if (capturedJsonResponse) {
+          logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        }
+
+        if (logLine.length > 80) {
+          logLine = logLine.slice(0, 79) + "…";
+        }
+
+        log(logLine);
+      }
+    });
+
+    next();
+  });
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -104,13 +116,6 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
     throw err;
   });
-
-  // Setup vite in development and serve static in production
-  if (app.get("env") === "development") {
-    await setupVite(app);
-  } else {
-    serveStatic(app);
-  }
 
   // Start Node.js server on port 5000
   const port = parseInt(process.env.PORT || '5000', 10);
