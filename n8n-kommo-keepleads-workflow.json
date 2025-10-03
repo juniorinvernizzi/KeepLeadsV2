@@ -1,0 +1,126 @@
+{
+  "name": "KommoCRM → KeepLeads Import",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "kommo-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-kommo",
+      "name": "Webhook - Kommo",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "kommo-leads"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Transform Kommo data to KeepLeads format\nconst kommoData = $input.item.json;\n\n// Extract lead data from Kommo webhook\nlet leadData = {};\n\n// Kommo sends data in 'leads' object with 'add' or 'update' array\nif (kommoData.leads && kommoData.leads.add && kommoData.leads.add.length > 0) {\n  const lead = kommoData.leads.add[0];\n  \n  // Map Kommo fields to KeepLeads format\n  leadData = {\n    name: lead.name || 'Lead sem nome',\n    email: extractEmail(lead) || '',\n    phone: extractPhone(lead) || '',\n    age: extractAge(lead) || 30,\n    city: extractCity(lead) || 'São Paulo',\n    state: extractState(lead) || 'SP',\n    insuranceCompanyId: extractInsuranceCompany(lead) || 'unimed',\n    planType: extractPlanType(lead) || 'individual',\n    budgetMin: extractBudgetMin(lead) || '200.00',\n    budgetMax: extractBudgetMax(lead) || '500.00',\n    availableLives: extractLives(lead) || 1,\n    source: 'KommoCRM',\n    campaign: extractCampaign(lead) || '',\n    notes: lead.note ? lead.note.text : ''\n  };\n}\n\n// Helper functions to extract data from custom fields\nfunction extractEmail(lead) {\n  // Check if email exists in contacts\n  if (lead._embedded && lead._embedded.contacts && lead._embedded.contacts.length > 0) {\n    const contact = lead._embedded.contacts[0];\n    if (contact.custom_fields_values) {\n      const emailField = contact.custom_fields_values.find(f => f.field_name === 'Email' || f.field_code === 'EMAIL');\n      if (emailField && emailField.values && emailField.values.length > 0) {\n        return emailField.values[0].value;\n      }\n    }\n  }\n  return '';\n}\n\nfunction extractPhone(lead) {\n  // Check if phone exists in contacts\n  if (lead._embedded && lead._embedded.contacts && lead._embedded.contacts.length > 0) {\n    const contact = lead._embedded.contacts[0];\n    if (contact.custom_fields_values) {\n      const phoneField = contact.custom_fields_values.find(f => f.field_name === 'Phone' || f.field_code === 'PHONE');\n      if (phoneField && phoneField.values && phoneField.values.length > 0) {\n        return phoneField.values[0].value;\n      }\n    }\n  }\n  return '';\n}\n\nfunction extractAge(lead) {\n  // Look for 'Idade' or 'Age' custom field\n  if (lead.custom_fields_values) {\n    const ageField = lead.custom_fields_values.find(f => f.field_name === 'Idade' || f.field_name === 'Age');\n    if (ageField && ageField.values && ageField.values.length > 0) {\n      return parseInt(ageField.values[0].value) || 30;\n    }\n  }\n  return 30;\n}\n\nfunction extractCity(lead) {\n  // Look for 'Cidade' or 'City' custom field\n  if (lead.custom_fields_values) {\n    const cityField = lead.custom_fields_values.find(f => f.field_name === 'Cidade' || f.field_name === 'City');\n    if (cityField && cityField.values && cityField.values.length > 0) {\n      return cityField.values[0].value;\n    }\n  }\n  return 'São Paulo';\n}\n\nfunction extractState(lead) {\n  // Look for 'Estado' or 'State' custom field\n  if (lead.custom_fields_values) {\n    const stateField = lead.custom_fields_values.find(f => f.field_name === 'Estado' || f.field_name === 'State');\n    if (stateField && stateField.values && stateField.values.length > 0) {\n      return stateField.values[0].value;\n    }\n  }\n  return 'SP';\n}\n\nfunction extractInsuranceCompany(lead) {\n  // Look for insurance company in tags or custom fields\n  if (lead._embedded && lead._embedded.tags && lead._embedded.tags.length > 0) {\n    const tags = lead._embedded.tags.map(t => t.name.toLowerCase());\n    if (tags.includes('amil')) return 'amil';\n    if (tags.includes('bradesco')) return 'bradesco';\n    if (tags.includes('sulamerica') || tags.includes('sulamérica')) return 'sulamérica';\n    if (tags.includes('unimed')) return 'unimed';\n    if (tags.includes('porto seguro') || tags.includes('porto-seguro')) return 'porto-seguro';\n  }\n  \n  // Check custom field\n  if (lead.custom_fields_values) {\n    const companyField = lead.custom_fields_values.find(f => f.field_name === 'Seguradora' || f.field_name === 'Insurance');\n    if (companyField && companyField.values && companyField.values.length > 0) {\n      return companyField.values[0].value.toLowerCase();\n    }\n  }\n  \n  return 'unimed';\n}\n\nfunction extractPlanType(lead) {\n  // Look for plan type in custom fields\n  if (lead.custom_fields_values) {\n    const planField = lead.custom_fields_values.find(f => f.field_name === 'Tipo de Plano' || f.field_name === 'Plan Type');\n    if (planField && planField.values && planField.values.length > 0) {\n      const value = planField.values[0].value.toLowerCase();\n      if (value.includes('individual')) return 'individual';\n      if (value.includes('familiar') || value.includes('family')) return 'family';\n      if (value.includes('empresarial') || value.includes('business')) return 'business';\n    }\n  }\n  return 'individual';\n}\n\nfunction extractBudgetMin(lead) {\n  // Look for budget min in custom fields\n  if (lead.custom_fields_values) {\n    const budgetField = lead.custom_fields_values.find(f => f.field_name === 'Orçamento Mínimo' || f.field_name === 'Budget Min');\n    if (budgetField && budgetField.values && budgetField.values.length > 0) {\n      return parseFloat(budgetField.values[0].value).toFixed(2);\n    }\n  }\n  // Use lead price as reference if available\n  if (lead.price) {\n    return (parseFloat(lead.price) * 0.8).toFixed(2);\n  }\n  return '200.00';\n}\n\nfunction extractBudgetMax(lead) {\n  // Look for budget max in custom fields\n  if (lead.custom_fields_values) {\n    const budgetField = lead.custom_fields_values.find(f => f.field_name === 'Orçamento Máximo' || f.field_name === 'Budget Max');\n    if (budgetField && budgetField.values && budgetField.values.length > 0) {\n      return parseFloat(budgetField.values[0].value).toFixed(2);\n    }\n  }\n  // Use lead price as reference if available\n  if (lead.price) {\n    return (parseFloat(lead.price) * 1.2).toFixed(2);\n  }\n  return '500.00';\n}\n\nfunction extractLives(lead) {\n  // Look for number of lives in custom fields\n  if (lead.custom_fields_values) {\n    const livesField = lead.custom_fields_values.find(f => f.field_name === 'Vidas' || f.field_name === 'Lives');\n    if (livesField && livesField.values && livesField.values.length > 0) {\n      return parseInt(livesField.values[0].value) || 1;\n    }\n  }\n  return 1;\n}\n\nfunction extractCampaign(lead) {\n  // Look for campaign name\n  if (lead._embedded && lead._embedded.pipelines && lead._embedded.pipelines.length > 0) {\n    return lead._embedded.pipelines[0].name || '';\n  }\n  return '';\n}\n\nreturn { json: leadData };"
+      },
+      "id": "transform-data",
+      "name": "Transform Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://SEU-DOMINIO.replit.app/api/leads/import",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameter": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameter": []
+        },
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "send-to-keepleads",
+      "name": "Send to KeepLeads",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"message\": \"Lead imported to KeepLeads\", \"leadId\": $json.leadId } }}",
+        "options": {}
+      },
+      "id": "respond-success",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": false, \"message\": \"Failed to import lead\", \"error\": $json.message } }}",
+        "responseCode": 500,
+        "options": {}
+      },
+      "id": "respond-error",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [850, 450]
+    }
+  ],
+  "connections": {
+    "Webhook - Kommo": {
+      "main": [
+        [
+          {
+            "node": "Transform Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform Data": {
+      "main": [
+        [
+          {
+            "node": "Send to KeepLeads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to KeepLeads": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-10-03T17:00:00.000Z",
+  "versionId": "1"
+}
