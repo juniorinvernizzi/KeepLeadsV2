@@ -166,7 +166,20 @@ class LeadController {
                 return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
             }
 
-            // Create purchase (implementation would go in Purchase model)
+            // Create purchase record
+            $purchase = new Purchase();
+            $purchase->lead_id = $leadId;
+            $purchase->user_id = $userId;
+            $purchase->price = $leadPrice;
+            $purchase->status = 'active';
+            
+            if (!$purchase->create()) {
+                $response->getBody()->write(json_encode([
+                    'message' => 'Failed to create purchase record'
+                ]));
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+            }
+            
             // Update lead status
             $lead->updateStatus($leadId, 'sold');
             
@@ -174,7 +187,17 @@ class LeadController {
             $newBalance = $userCredits - $leadPrice;
             $user->updateCredits($newBalance);
 
-            // Add credit transaction (implementation would go in CreditTransaction model)
+            // Add credit transaction
+            $transaction = new CreditTransaction();
+            $transaction->user_id = $userId;
+            $transaction->type = 'purchase';
+            $transaction->amount = -$leadPrice;
+            $transaction->description = "Compra de lead: " . $leadData['name'];
+            $transaction->balance_before = $userCredits;
+            $transaction->balance_after = $newBalance;
+            $transaction->payment_method = 'credits';
+            $transaction->payment_id = null;
+            $transaction->create();
             
             $response->getBody()->write(json_encode([
                 'success' => true,

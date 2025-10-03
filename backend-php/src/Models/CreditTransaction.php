@@ -39,10 +39,10 @@ class CreditTransaction {
         $this->id = $this->generateUUID();
         
         $query = "INSERT INTO " . $this->table . " 
-                  SET id=:id, user_id=:user_id, type=:type, amount=:amount,
-                      description=:description, balance_before=:balance_before,
-                      balance_after=:balance_after, payment_method=:payment_method,
-                      payment_id=:payment_id, created_at=NOW()";
+                  (id, user_id, type, amount, description, balance_before, 
+                   balance_after, payment_method, payment_id, created_at) 
+                  VALUES (:id, :user_id, :type, :amount, :description, :balance_before,
+                          :balance_after, :payment_method, :payment_id, NOW())";
 
         $stmt = $this->conn->prepare($query);
 

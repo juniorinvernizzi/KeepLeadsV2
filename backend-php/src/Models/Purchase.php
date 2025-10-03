@@ -35,8 +35,8 @@ class Purchase {
         $this->id = $this->generateUUID();
         
         $query = "INSERT INTO " . $this->table . " 
-                  SET id=:id, lead_id=:lead_id, user_id=:user_id, 
-                      price=:price, status=:status, purchased_at=NOW()";
+                  (id, lead_id, user_id, price, status, purchased_at) 
+                  VALUES (:id, :lead_id, :user_id, :price, :status, NOW())";
 
         $stmt = $this->conn->prepare($query);
 
