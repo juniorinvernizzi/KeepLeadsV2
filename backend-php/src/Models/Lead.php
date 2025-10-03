@@ -15,7 +15,9 @@ class Lead {
     public $age;
     public $city;
     public $state;
+    public $income;
     public $insurance_company_id;
+    public $category;
     public $plan_type;
     public $budget_min;
     public $budget_max;
@@ -157,12 +159,13 @@ class Lead {
         }
 
         $query = "INSERT INTO " . $this->table . " 
-                  SET id=:id, name=:name, email=:email, phone=:phone, age=:age, city=:city, 
-                      state=:state, insurance_company_id=:insurance_company_id, 
-                      plan_type=:plan_type, budget_min=:budget_min, budget_max=:budget_max,
-                      available_lives=:available_lives, source=:source, campaign=:campaign,
-                      quality=:quality, status=:status, price=:price, notes=:notes,
-                      created_at=NOW(), updated_at=NOW()";
+                  (id, name, email, phone, age, city, state, income, insurance_company_id, category,
+                   plan_type, budget_min, budget_max, available_lives, source, campaign,
+                   quality, status, price, notes, created_at, updated_at)
+                  VALUES 
+                  (:id, :name, :email, :phone, :age, :city, :state, :income, :insurance_company_id, :category,
+                   :plan_type, :budget_min, :budget_max, :available_lives, :source, :campaign,
+                   :quality, :status, :price, :notes, NOW(), NOW())";
 
         $stmt = $this->conn->prepare($query);
 
@@ -173,7 +176,9 @@ class Lead {
         $stmt->bindParam(":age", $this->age);
         $stmt->bindParam(":city", $this->city);
         $stmt->bindParam(":state", $this->state);
+        $stmt->bindParam(":income", $this->income);
         $stmt->bindParam(":insurance_company_id", $this->insurance_company_id);
+        $stmt->bindParam(":category", $this->category);
         $stmt->bindParam(":plan_type", $this->plan_type);
         $stmt->bindParam(":budget_min", $this->budget_min);
         $stmt->bindParam(":budget_max", $this->budget_max);

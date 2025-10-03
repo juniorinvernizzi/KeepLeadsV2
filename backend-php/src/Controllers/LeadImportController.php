@@ -60,6 +60,12 @@ class LeadImportController {
             $lead->budget_min = isset($body['budgetMin']) ? (string)$body['budgetMin'] : '200.00';
             $lead->budget_max = isset($body['budgetMax']) ? (string)$body['budgetMax'] : '500.00';
             
+            // Income (required field)
+            $lead->income = isset($body['income']) ? (string)$body['income'] : '3000.00';
+            
+            // Category (required field)
+            $lead->category = isset($body['category']) ? $this->sanitize($body['category']) : 'health_insurance';
+            
             // Additional fields
             $lead->available_lives = isset($body['availableLives']) ? (int)$body['availableLives'] : 1;
             $lead->source = $this->sanitize($body['source'] ?? 'KommoCRM');

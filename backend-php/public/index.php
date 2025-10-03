@@ -22,6 +22,9 @@ AppFactory::setContainer($container);
 // Create App
 $app = AppFactory::create();
 
+// Add Body Parsing Middleware (must be before other middlewares)
+$app->addBodyParsingMiddleware();
+
 // Add error middleware
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 
@@ -79,8 +82,10 @@ $app->add(function ($request, $handler) {
     
     // Apply CSRF protection only to state-changing methods
     if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'])) {
-        // Exclude webhook endpoint from CSRF protection
-        if ($path !== '/api/payment/webhook') {
+        // Exclude webhook endpoints from CSRF protection (external services)
+        // Note: proxy removes /api prefix, so use paths without it
+        $csrfExemptPaths = ['/payment/webhook', '/leads/import'];
+        if (!in_array($path, $csrfExemptPaths)) {
             $origin = $request->getHeaderLine('Origin');
             $referer = $request->getHeaderLine('Referer');
             
