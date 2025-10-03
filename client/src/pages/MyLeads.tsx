@@ -13,30 +13,26 @@ import { useState } from "react";
 
 interface PurchasedLead {
   id: string;
-  leadId: string;
-  userId: string;
-  price: string;
+  name: string;
+  email: string;
+  phone: string;
+  age: number;
+  city: string;
+  state: string;
+  insuranceCompanyId: string;
+  planType: string;
+  budgetMin: string;
+  budgetMax: string;
+  availableLives: number;
+  source: string;
+  campaign: string;
+  quality: string;
   status: string;
+  price: string;
+  notes: string;
   purchasedAt: string;
-  lead: {
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    age: number;
-    city: string;
-    state: string;
-    insuranceCompanyId: string;
-    planType: string;
-    budgetMin: string;
-    budgetMax: string;
-    availableLives: number;
-    source: string;
-    campaign: string;
-    quality: string;
-    notes: string;
-    createdAt: string;
-  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function MyLeads() {
@@ -295,15 +291,15 @@ export default function MyLeads() {
                           </div>
                           <div>
                             <h3 className="font-semibold text-white text-sm">
-                              {getCompanyName(purchase.lead.insuranceCompanyId)}
+                              {getCompanyName(purchase.insuranceCompanyId)}
                             </h3>
                             <p className="text-xs text-purple-100">Plano de Saúde</p>
                           </div>
                         </div>
-                        <Badge className={getQualityColor(purchase.lead.quality)} style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}>
+                        <Badge className={getQualityColor(purchase.quality)} style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}>
                           <Star className="w-3 h-3 mr-1" />
-                          {purchase.lead.quality === 'high' ? 'Premium' : 
-                           purchase.lead.quality === 'medium' ? 'Padrão' : 'Básico'}
+                          {purchase.quality === 'high' ? 'Premium' : 
+                           purchase.quality === 'medium' ? 'Padrão' : 'Básico'}
                         </Badge>
                       </div>
 
@@ -311,11 +307,11 @@ export default function MyLeads() {
                         <div className="flex items-center space-x-2 text-purple-100">
                           <MapPin className="w-4 h-4" />
                           <span className="text-sm font-medium">
-                            {purchase.lead.city}, {purchase.lead.state}
+                            {purchase.city}, {purchase.state}
                           </span>
                         </div>
                         <div className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
-                          <span className="text-xs text-white font-medium">{purchase.lead.age} anos</span>
+                          <span className="text-xs text-white font-medium">{purchase.age} anos</span>
                         </div>
                       </div>
                     </div>
@@ -326,23 +322,23 @@ export default function MyLeads() {
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-slate-600">Tipo de Plano</span>
                           <span className="text-sm font-medium text-slate-900 capitalize">
-                            {purchase.lead.planType === 'individual' ? 'Individual' :
-                             purchase.lead.planType === 'family' ? 'Familiar' : 
-                             purchase.lead.planType === 'business' ? 'Empresarial' : purchase.lead.planType}
+                            {purchase.planType === 'individual' ? 'Individual' :
+                             purchase.planType === 'family' ? 'Familiar' : 
+                             purchase.planType === 'business' ? 'Empresarial' : purchase.planType}
                           </span>
                         </div>
                         
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-slate-600">Vidas Disponíveis</span>
                           <span className="text-sm font-medium text-slate-900">
-                            {purchase.lead.availableLives} vida{purchase.lead.availableLives > 1 ? 's' : ''}
+                            {purchase.availableLives} vida{purchase.availableLives > 1 ? 's' : ''}
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-slate-600">Origem</span>
                           <span className="text-sm font-medium text-slate-900">
-                            {purchase.lead.source}
+                            {purchase.source}
                           </span>
                         </div>
                       </div>
@@ -383,8 +379,8 @@ export default function MyLeads() {
             <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900">{selectedLead.lead.name}</h2>
-                  <p className="text-slate-600">{selectedLead.lead.city}, {selectedLead.lead.state}</p>
+                  <h2 className="text-2xl font-bold text-slate-900">{selectedLead.name}</h2>
+                  <p className="text-slate-600">{selectedLead.city}, {selectedLead.state}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -406,21 +402,21 @@ export default function MyLeads() {
                         <Phone className="w-4 h-4 text-green-600 mr-2" />
                         <span className="text-sm font-medium text-green-800">Telefone</span>
                       </div>
-                      <p className="font-semibold text-slate-900">{selectedLead.lead.phone}</p>
+                      <p className="font-semibold text-slate-900">{selectedLead.phone}</p>
                     </div>
                     <div className="text-center">
                       <div className="flex items-center justify-center mb-2">
                         <Mail className="w-4 h-4 text-green-600 mr-2" />
                         <span className="text-sm font-medium text-green-800">E-mail</span>
                       </div>
-                      <p className="font-semibold text-slate-900 break-all">{selectedLead.lead.email}</p>
+                      <p className="font-semibold text-slate-900 break-all">{selectedLead.email}</p>
                     </div>
                     <div className="text-center">
                       <div className="flex items-center justify-center mb-2">
                         <MapPin className="w-4 h-4 text-green-600 mr-2" />
                         <span className="text-sm font-medium text-green-800">Localização</span>
                       </div>
-                      <p className="font-semibold text-slate-900">{selectedLead.lead.city}, {selectedLead.lead.state}</p>
+                      <p className="font-semibold text-slate-900">{selectedLead.city}, {selectedLead.state}</p>
                     </div>
                   </div>
                 </div>
@@ -435,9 +431,9 @@ export default function MyLeads() {
                         Tipo de Plano
                       </div>
                       <p className="font-semibold text-slate-900 capitalize">
-                        {selectedLead.lead.planType === 'individual' ? 'Individual' :
-                         selectedLead.lead.planType === 'family' ? 'Familiar' : 
-                         selectedLead.lead.planType === 'business' ? 'Empresarial' : selectedLead.lead.planType}
+                        {selectedLead.planType === 'individual' ? 'Individual' :
+                         selectedLead.planType === 'family' ? 'Familiar' : 
+                         selectedLead.planType === 'business' ? 'Empresarial' : selectedLead.planType}
                       </p>
                     </div>
                     
@@ -447,7 +443,7 @@ export default function MyLeads() {
                         Orçamento
                       </div>
                       <p className="font-semibold text-slate-900">
-                        {formatBudgetRange(selectedLead.lead.budgetMin, selectedLead.lead.budgetMax)}
+                        {formatBudgetRange(selectedLead.budgetMin, selectedLead.budgetMax)}
                       </p>
                     </div>
                     
@@ -457,7 +453,7 @@ export default function MyLeads() {
                         Vidas Disponíveis
                       </div>
                       <p className="font-semibold text-slate-900">
-                        {selectedLead.lead.availableLives} vida{selectedLead.lead.availableLives > 1 ? 's' : ''}
+                        {selectedLead.availableLives} vida{selectedLead.availableLives > 1 ? 's' : ''}
                       </p>
                     </div>
                     
@@ -467,27 +463,27 @@ export default function MyLeads() {
                         Origem
                       </div>
                       <p className="font-semibold text-slate-900">
-                        {selectedLead.lead.source}
+                        {selectedLead.source}
                       </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Campaign and Notes */}
-                {(selectedLead.lead.campaign || selectedLead.lead.notes) && (
+                {(selectedLead.campaign || selectedLead.notes) && (
                   <div>
                     <h3 className="text-lg font-semibold text-slate-900 mb-4">Informações Adicionais</h3>
                     <div className="space-y-3 p-4 bg-slate-50 rounded-lg">
-                      {selectedLead.lead.campaign && (
+                      {selectedLead.campaign && (
                         <div>
                           <span className="text-sm font-medium text-slate-600">Campanha: </span>
-                          <span className="text-slate-900">{selectedLead.lead.campaign}</span>
+                          <span className="text-slate-900">{selectedLead.campaign}</span>
                         </div>
                       )}
-                      {selectedLead.lead.notes && (
+                      {selectedLead.notes && (
                         <div>
                           <span className="text-sm font-medium text-slate-600">Observações: </span>
-                          <span className="text-slate-900">{selectedLead.lead.notes}</span>
+                          <span className="text-slate-900">{selectedLead.notes}</span>
                         </div>
                       )}
                     </div>
