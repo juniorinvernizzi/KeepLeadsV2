@@ -25,7 +25,8 @@ import {
   X,
   Target,
   FolderOpen,
-  ChevronDown
+  ChevronDown,
+  TestTube
 } from "lucide-react";
 import { Link as LinkIcon } from "lucide-react";
 
@@ -78,6 +79,11 @@ export default function Layout({ children }: LayoutProps) {
         path: "/admin/manage-leads", 
         label: "Gerenciar Leads", 
         icon: <FolderOpen className="w-5 h-5" />
+      },
+      {
+        path: "/admin/test-import", 
+        label: "Testar Importação", 
+        icon: <TestTube className="w-5 h-5" />
       },
       {
         path: "/integrations", 

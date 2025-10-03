@@ -18,6 +18,7 @@ import Credits from "@/pages/Credits";
 import AdminPanel from "@/pages/AdminPanel";
 import ManageLeads from "@/pages/ManageLeads";
 import Integrations from "@/pages/Integrations";
+import TestImport from "@/pages/TestImport";
 import EditProfile from "@/pages/EditProfile";
 import PublicLeads from "@/pages/PublicLeads";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
@@ -55,6 +56,7 @@ function Router() {
           <Route path="/credits" component={Credits} />
           <Route path="/admin" component={AdminPanel} />
           <Route path="/admin/manage-leads" component={ManageLeads} />
+          <Route path="/admin/test-import" component={TestImport} />
           <Route path="/integrations" component={Integrations} />
           <Route path="/profile/edit" component={EditProfile} />
         </>
@@ -66,6 +68,7 @@ function Router() {
           <Route path="/credits" component={Login} />
           <Route path="/admin" component={Login} />
           <Route path="/admin/manage-leads" component={Login} />
+          <Route path="/admin/test-import" component={Login} />
           <Route path="/integrations" component={Login} />
           <Route path="/profile/edit" component={Login} />
         </>
