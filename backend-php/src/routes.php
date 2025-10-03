@@ -3,6 +3,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use KeepLeads\Controllers\AuthController;
 use KeepLeads\Controllers\LeadController;
+use KeepLeads\Controllers\LeadImportController;
 use KeepLeads\Controllers\UserController;
 use KeepLeads\Controllers\PaymentController;
 use KeepLeads\Controllers\AdminController;
@@ -12,6 +13,7 @@ use KeepLeads\Controllers\AdminController;
 // Initialize controllers
 $authController = new AuthController();
 $leadController = new LeadController();
+$leadImportController = new LeadImportController();
 $userController = new UserController();
 $paymentController = new PaymentController();
 $adminController = new AdminController();
@@ -41,6 +43,9 @@ $app->get('/simple-auth/user', [$authController, 'getUser']);
 $app->get('/leads', [$leadController, 'getLeads']);
 $app->get('/leads/{id}', [$leadController, 'getLead']);
 $app->post('/leads/{id}/purchase', [$leadController, 'purchaseLead']);
+
+// Lead import from external sources (N8N, KommoCRM)
+$app->post('/leads/import', [$leadImportController, 'importLead']);
 
 // User routes
 $app->get('/my-leads', [$userController, 'getMyLeads']); 
