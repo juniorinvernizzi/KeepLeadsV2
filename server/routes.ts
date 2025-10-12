@@ -297,6 +297,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
+      // Get current host to build dynamic URLs with fallback
+      const host = req.get('host') || process.env.REPLIT_DEV_DOMAIN || 'localhost:5000';
+      const protocol = req.get('X-Forwarded-Proto') || req.protocol || 'https';
+      const baseUrl = `${protocol}://${host}`;
+
       const preferenceData: any = {
         items: [
           {
@@ -318,13 +323,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           installments: 12,
         },
         back_urls: {
-          success: `https://fc09caa2-6723-48de-ac2d-2e5743aa8b86-00-13sj9i4zh2zds.picard.replit.dev/credits?status=success`,
-          failure: `https://fc09caa2-6723-48de-ac2d-2e5743aa8b86-00-13sj9i4zh2zds.picard.replit.dev/credits?status=failure`,
-          pending: `https://fc09caa2-6723-48de-ac2d-2e5743aa8b86-00-13sj9i4zh2zds.picard.replit.dev/credits?status=pending`,
+          success: `${baseUrl}/credits?status=success`,
+          failure: `${baseUrl}/credits?status=failure`,
+          pending: `${baseUrl}/credits?status=pending`,
         },
         auto_return: 'approved',
         external_reference: `user_${userId}_credits_${Date.now()}`,
-        notification_url: `https://fc09caa2-6723-48de-ac2d-2e5743aa8b86-00-13sj9i4zh2zds.picard.replit.dev/api/payment/webhook`,
+        notification_url: `${baseUrl}/api/payment/webhook`,
       };
 
       console.log('🔍 DEBUG: Mercado Pago preference data:', JSON.stringify(preferenceData, null, 2));
