@@ -1,0 +1,54 @@
+# Prompt - Integração Mercado Pago para Compra de Créditos no KeepLeads
+
+## Objetivo
+
+Implementar a integração com Mercado Pago para que o usuário possa comprar créditos dentro do sistema KeepLeads, utilizando os métodos de pagamento oferecidos pela plataforma (cartão de crédito, PIX, boleto, etc).
+
+## Requisitos Funcionais
+
+- **Página de Adicionar Créditos**
+    - Exibir opções de valores para compra de créditos (pré-definidos e/ou campo personalizado).
+    - Ao selecionar um valor, destacar visualmente o valor escolhido.
+    - Oferecer botões para seleção do método de pagamento: Cartão de Crédito, PIX, Boleto.
+    - Mostrar histórico das últimas transações do usuário; se não houver, exibir mensagem “Ainda não possui histórico de transações”.
+
+- **Integração Mercado Pago**
+    - Ao clicar no método de pagamento, iniciar o fluxo de pagamento via Mercado Pago.
+    - Gerar checkout preference/dinâmico, redirecionando ou exibindo modal de pagamento de acordo com a documentação oficial do Mercado Pago.
+    - Receber notificação (webhook ou callback) de pagamento aprovado.
+    - Após confirmação do pagamento, adicionar automaticamente os créditos ao saldo do usuário.
+    - Exibir mensagem de sucesso/erro ao usuário e atualizar o saldo em tempo real.
+
+## Requisitos Técnicos
+
+- **Frontend**
+    - Utilizar TailwindCSS para layout e componentes.
+    - Usar JavaScript para integração do checkout, exibição dinâmica das opções, atualização do saldo após compra.
+    - Feedback visual de carregamento, sucesso ou erro.
+
+- **Backend**
+    - Endpoint para gerar checkout preference do Mercado Pago (valor, usuário, etc).
+    - Endpoint para receber e processar notificações de pagamento (webhook/callback).
+    - Atualizar saldo do usuário após pagamento aprovado.
+    - Registrar histórico de transações (valor, data, método, status).
+
+- **Segurança**
+    - Validar e registrar apenas pagamentos aprovados.
+    - Proteger endpoints de callback/webhook contra fraudes.
+    - Não salvar dados sensíveis de cartão no sistema.
+
+## Observações
+
+- O fluxo deve ser rápido, seguro e intuitivo.
+- Documentar todas as funções e endpoints envolvidos.
+- Seguir boas práticas recomendadas pelo Mercado Pago.
+
+---
+
+**Resumo do fluxo:**  
+1. Usuário acessa página de créditos, escolhe valor e método de pagamento.
+2. Integração Mercado Pago processa pagamento.
+3. Após aprovação, créditos são adicionados ao saldo automaticamente e histórico atualizado.
+
+**Referência:**  
+Utilizar documentação oficial do Mercado Pago para checkout transparente, PIX, boleto e callbacks.
