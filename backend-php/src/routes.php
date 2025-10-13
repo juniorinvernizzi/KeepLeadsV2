@@ -67,3 +67,8 @@ $app->get('/admin/leads', [$adminController, 'getLeads']);
 $app->post('/admin/leads', [$adminController, 'createLead']);
 $app->put('/admin/leads/{id}', [$adminController, 'updateLead']);
 $app->delete('/admin/leads/{id}', [$adminController, 'deleteLead']);
+
+// Admin integration routes
+$app->get('/admin/integrations', [$adminController, 'getIntegrations']);
+$app->post('/admin/integrations', [$adminController, 'saveIntegrations']);
+$app->post('/admin/integrations/test-webhook', [$adminController, 'testWebhook']);

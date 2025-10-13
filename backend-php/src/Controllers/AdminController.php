@@ -55,9 +55,10 @@ class AdminController {
             return $response->withHeader('Content-Type', 'application/json');
 
         } catch (\Exception $e) {
-            $statusCode = $e->getCode() ?: 500;
-            $message = $e->getCode() === 401 ? 'Unauthorized' : 
-                      ($e->getCode() === 403 ? 'Forbidden' : 'Failed to fetch users');
+            $code = $e->getCode();
+            $statusCode = ($code === 401 || $code === 403) ? $code : 500;
+            $message = $code === 401 ? 'Unauthorized' : 
+                      ($code === 403 ? 'Forbidden' : 'Failed to fetch users');
             
             $response->getBody()->write(json_encode(['message' => $message]));
             return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
@@ -95,11 +96,11 @@ class AdminController {
             $stats['totalRevenue'] = $stmt->fetch()['total'];
 
             // Recent activity
-            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM users WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM users WHERE created_at >= NOW() - INTERVAL '30 days'");
             $stmt->execute();
             $stats['newUsersLast30Days'] = $stmt->fetch()['count'];
 
-            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM lead_purchases WHERE purchased_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)");
+            $stmt = $conn->prepare("SELECT COUNT(*) as count FROM lead_purchases WHERE purchased_at >= NOW() - INTERVAL '30 days'");
             $stmt->execute();
             $stats['purchasesLast30Days'] = $stmt->fetch()['count'];
 
@@ -107,11 +108,13 @@ class AdminController {
             return $response->withHeader('Content-Type', 'application/json');
 
         } catch (\Exception $e) {
-            $statusCode = $e->getCode() ?: 500;
-            $message = $e->getCode() === 401 ? 'Unauthorized' : 
-                      ($e->getCode() === 403 ? 'Forbidden' : 'Failed to fetch statistics');
+            $code = $e->getCode();
+            // Only use exception code if it's a valid HTTP status code (401, 403, etc)
+            $statusCode = ($code === 401 || $code === 403) ? $code : 500;
+            $message = $code === 401 ? 'Unauthorized' : 
+                      ($code === 403 ? 'Forbidden' : 'Failed to fetch statistics');
             
-            $response->getBody()->write(json_encode(['message' => $message]));
+            $response->getBody()->write(json_encode(['message' => $message, 'error' => $e->getMessage()]));
             return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
         }
     }
@@ -127,9 +130,10 @@ class AdminController {
             return $response->withHeader('Content-Type', 'application/json');
 
         } catch (\Exception $e) {
-            $statusCode = $e->getCode() ?: 500;
-            $message = $e->getCode() === 401 ? 'Unauthorized' : 
-                      ($e->getCode() === 403 ? 'Forbidden' : 'Failed to fetch leads');
+            $code = $e->getCode();
+            $statusCode = ($code === 401 || $code === 403) ? $code : 500;
+            $message = $code === 401 ? 'Unauthorized' : 
+                      ($code === 403 ? 'Forbidden' : 'Failed to fetch leads');
             
             $response->getBody()->write(json_encode(['message' => $message]));
             return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
@@ -187,9 +191,10 @@ class AdminController {
             return $response->withStatus(201)->withHeader('Content-Type', 'application/json');
 
         } catch (\Exception $e) {
-            $statusCode = $e->getCode() ?: 500;
-            $message = $e->getCode() === 401 ? 'Unauthorized' : 
-                      ($e->getCode() === 403 ? 'Forbidden' : 'Failed to create lead');
+            $code = $e->getCode();
+            $statusCode = ($code === 401 || $code === 403) ? $code : 500;
+            $message = $code === 401 ? 'Unauthorized' : 
+                      ($code === 403 ? 'Forbidden' : 'Failed to create lead');
             
             $response->getBody()->write(json_encode(['message' => $message]));
             return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
@@ -255,9 +260,10 @@ class AdminController {
             return $response->withHeader('Content-Type', 'application/json');
 
         } catch (\Exception $e) {
-            $statusCode = $e->getCode() ?: 500;
-            $message = $e->getCode() === 401 ? 'Unauthorized' : 
-                      ($e->getCode() === 403 ? 'Forbidden' : 'Failed to update lead');
+            $code = $e->getCode();
+            $statusCode = ($code === 401 || $code === 403) ? $code : 500;
+            $message = $code === 401 ? 'Unauthorized' : 
+                      ($code === 403 ? 'Forbidden' : 'Failed to update lead');
             
             $response->getBody()->write(json_encode(['message' => $message]));
             return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
@@ -291,9 +297,118 @@ class AdminController {
             return $response->withHeader('Content-Type', 'application/json');
 
         } catch (\Exception $e) {
-            $statusCode = $e->getCode() ?: 500;
-            $message = $e->getCode() === 401 ? 'Unauthorized' : 
-                      ($e->getCode() === 403 ? 'Forbidden' : 'Failed to delete lead');
+            $code = $e->getCode();
+            $statusCode = ($code === 401 || $code === 403) ? $code : 500;
+            $message = $code === 401 ? 'Unauthorized' : 
+                      ($code === 403 ? 'Forbidden' : 'Failed to delete lead');
+            
+            $response->getBody()->write(json_encode(['message' => $message]));
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        }
+    }
+
+    public function getIntegrations(Request $request, Response $response) {
+        try {
+            $this->requireAdmin();
+
+            $settings = [
+                'n8nWebhookUrl' => $_ENV['N8N_WEBHOOK_URL'] ?? '',
+                'n8nEnabled' => !empty($_ENV['N8N_WEBHOOK_URL']),
+                'kommoCrmApiKey' => $_ENV['KOMMO_API_KEY'] ?? '',
+                'kommoCrmEnabled' => !empty($_ENV['KOMMO_API_KEY']),
+                'mercadoPagoAccessToken' => $_ENV['MERCADO_PAGO_ACCESS_TOKEN'] ?? '',
+                'mercadoPagoEnabled' => !empty($_ENV['MERCADO_PAGO_ACCESS_TOKEN'])
+            ];
+
+            $response->getBody()->write(json_encode($settings));
+            return $response->withHeader('Content-Type', 'application/json');
+
+        } catch (\Exception $e) {
+            $code = $e->getCode();
+            $statusCode = ($code === 401 || $code === 403) ? $code : 500;
+            $message = $code === 401 ? 'Unauthorized' : 
+                      ($code === 403 ? 'Forbidden' : 'Failed to fetch integration settings');
+            
+            $response->getBody()->write(json_encode(['message' => $message]));
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        }
+    }
+
+    public function saveIntegrations(Request $request, Response $response) {
+        try {
+            $this->requireAdmin();
+
+            $response->getBody()->write(json_encode([
+                'success' => true,
+                'message' => 'Integration settings are read-only. Please update environment variables on the server.'
+            ]));
+            return $response->withHeader('Content-Type', 'application/json');
+
+        } catch (\Exception $e) {
+            $code = $e->getCode();
+            $statusCode = ($code === 401 || $code === 403) ? $code : 500;
+            $message = $code === 401 ? 'Unauthorized' : 
+                      ($code === 403 ? 'Forbidden' : 'Failed to save integration settings');
+            
+            $response->getBody()->write(json_encode(['message' => $message]));
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        }
+    }
+
+    public function testWebhook(Request $request, Response $response) {
+        try {
+            $this->requireAdmin();
+            $data = json_decode($request->getBody()->getContents(), true);
+            $url = $data['url'] ?? '';
+
+            if (empty($url)) {
+                $response->getBody()->write(json_encode([
+                    'message' => 'Webhook URL is required'
+                ]));
+                return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            }
+
+            // Test webhook with sample data
+            $testData = [
+                'test' => true,
+                'name' => 'Test Lead',
+                'email' => 'test@example.com',
+                'phone' => '11999999999'
+            ];
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($testData));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+            $result = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode >= 200 && $httpCode < 300) {
+                $response->getBody()->write(json_encode([
+                    'success' => true,
+                    'message' => 'Webhook test successful',
+                    'httpCode' => $httpCode
+                ]));
+            } else {
+                $response->getBody()->write(json_encode([
+                    'success' => false,
+                    'message' => 'Webhook test failed',
+                    'httpCode' => $httpCode
+                ]));
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+            }
+
+            return $response->withHeader('Content-Type', 'application/json');
+
+        } catch (\Exception $e) {
+            $code = $e->getCode();
+            $statusCode = ($code === 401 || $code === 403) ? $code : 500;
+            $message = $code === 401 ? 'Unauthorized' : 
+                      ($code === 403 ? 'Forbidden' : 'Failed to test webhook');
             
             $response->getBody()->write(json_encode(['message' => $message]));
             return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
