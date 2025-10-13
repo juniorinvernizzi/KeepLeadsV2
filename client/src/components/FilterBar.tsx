@@ -178,11 +178,11 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
           </div>
         </div>
         
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-slate-600">Preço:</span>
-            <div className="flex items-center space-x-4">
-              <div className="w-48">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
+            <span className="text-sm text-slate-600 whitespace-nowrap">Preço:</span>
+            <div className="flex items-center gap-3 sm:gap-4 flex-1 sm:flex-initial">
+              <div className="w-full sm:w-48">
                 <Slider
                   value={priceRange}
                   onValueChange={handlePriceRangeChange}
@@ -193,14 +193,14 @@ export default function FilterBar({ filters, onFiltersChange, companies }: Filte
                   data-testid="slider-price-range"
                 />
               </div>
-              <span className="text-sm font-medium text-slate-800" data-testid="text-price-range">
+              <span className="text-sm font-medium text-slate-800 whitespace-nowrap" data-testid="text-price-range">
                 R$ {priceRange[0]} - R$ {priceRange[1]}
               </span>
             </div>
           </div>
           
           <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={clearFilters} data-testid="button-clear-filters">
+            <Button variant="outline" onClick={clearFilters} data-testid="button-clear-filters" className="w-full sm:w-auto">
               Limpar filtros
             </Button>
           </div>

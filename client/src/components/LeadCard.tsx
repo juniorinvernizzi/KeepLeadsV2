@@ -202,54 +202,54 @@ export default function LeadCard({
           </div>
         </div>
 
-        <CardContent className="p-6">
+        <CardContent className="p-4 sm:p-6">
           {/* Informações principais em grid moderno */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-3 border border-blue-100">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-blue-100">
               <div className="flex items-center space-x-1 mb-1">
                 <User className="w-3 h-3 text-blue-600" />
-                <span className="text-xs font-medium text-blue-600">Idade</span>
+                <span className="text-[10px] sm:text-xs font-medium text-blue-600">Idade</span>
               </div>
-              <p className="text-sm font-bold text-gray-900">{lead.age} anos</p>
+              <p className="text-xs sm:text-sm font-bold text-gray-900">{lead.age} anos</p>
             </div>
 
-            <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-3 border border-emerald-100">
+            <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-emerald-100">
               <div className="flex items-center space-x-1 mb-1">
                 <Users className="w-3 h-3 text-emerald-600" />
-                <span className="text-xs font-medium text-emerald-600">
+                <span className="text-[10px] sm:text-xs font-medium text-emerald-600">
                   Vidas
                 </span>
               </div>
-              <p className="text-sm font-bold text-gray-900">
+              <p className="text-xs sm:text-sm font-bold text-gray-900">
                 {lead.availableLives}
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-3 border border-orange-100">
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-orange-100">
               <div className="flex items-center space-x-1 mb-1">
                 <CreditCard className="w-3 h-3 text-orange-600" />
-                <span className="text-xs font-medium text-orange-600">
+                <span className="text-[10px] sm:text-xs font-medium text-orange-600">
                   Plano
                 </span>
               </div>
-              <p className="text-sm font-bold text-gray-900 capitalize">
+              <p className="text-xs sm:text-sm font-bold text-gray-900 capitalize truncate">
                 {lead.planType}
               </p>
             </div>
           </div>
 
           {/* Preço com destaque especial */}
-          <div className="relative bg-gradient-to-br from-gray-100 to-gray-20 rounded-xl p-5 mb-6 overflow-hidden">
+          <div className="relative bg-gradient-to-br from-gray-100 to-gray-20 rounded-xl p-4 sm:p-5 mb-4 sm:mb-6 overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-gray-200/50 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
             <div className="relative text-center">
-              <p className="text-xs text-gray-800 mb-1">Valor do lead</p>
+              <p className="text-[10px] sm:text-xs text-gray-800 mb-1">Valor do lead</p>
               <div
-                className="text-3xl font-bold text-gray-800 mb-1"
+                className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1"
                 data-testid={`text-price-${lead.id}`}
               >
                 R$ {parseFloat(lead.price).toFixed(2)}
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-[10px] sm:text-xs text-gray-500">
                 Orçamento: R$ {parseFloat(lead.budgetMin).toFixed(0)} - R${" "}
                 {parseFloat(lead.budgetMax).toFixed(0)}
               </p>
