@@ -34,6 +34,59 @@ interface Purchase {
   id: string;
   price: string;
   purchasedAt: string;
+  // Backend returns snake_case, but we support both
+  purchase_price?: string;
+  purchased_at?: string;
+  purchase_status?: string;
+  purchasePrice?: string;
+  purchaseStatus?: string;
+  // Lead fields (both flattened and nested)
+  lead?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    age?: number;
+    city?: string;
+    state?: string;
+    insuranceCompanyId?: string;
+    insurance_company_id?: string;
+    planType?: string;
+    plan_type?: string;
+    budgetMin?: string;
+    budgetMax?: string;
+    budget_min?: string;
+    budget_max?: string;
+    quality?: string;
+    source?: string;
+    campaign?: string;
+    notes?: string;
+  };
+  name?: string;
+  email?: string;
+  phone?: string;
+  age?: number;
+  city?: string;
+  state?: string;
+  // Insurance company fields (both naming conventions)
+  insurance_company_id?: string;
+  insurance_company_name?: string;
+  insurance_company_color?: string;
+  insuranceCompanyId?: string;
+  insuranceCompanyName?: string;
+  insuranceCompanyColor?: string;
+  // Other lead fields
+  plan_type?: string;
+  planType?: string;
+  budget_min?: string;
+  budget_max?: string;
+  budgetMin?: string;
+  budgetMax?: string;
+  quality?: string;
+  source?: string;
+  campaign?: string;
+  notes?: string;
+  created_at?: string;
+  createdAt?: string;
 }
 
 interface Transaction {
@@ -205,7 +258,17 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-4">
                   {recentPurchases.map((purchase) => {
-                    const company = companies.find(c => c.id === purchase.lead?.insuranceCompanyId);
+                    // Support both flattened and nested lead data
+                    const leadName = purchase.name || purchase.lead?.name || 'Lead';
+                    const leadCity = purchase.city || purchase.lead?.city || '';
+                    const leadState = purchase.state || purchase.lead?.state || '';
+                    const insuranceCompanyId = purchase.insuranceCompanyId || purchase.insurance_company_id || purchase.lead?.insuranceCompanyId || purchase.lead?.insurance_company_id;
+                    const companyName = purchase.insuranceCompanyName || purchase.insurance_company_name || 
+                                      companies.find(c => c.id === insuranceCompanyId)?.name || 'N/A';
+                    const displayPrice = purchase.purchasePrice || purchase.purchase_price || purchase.price;
+                    const displayDate = purchase.purchasedAt || purchase.purchased_at || new Date().toISOString();
+                    const locationText = leadCity && leadState ? `${leadCity}/${leadState}` : leadCity || leadState || '—';
+                    
                     return (
                       <div key={purchase.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow">
                         <div className="flex items-center space-x-4">
@@ -213,16 +276,16 @@ export default function Dashboard() {
                             <Users className="w-6 h-6 text-green-600" />
                           </div>
                           <div>
-                            <h3 className="font-medium text-gray-900">{purchase.lead?.name}</h3>
+                            <h3 className="font-medium text-gray-900">{leadName}</h3>
                             <p className="text-sm text-gray-500">
-                              {purchase.lead?.city}/{purchase.lead?.state} • {company?.name || 'N/A'}
+                              {locationText} • {companyName}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-green-600">R$ {parseFloat(purchase.price).toFixed(2)}</p>
+                          <p className="font-bold text-green-600">R$ {parseFloat(displayPrice).toFixed(2)}</p>
                           <p className="text-sm text-gray-500">
-                            {formatDistanceToNow(new Date(purchase.purchasedAt), { addSuffix: true, locale: ptBR })}
+                            {formatDistanceToNow(new Date(displayDate), { addSuffix: true, locale: ptBR })}
                           </p>
                         </div>
                       </div>
@@ -408,26 +471,30 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {recentPurchases.map((purchase, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                            <Users className="w-5 h-5 text-purple-600" />
+                    {recentPurchases.map((purchase, index) => {
+                      const leadName = purchase.name || purchase.lead?.name || 'Lead Comprado';
+                      const displayPrice = purchase.purchasePrice || purchase.purchase_price || purchase.price;
+                      return (
+                        <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                              <Users className="w-5 h-5 text-purple-600" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm text-gray-900">
+                                {leadName}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                R$ {parseFloat(displayPrice).toFixed(2)}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-sm text-gray-900">
-                              Lead Comprado
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              R$ {parseFloat(purchase.price).toFixed(2)}
-                            </p>
-                          </div>
+                          <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                            Sucesso
+                          </Badge>
                         </div>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                          Sucesso
-                        </Badge>
-                      </div>
-                    ))}
+                      );
+                    })}
                     
                     <Link href="/my-leads">
                       <Button variant="outline" size="sm" className="w-full mt-4">
