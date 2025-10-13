@@ -70,11 +70,11 @@ export default function LeadsMarketplace() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="w-9/10 mx-auto py-8">
+        <div className="w-full">
           <div className="animate-pulse">
-            <div className="h-8 bg-slate-200 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-slate-200 rounded w-1/2 mb-8"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="h-8 bg-slate-200 rounded w-2/3 sm:w-1/3 mb-4"></div>
+            <div className="h-4 bg-slate-200 rounded w-full sm:w-1/2 mb-8"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-slate-200 rounded-xl h-80"></div>
               ))}
@@ -87,13 +87,13 @@ export default function LeadsMarketplace() {
 
   return (
     <Layout>
-      <div className="w-9/10 mx-auto py-8">
+      <div className="w-full">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2" data-testid="text-page-title">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-800 mb-2" data-testid="text-page-title">
             Marketplace de Leads
           </h1>
-          <p className="text-slate-600">Encontre leads qualificados de planos de saúde</p>
+          <p className="text-sm sm:text-base text-slate-600">Encontre leads qualificados de planos de saúde</p>
         </div>
 
         {/* Filter Bar */}

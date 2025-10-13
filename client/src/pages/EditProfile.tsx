@@ -52,10 +52,10 @@ export default function EditProfile() {
 
   return (
     <Layout>
-      <div className="w-9/10 mx-auto py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Editar Perfil</h1>
-          <p className="text-slate-600">Atualize suas informações pessoais</p>
+      <div className="w-full">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-800 mb-2">Editar Perfil</h1>
+          <p className="text-sm sm:text-base text-slate-600">Atualize suas informações pessoais</p>
         </div>
 
         <div className="max-w-2xl">

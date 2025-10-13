@@ -255,7 +255,7 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* Page content with full width and padding */}
         <main className="flex-1 overflow-auto">
-          <div className="px-4 sm:px-8 lg:px-[60px] py-8 max-w-full">
+          <div className="px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 py-4 sm:py-6 lg:py-8 w-full max-w-[1920px] mx-auto">
             {children}
           </div>
         </main>

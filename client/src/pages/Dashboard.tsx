@@ -114,13 +114,13 @@ export default function Dashboard() {
     
     return (
       <Layout>
-        <div className="w-9/10 mx-auto py-8">
+        <div className="w-full">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
               Meu Dashboard
             </h1>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               Acompanhe suas compras, saldo e atividades na plataforma
             </p>
           </div>

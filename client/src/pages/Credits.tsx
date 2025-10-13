@@ -166,7 +166,7 @@ export default function Credits() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="w-9/10 mx-auto py-8">
+        <div className="w-full">
           <div className="animate-pulse">
             <div className="h-8 bg-slate-200 rounded w-1/3 mb-8"></div>
             <div className="bg-slate-200 rounded-xl h-32 mb-8"></div>

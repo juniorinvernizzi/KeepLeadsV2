@@ -132,10 +132,10 @@ export default function Integrations() {
 
   return (
     <Layout>
-      <div className="w-9/10 mx-auto py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Integrações</h1>
-          <p className="text-slate-600">Configure as integrações externas do sistema</p>
+      <div className="w-full">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-800 mb-2">Integrações</h1>
+          <p className="text-sm sm:text-base text-slate-600">Configure as integrações externas do sistema</p>
         </div>
 
         <div className="space-y-6">
