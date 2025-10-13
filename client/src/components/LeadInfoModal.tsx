@@ -78,7 +78,7 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-3">
             <div 
@@ -109,7 +109,7 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
 
         <div className="space-y-6">
           {/* Header Stats */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold text-gray-900">
                 R$ {parseFloat(lead.price).toFixed(2)}
@@ -145,7 +145,7 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
           </div>
 
           {/* Lead Information */}
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-4">
               <h3 className="font-semibold text-gray-900 border-b pb-2">Informações Básicas</h3>
               
@@ -227,7 +227,7 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
           <div className="space-y-4">
             <h3 className="font-semibold text-gray-900 border-b pb-2">Informações de Marketing</h3>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="flex items-center space-x-3">
                 <Tag className="w-4 h-4 text-gray-400" />
                 <div>
