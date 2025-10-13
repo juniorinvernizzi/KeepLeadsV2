@@ -110,7 +110,10 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-lg transform lg:translate-x-0 lg:static lg:inset-0 transition duration-200 ease-in-out lg:transition-none`}>
+      <div 
+        className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-lg transform lg:translate-x-0 lg:static lg:inset-0 transition duration-200 ease-in-out lg:transition-none`}
+        data-testid="sidebar"
+      >
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-20 px-6 border-b border-gray-100">
           <div className="flex items-center space-x-3">
@@ -248,6 +251,7 @@ export default function Layout({ children }: LayoutProps) {
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-2 rounded-lg hover:bg-gray-100 bg-white shadow-sm border"
+            data-testid="button-menu"
           >
             <Menu className="w-5 h-5 text-gray-500" />
           </button>
