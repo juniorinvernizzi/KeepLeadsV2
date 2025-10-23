@@ -83,6 +83,10 @@ class AdminController {
             $stmt = $conn->query("SELECT COUNT(*) as count FROM leads");
             $stats['totalLeads'] = $stmt->fetch()['count'];
 
+            // Sold leads
+            $stmt = $conn->query("SELECT COUNT(*) as count FROM leads WHERE status = 'sold'");
+            $stats['soldLeads'] = $stmt->fetch()['count'];
+
             // Available leads
             $stmt = $conn->query("SELECT COUNT(*) as count FROM leads WHERE status = 'available'");
             $stats['availableLeads'] = $stmt->fetch()['count'];
@@ -94,6 +98,11 @@ class AdminController {
             // Revenue
             $stmt = $conn->query("SELECT COALESCE(SUM(amount), 0) as total FROM credit_transactions WHERE type = 'deposit'");
             $stats['totalRevenue'] = $stmt->fetch()['total'];
+
+            // Active users (users who made a purchase in the last 30 days)
+            $stmt = $conn->prepare("SELECT COUNT(DISTINCT user_id) as count FROM lead_purchases WHERE purchased_at >= NOW() - INTERVAL '30 days'");
+            $stmt->execute();
+            $stats['activeUsers'] = $stmt->fetch()['count'];
 
             // Recent activity
             $stmt = $conn->prepare("SELECT COUNT(*) as count FROM users WHERE created_at >= NOW() - INTERVAL '30 days'");
