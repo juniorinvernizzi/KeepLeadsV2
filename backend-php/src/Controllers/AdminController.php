@@ -496,6 +496,37 @@ class AdminController {
             $publicKey = $data['publicKey'] ?? '';
             $isActive = $data['isActive'] ?? true;
 
+            // Check if this is just an activation toggle (no token provided)
+            $isActivationOnly = empty($accessToken) && empty($publicKey);
+
+            if ($isActivationOnly) {
+                // Just update is_active status without touching credentials
+                $database = new \Database();
+                $conn = $database->getConnection();
+                
+                // Set this environment as active
+                $query = "UPDATE integration_settings SET is_active = true, updated_at = NOW()
+                          WHERE provider = 'mercado_pago' AND environment = :env";
+                $stmt = $conn->prepare($query);
+                $stmt->bindParam(':env', $environment);
+                $stmt->execute();
+                
+                // Deactivate the other environment
+                $otherEnv = $environment === 'test' ? 'production' : 'test';
+                $query = "UPDATE integration_settings SET is_active = false, updated_at = NOW()
+                          WHERE provider = 'mercado_pago' AND environment = :otherenv";
+                $stmt = $conn->prepare($query);
+                $stmt->bindParam(':otherenv', $otherEnv);
+                $stmt->execute();
+
+                $response->getBody()->write(json_encode([
+                    'success' => true,
+                    'message' => 'Ambiente ativado com sucesso',
+                    'environment' => $environment
+                ]));
+                return $response->withHeader('Content-Type', 'application/json');
+            }
+
             // Validate test token format
             if ($environment === 'test' && !empty($accessToken) && strpos($accessToken, 'TEST-') !== 0) {
                 $response->getBody()->write(json_encode([
@@ -512,7 +543,7 @@ class AdminController {
                 return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
             }
 
-            // Save settings to database
+            // Save settings to database (with new token)
             $setting = new \KeepLeads\Models\IntegrationSetting();
             $setting->provider = 'mercado_pago';
             $setting->environment = $environment;

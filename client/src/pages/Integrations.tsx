@@ -70,17 +70,18 @@ export default function Integrations() {
   const { data: integrationSettings } = useQuery<IntegrationSettings>({
     queryKey: ["/api/admin/integrations"],
     enabled: user?.role === "admin",
-    onSuccess: (data) => {
-      if (data) {
-        setSettings(data);
-      }
-    },
   });
 
   const { data: mpSettings, isLoading: isMpLoading } = useQuery<MercadoPagoSettings>({
     queryKey: ["/api/admin/integrations/mercadopago"],
     enabled: user?.role === "admin",
   });
+
+  useEffect(() => {
+    if (integrationSettings) {
+      setSettings(integrationSettings);
+    }
+  }, [integrationSettings]);
 
   useEffect(() => {
     if (mpSettings) {
