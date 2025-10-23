@@ -52,7 +52,9 @@ export default function Integrations() {
   });
 
   const [mpTestToken, setMpTestToken] = useState("");
+  const [mpTestPublicKey, setMpTestPublicKey] = useState("");
   const [mpProductionToken, setMpProductionToken] = useState("");
+  const [mpProductionPublicKey, setMpProductionPublicKey] = useState("");
   const [mpActiveEnv, setMpActiveEnv] = useState<'test' | 'production'>('test');
 
   // Redirect non-admin users
@@ -131,7 +133,7 @@ export default function Integrations() {
   });
 
   const saveMercadoPagoMutation = useMutation({
-    mutationFn: async (data: { environment: 'test' | 'production', accessToken: string, isActive: boolean }) => {
+    mutationFn: async (data: { environment: 'test' | 'production', accessToken: string, publicKey: string, isActive: boolean }) => {
       return await apiRequest("PUT", "/api/admin/integrations/mercadopago", data);
     },
     onSuccess: () => {
@@ -142,7 +144,9 @@ export default function Integrations() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/integrations/mercadopago"] });
       // Clear input fields
       setMpTestToken("");
+      setMpTestPublicKey("");
       setMpProductionToken("");
+      setMpProductionPublicKey("");
     },
     onError: (error: Error) => {
       toast({
@@ -171,10 +175,12 @@ export default function Integrations() {
 
   const handleSaveMercadoPago = (env: 'test' | 'production') => {
     const token = env === 'test' ? mpTestToken : mpProductionToken;
-    if (!token) {
+    const publicKey = env === 'test' ? mpTestPublicKey : mpProductionPublicKey;
+    
+    if (!token || !publicKey) {
       toast({
-        title: "Token necessário",
-        description: "Por favor, insira o token antes de salvar.",
+        title: "Credenciais necessárias",
+        description: "Por favor, insira o Access Token e a Public Key antes de salvar.",
         variant: "destructive",
       });
       return;
@@ -182,6 +188,7 @@ export default function Integrations() {
     saveMercadoPagoMutation.mutate({
       environment: env,
       accessToken: token,
+      publicKey: publicKey,
       isActive: env === mpActiveEnv
     });
   };
@@ -190,8 +197,8 @@ export default function Integrations() {
     const settings = env === 'test' ? mpSettings?.test : mpSettings?.production;
     if (!settings?.hasToken) {
       toast({
-        title: "Token necessário",
-        description: `Configure um token para o ambiente ${env === 'test' ? 'de teste' : 'de produção'} antes de ativá-lo.`,
+        title: "Credenciais necessárias",
+        description: `Configure Access Token e Public Key para o ambiente ${env === 'test' ? 'de teste' : 'de produção'} antes de ativá-lo.`,
         variant: "destructive",
       });
       return;
@@ -200,6 +207,7 @@ export default function Integrations() {
     saveMercadoPagoMutation.mutate({
       environment: env,
       accessToken: '', // Empty token since we're just activating
+      publicKey: '', // Empty key since we're just activating
       isActive: true
     });
     setMpActiveEnv(env);
@@ -433,12 +441,28 @@ export default function Integrations() {
                             Token deve começar com "TEST-"
                           </p>
                         </div>
+                        
+                        <div>
+                          <Label htmlFor="mp-test-public-key">Public Key de Teste</Label>
+                          <Input
+                            id="mp-test-public-key"
+                            type="password"
+                            placeholder="TEST-..."
+                            value={mpTestPublicKey}
+                            onChange={(e) => setMpTestPublicKey(e.target.value)}
+                            data-testid="input-mp-test-public-key"
+                          />
+                          <p className="text-xs text-slate-500 mt-1">
+                            Chave pública para o frontend
+                          </p>
+                        </div>
+                        
                         <Button
                           onClick={() => handleSaveMercadoPago('test')}
-                          disabled={saveMercadoPagoMutation.isPending || !mpTestToken}
+                          disabled={saveMercadoPagoMutation.isPending || !mpTestToken || !mpTestPublicKey}
                           data-testid="button-save-mp-test"
                         >
-                          {saveMercadoPagoMutation.isPending ? "Salvando..." : "Salvar Token de Teste"}
+                          {saveMercadoPagoMutation.isPending ? "Salvando..." : "Salvar Credenciais de Teste"}
                         </Button>
                       </div>
                     </TabsContent>
@@ -481,12 +505,28 @@ export default function Integrations() {
                             Token deve começar com "APP_USR-"
                           </p>
                         </div>
+                        
+                        <div>
+                          <Label htmlFor="mp-production-public-key">Public Key de Produção</Label>
+                          <Input
+                            id="mp-production-public-key"
+                            type="password"
+                            placeholder="APP_USR-..."
+                            value={mpProductionPublicKey}
+                            onChange={(e) => setMpProductionPublicKey(e.target.value)}
+                            data-testid="input-mp-production-public-key"
+                          />
+                          <p className="text-xs text-slate-500 mt-1">
+                            Chave pública para o frontend
+                          </p>
+                        </div>
+                        
                         <Button
                           onClick={() => handleSaveMercadoPago('production')}
-                          disabled={saveMercadoPagoMutation.isPending || !mpProductionToken}
+                          disabled={saveMercadoPagoMutation.isPending || !mpProductionToken || !mpProductionPublicKey}
                           data-testid="button-save-mp-production"
                         >
-                          {saveMercadoPagoMutation.isPending ? "Salvando..." : "Salvar Token de Produção"}
+                          {saveMercadoPagoMutation.isPending ? "Salvando..." : "Salvar Credenciais de Produção"}
                         </Button>
                       </div>
                     </TabsContent>
