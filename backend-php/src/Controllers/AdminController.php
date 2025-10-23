@@ -414,4 +414,147 @@ class AdminController {
             return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
         }
     }
+
+    public function getMercadoPagoSettings(Request $request, Response $response) {
+        try {
+            $this->requireAdmin();
+
+            $settings = \KeepLeads\Models\IntegrationSetting::getAll();
+            $mercadoPagoSettings = array_filter($settings, function($s) {
+                return $s->provider === 'mercado_pago';
+            });
+
+            $result = [
+                'test' => null,
+                'production' => null,
+                'activeEnvironment' => 'test'
+            ];
+
+            foreach ($mercadoPagoSettings as $setting) {
+                $settingData = [
+                    'accessToken' => $setting->access_token ? '***' . substr($setting->access_token, -8) : null,
+                    'publicKey' => $setting->public_key ? '***' . substr($setting->public_key, -8) : null,
+                    'isActive' => $setting->is_active,
+                    'hasToken' => !empty($setting->access_token)
+                ];
+
+                if ($setting->environment === 'test') {
+                    $result['test'] = $settingData;
+                    if ($setting->is_active) {
+                        $result['activeEnvironment'] = 'test';
+                    }
+                } else if ($setting->environment === 'production') {
+                    $result['production'] = $settingData;
+                    if ($setting->is_active) {
+                        $result['activeEnvironment'] = 'production';
+                    }
+                }
+            }
+
+            // Check for env fallback
+            $envToken = $_ENV['MERCADO_PAGO_ACCESS_TOKEN'] ?? '';
+            if ($envToken && !$result['test'] && !$result['production']) {
+                $isTest = strpos($envToken, 'TEST-') === 0;
+                $result['activeEnvironment'] = $isTest ? 'test' : 'production';
+                $result[$isTest ? 'test' : 'production'] = [
+                    'accessToken' => '***' . substr($envToken, -8),
+                    'publicKey' => null,
+                    'isActive' => true,
+                    'hasToken' => true,
+                    'source' => 'env'
+                ];
+            }
+
+            $response->getBody()->write(json_encode($result));
+            return $response->withHeader('Content-Type', 'application/json');
+
+        } catch (\Exception $e) {
+            $code = $e->getCode();
+            $statusCode = ($code === 401 || $code === 403) ? $code : 500;
+            $message = $code === 401 ? 'Unauthorized' : 
+                      ($code === 403 ? 'Forbidden' : 'Failed to fetch Mercado Pago settings');
+            
+            $response->getBody()->write(json_encode(['message' => $message]));
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        }
+    }
+
+    public function saveMercadoPagoSettings(Request $request, Response $response) {
+        try {
+            $this->requireAdmin();
+            $data = json_decode($request->getBody()->getContents(), true);
+
+            if (!isset($data['environment']) || !in_array($data['environment'], ['test', 'production'])) {
+                $response->getBody()->write(json_encode([
+                    'message' => 'Invalid environment. Must be "test" or "production"'
+                ]));
+                return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            }
+
+            $environment = $data['environment'];
+            $accessToken = $data['accessToken'] ?? '';
+            $publicKey = $data['publicKey'] ?? '';
+            $isActive = $data['isActive'] ?? true;
+
+            // Validate test token format
+            if ($environment === 'test' && !empty($accessToken) && strpos($accessToken, 'TEST-') !== 0) {
+                $response->getBody()->write(json_encode([
+                    'message' => 'Token de teste deve começar com "TEST-"'
+                ]));
+                return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            }
+
+            // Validate production token format
+            if ($environment === 'production' && !empty($accessToken) && strpos($accessToken, 'APP_USR-') !== 0) {
+                $response->getBody()->write(json_encode([
+                    'message' => 'Token de produção deve começar com "APP_USR-"'
+                ]));
+                return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            }
+
+            // Save settings to database
+            $setting = new \KeepLeads\Models\IntegrationSetting();
+            $setting->provider = 'mercado_pago';
+            $setting->environment = $environment;
+            $setting->access_token = $accessToken;
+            $setting->public_key = $publicKey;
+            $setting->is_active = $isActive;
+
+            if ($setting->upsert()) {
+                // If activating this environment, deactivate the other one
+                if ($isActive) {
+                    $otherEnv = $environment === 'test' ? 'production' : 'test';
+                    $database = new \Database();
+                    $conn = $database->getConnection();
+                    $query = "UPDATE integration_settings SET is_active = false 
+                              WHERE provider = 'mercado_pago' AND environment = :env";
+                    $stmt = $conn->prepare($query);
+                    $stmt->bindParam(':env', $otherEnv);
+                    $stmt->execute();
+                }
+
+                $response->getBody()->write(json_encode([
+                    'success' => true,
+                    'message' => 'Configurações salvas com sucesso',
+                    'environment' => $environment
+                ]));
+                return $response->withHeader('Content-Type', 'application/json');
+            } else {
+                $response->getBody()->write(json_encode([
+                    'message' => 'Failed to save settings'
+                ]));
+                return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+            }
+
+        } catch (\Exception $e) {
+            $code = $e->getCode();
+            $statusCode = ($code === 401 || $code === 403) ? $code : 500;
+            $message = $code === 401 ? 'Unauthorized' : 
+                      ($code === 403 ? 'Forbidden' : 'Failed to save Mercado Pago settings');
+            
+            error_log("Error saving Mercado Pago settings: " . $e->getMessage());
+            $response->getBody()->write(json_encode(['message' => $message]));
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        }
+    }
 }

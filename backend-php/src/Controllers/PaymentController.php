@@ -11,9 +11,20 @@ use MercadoPago\Item;
 
 class PaymentController {
 
+    private function getMercadoPagoToken() {
+        // Try to get from database first
+        $setting = \KeepLeads\Models\IntegrationSetting::findByProvider('mercado_pago');
+        if ($setting && !empty($setting->access_token) && $setting->is_active) {
+            return $setting->access_token;
+        }
+        
+        // Fallback to environment variable
+        return $_ENV['MERCADO_PAGO_ACCESS_TOKEN'] ?? '';
+    }
+
     public function __construct() {
-        // Initialize Mercado Pago SDK
-        $accessToken = $_ENV['MERCADO_PAGO_ACCESS_TOKEN'] ?? '';
+        // Initialize Mercado Pago SDK with token from database or env
+        $accessToken = $this->getMercadoPagoToken();
         if ($accessToken) {
             MercadoPago::setAccessToken($accessToken);
         }

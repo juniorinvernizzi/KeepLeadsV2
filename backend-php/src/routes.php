@@ -72,3 +72,5 @@ $app->delete('/admin/leads/{id}', [$adminController, 'deleteLead']);
 $app->get('/admin/integrations', [$adminController, 'getIntegrations']);
 $app->post('/admin/integrations', [$adminController, 'saveIntegrations']);
 $app->post('/admin/integrations/test-webhook', [$adminController, 'testWebhook']);
+$app->get('/admin/integrations/mercadopago', [$adminController, 'getMercadoPagoSettings']);
+$app->put('/admin/integrations/mercadopago', [$adminController, 'saveMercadoPagoSettings']);
