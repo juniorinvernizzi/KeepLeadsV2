@@ -57,6 +57,7 @@ $app->put('/profile', [$userController, 'updateProfile']); // Alias for frontend
 $app->get('/insurance-companies', [$leadController, 'getInsuranceCompanies']);
 
 // Payment routes
+$app->get('/payment/config', [$paymentController, 'getConfig']);
 $app->post('/payment/create-preference', [$paymentController, 'createPreference']);
 $app->post('/payment/webhook', [$paymentController, 'webhook']);
 

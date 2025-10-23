@@ -22,6 +22,17 @@ class PaymentController {
         return $_ENV['MERCADO_PAGO_ACCESS_TOKEN'] ?? '';
     }
 
+    private function getMercadoPagoPublicKey() {
+        // Try to get from database first
+        $setting = \KeepLeads\Models\IntegrationSetting::findByProvider('mercado_pago');
+        if ($setting && !empty($setting->public_key) && $setting->is_active) {
+            return $setting->public_key;
+        }
+        
+        // Fallback to environment variable (if needed)
+        return $_ENV['MERCADO_PAGO_PUBLIC_KEY'] ?? '';
+    }
+
     public function __construct() {
         // Initialize Mercado Pago SDK with token from database or env
         $accessToken = $this->getMercadoPagoToken();
@@ -252,6 +263,34 @@ class PaymentController {
             error_log("Webhook processing error: " . $e->getMessage());
             $response->getBody()->write('ERROR');
             return $response->withStatus(500);
+        }
+    }
+
+    public function getConfig(Request $request, Response $response) {
+        try {
+            $publicKey = $this->getMercadoPagoPublicKey();
+            
+            // Get active environment
+            $setting = \KeepLeads\Models\IntegrationSetting::findByProvider('mercado_pago');
+            $environment = 'test'; // default
+            
+            if ($setting && $setting->is_active) {
+                $environment = $setting->environment;
+            }
+            
+            $response->getBody()->write(json_encode([
+                'publicKey' => $publicKey,
+                'environment' => $environment
+            ]));
+            
+            return $response->withHeader('Content-Type', 'application/json');
+            
+        } catch (\Exception $e) {
+            error_log("Error getting payment config: " . $e->getMessage());
+            $response->getBody()->write(json_encode([
+                'message' => 'Failed to get payment configuration'
+            ]));
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
     }
 }
