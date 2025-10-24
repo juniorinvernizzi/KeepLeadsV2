@@ -51,6 +51,16 @@ class PaymentController {
     public function createPreference(Request $request, Response $response) {
         try {
             $userId = $this->requireAuth();
+            
+            // Validate Mercado Pago is configured
+            $accessToken = $this->getMercadoPagoToken();
+            if (empty($accessToken)) {
+                $response->getBody()->write(json_encode([
+                    'message' => 'Mercado Pago não está configurado. Entre em contato com o administrador.'
+                ]));
+                return $response->withStatus(503)->withHeader('Content-Type', 'application/json');
+            }
+            
             $data = json_decode($request->getBody()->getContents(), true);
 
             if (!isset($data['amount']) || !isset($data['description'])) {
