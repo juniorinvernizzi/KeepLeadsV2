@@ -291,16 +291,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mercado Pago payment routes
   app.post('/api/payment/create-preference', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
     try {
-      const { MercadoPagoConfig, Preference } = await import('mercadopago');
-      
-      const client = new MercadoPagoConfig({
-        accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
-        options: { timeout: 5000 }
-      });
+      // Validate Mercado Pago token
+      const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+      if (!mpToken || mpToken.trim() === '') {
+        console.error('❌ MERCADO_PAGO_ACCESS_TOKEN não está configurado');
+        return res.status(500).json({ 
+          message: "Mercado Pago não está configurado. Entre em contato com o administrador.",
+          code: "MP_TOKEN_NOT_CONFIGURED"
+        });
+      }
 
-      const preference = new Preference(client);
-      
+      // Validate request body
       const { amount, paymentMethod } = req.body;
+      if (!amount || typeof amount !== 'number' || amount < 10) {
+        console.error('❌ Valor inválido:', amount);
+        return res.status(400).json({ 
+          message: "Valor inválido. O valor mínimo é R$ 10,00",
+          code: "INVALID_AMOUNT"
+        });
+      }
+
+      if (!paymentMethod) {
+        console.error('❌ Método de pagamento não especificado');
+        return res.status(400).json({ 
+          message: "Método de pagamento não especificado",
+          code: "PAYMENT_METHOD_REQUIRED"
+        });
+      }
+
       const userId = req.session.userId;
       const user = await storage.getUser(userId);
 
@@ -308,10 +326,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
+      console.log('✅ Iniciando criação de preferência Mercado Pago');
+      console.log('   - Usuário:', user.email);
+      console.log('   - Valor:', amount);
+      console.log('   - Método:', paymentMethod);
+
+      const { MercadoPagoConfig, Preference } = await import('mercadopago');
+      
+      const client = new MercadoPagoConfig({
+        accessToken: mpToken,
+        options: { timeout: 5000 }
+      });
+
+      const preference = new Preference(client);
+
       // Get current host to build dynamic URLs with fallback
-      const host = req.get('host') || process.env.REPLIT_DEV_DOMAIN || 'localhost:5000';
-      const protocol = req.get('X-Forwarded-Proto') || req.protocol || 'https';
-      const baseUrl = `${protocol}://${host}`;
+      // Mercado Pago requires public URLs (not localhost) in production mode
+      const replitDomain = process.env.REPLIT_DOMAINS;
+      let baseUrl: string;
+      
+      if (replitDomain) {
+        // Use Replit public domain (HTTPS required for Mercado Pago)
+        baseUrl = `https://${replitDomain}`;
+      } else {
+        // Fallback to request host (might be localhost in dev)
+        const host = req.get('host') || 'localhost:5000';
+        const protocol = req.get('X-Forwarded-Proto') || req.protocol || 'http';
+        baseUrl = `${protocol}://${host}`;
+      }
+      
+      console.log('🌐 Base URL para Mercado Pago:', baseUrl);
 
       const preferenceData: any = {
         items: [
@@ -343,20 +387,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notification_url: `${baseUrl}/api/payment/webhook`,
       };
 
-      console.log('🔍 DEBUG: Mercado Pago preference data:', JSON.stringify(preferenceData, null, 2));
-      console.log('🔍 DEBUG: Host:', req.get('host'));
-      console.log('🔍 DEBUG: Protocol:', req.protocol);
+      console.log('📋 Dados da preferência:', JSON.stringify(preferenceData, null, 2));
       
       const result = await preference.create({ body: preferenceData });
+      
+      console.log('✅ Preferência criada com sucesso:', result.id);
       
       res.json({
         preferenceId: result.id,
         initPoint: result.init_point,
         sandboxInitPoint: result.sandbox_init_point,
       });
+    } catch (error: any) {
+      console.error("❌ Erro ao criar preferência Mercado Pago:");
+      console.error("   - Mensagem:", error.message);
+      console.error("   - Código de status:", error.status);
+      console.error("   - Resposta da API:", JSON.stringify(error.cause, null, 2));
+      console.error("   - Stack:", error.stack);
+      
+      // Return detailed error to frontend
+      res.status(500).json({ 
+        message: error.message || "Erro ao criar preferência de pagamento",
+        details: error.cause || error.response?.data || "Sem detalhes adicionais",
+        code: "MP_CREATE_PREFERENCE_ERROR"
+      });
+    }
+  });
+
+  // Check Mercado Pago configuration
+  app.get('/api/payment/config', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+      const isConfigured = mpToken && mpToken.trim() !== '';
+      
+      res.json({
+        configured: isConfigured,
+        message: isConfigured 
+          ? "Mercado Pago está configurado e pronto para uso" 
+          : "Mercado Pago não está configurado. Configure MERCADO_PAGO_ACCESS_TOKEN nas variáveis de ambiente."
+      });
     } catch (error) {
-      console.error("Error creating payment preference:", error);
-      res.status(500).json({ message: "Failed to create payment preference" });
+      res.status(500).json({ 
+        configured: false,
+        message: "Erro ao verificar configuração do Mercado Pago" 
+      });
     }
   });
 

@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { AlertCircle } from "lucide-react";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -23,11 +25,31 @@ export default function PaymentModal({
   paymentMethod 
 }: PaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
-  const [cvv, setCvv] = useState("");
-  const [cardName, setCardName] = useState("");
+  const [isCheckingConfig, setIsCheckingConfig] = useState(true);
+  const [isConfigured, setIsConfigured] = useState(true);
+  const [configMessage, setConfigMessage] = useState("");
   const { toast } = useToast();
+
+  // Check Mercado Pago configuration when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      checkConfiguration();
+    }
+  }, [isOpen]);
+
+  const checkConfiguration = async () => {
+    try {
+      setIsCheckingConfig(true);
+      const response = await apiRequest("GET", "/api/payment/config");
+      setIsConfigured((response as any).configured);
+      setConfigMessage((response as any).message);
+    } catch (error) {
+      setIsConfigured(false);
+      setConfigMessage("Erro ao verificar configuração do Mercado Pago");
+    } finally {
+      setIsCheckingConfig(false);
+    }
+  };
 
   const handlePayment = async () => {
     setIsProcessing(true);
@@ -48,11 +70,18 @@ export default function PaymentModal({
       }
     } catch (error: any) {
       setIsProcessing(false);
+      
+      // Show detailed error message
+      const errorMessage = error.message || "Não foi possível processar o pagamento";
+      const errorDetails = error.details ? JSON.stringify(error.details, null, 2) : null;
+      
       toast({
         title: "Erro no pagamento",
-        description: error.message || "Não foi possível processar o pagamento. Tente novamente.",
+        description: errorDetails ? `${errorMessage}\n\nDetalhes: ${errorDetails}` : errorMessage,
         variant: "destructive",
       });
+      
+      console.error("Erro detalhado:", error);
     }
   };
 
@@ -92,33 +121,52 @@ export default function PaymentModal({
             </div>
           </div>
 
-          {/* Payment Info */}
-          <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2v1h12V6H4zm0 3v5h12V9H4z" clipRule="evenodd" />
-              </svg>
+          {/* Configuration Status */}
+          {isCheckingConfig ? (
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+              <p className="text-slate-600 text-sm">Verificando configuração...</p>
             </div>
-            <h3 className="text-lg font-medium text-slate-900 mb-2">
-              {paymentMethod === "pix" ? "Pagamento via PIX" : "Pagamento via Cartão"}
-            </h3>
-            <p className="text-slate-600 mb-4">
-              Você será redirecionado para o ambiente seguro do Mercado Pago para finalizar o pagamento.
-            </p>
-            <Badge className={paymentMethod === "pix" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
-              {paymentMethod === "pix" ? "Aprovação instantânea" : "Parcelamento disponível"}
-            </Badge>
-          </div>
+          ) : !isConfigured ? (
+            <Alert variant="destructive" data-testid="alert-not-configured">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Mercado Pago não configurado</strong>
+                <p className="mt-1 text-sm">{configMessage}</p>
+                <p className="mt-2 text-sm">Entre em contato com o administrador para configurar o MERCADO_PAGO_ACCESS_TOKEN.</p>
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              {/* Payment Info */}
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2v1h12V6H4zm0 3v5h12V9H4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-slate-900 mb-2">
+                  {paymentMethod === "pix" ? "Pagamento via PIX" : "Pagamento via Cartão"}
+                </h3>
+                <p className="text-slate-600 mb-4">
+                  Você será redirecionado para o ambiente seguro do Mercado Pago para finalizar o pagamento.
+                </p>
+                <Badge className={paymentMethod === "pix" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
+                  {paymentMethod === "pix" ? "Aprovação instantânea" : "Parcelamento disponível"}
+                </Badge>
+              </div>
 
-          {/* Security Notice */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-sm text-green-800">Pagamento 100% seguro via Mercado Pago</span>
-            </div>
-          </div>
+              {/* Security Notice */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center">
+                  <svg className="w-5 h-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm text-green-800">Pagamento 100% seguro via Mercado Pago</span>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3">
@@ -134,7 +182,7 @@ export default function PaymentModal({
             <Button
               className="flex-1"
               onClick={handlePayment}
-              disabled={isProcessing}
+              disabled={isProcessing || !isConfigured || isCheckingConfig}
               data-testid="button-process-payment"
             >
               {isProcessing ? (
