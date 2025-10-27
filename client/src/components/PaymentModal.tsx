@@ -41,9 +41,10 @@ export default function PaymentModal({
     try {
       setIsCheckingConfig(true);
       const response = await apiRequest("GET", "/api/payment/config");
-      setIsConfigured((response as any).configured);
-      setConfigMessage((response as any).message);
-      console.log("✅ Configuração do Mercado Pago:", response);
+      const data = await response.json();
+      setIsConfigured(data.configured);
+      setConfigMessage(data.message);
+      console.log("✅ Configuração do Mercado Pago:", data);
     } catch (error: any) {
       console.error("❌ Erro ao verificar configuração:", error);
       console.error("   - Status:", error.status);
@@ -73,9 +74,11 @@ export default function PaymentModal({
         description: `Compra de R$ ${amount.toFixed(2)} em créditos`,
       });
 
-      if ((response as any).initPoint) {
+      const preference = await response.json();
+
+      if (preference.initPoint) {
         // Redirect to Mercado Pago checkout (same window)
-        window.location.href = (response as any).initPoint;
+        window.location.href = preference.initPoint;
       } else {
         throw new Error("Não foi possível criar o pagamento");
       }
