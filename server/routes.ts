@@ -927,15 +927,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId;
       const purchases = await storage.getUserPurchases(userId);
       
-      // Get lead details for each purchase
+      // Get lead details for each purchase and merge them
       const purchasesWithLeads = await Promise.all(
         purchases.map(async (purchase) => {
           const lead = await storage.getLeadById(purchase.leadId);
-          return { ...purchase, lead };
+          if (!lead) {
+            return null;
+          }
+          // Merge purchase info with lead data
+          return {
+            ...lead,
+            price: purchase.price,
+            purchasedAt: purchase.purchasedAt,
+            status: purchase.status || 'active',
+          };
         })
       );
       
-      res.json(purchasesWithLeads);
+      // Filter out any null values (leads that weren't found)
+      const validPurchases = purchasesWithLeads.filter(p => p !== null);
+      
+      res.json(validPurchases);
     } catch (error) {
       console.error("Error fetching user purchases:", error);
       res.status(500).json({ message: "Failed to fetch purchased leads" });
