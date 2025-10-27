@@ -23,9 +23,17 @@ interface ReplitAuthenticatedRequest extends Request {
 
 // Simple auth middleware
 const isSimpleAuthenticated = (req: any, res: any, next: any) => {
+  console.log('🔒 Verificando autenticação:');
+  console.log('   - Session exists:', !!req.session);
+  console.log('   - Session ID:', req.session?.id);
+  console.log('   - User ID in session:', req.session?.userId);
+  console.log('   - Path:', req.path);
+  
   if (req.session?.userId) {
     return next();
   }
+  
+  console.log('❌ Autenticação falhou - usuário não encontrado na sessão');
   return res.status(401).json({ message: "Unauthorized" });
 };
 
@@ -417,8 +425,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check Mercado Pago configuration
   app.get('/api/payment/config', isSimpleAuthenticated, async (req: any, res) => {
     try {
+      console.log('📱 Verificando configuração do Mercado Pago');
+      console.log('   - Usuário autenticado:', req.session?.userId ? 'Sim' : 'Não');
+      console.log('   - Session ID:', req.session?.id);
+      
       const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
       const isConfigured = mpToken && mpToken.trim() !== '';
+      
+      console.log('   - Token configurado:', isConfigured ? 'Sim' : 'Não');
       
       res.json({
         configured: isConfigured,

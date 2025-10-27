@@ -43,9 +43,20 @@ export default function PaymentModal({
       const response = await apiRequest("GET", "/api/payment/config");
       setIsConfigured((response as any).configured);
       setConfigMessage((response as any).message);
-    } catch (error) {
-      setIsConfigured(false);
-      setConfigMessage("Erro ao verificar configuração do Mercado Pago");
+      console.log("✅ Configuração do Mercado Pago:", response);
+    } catch (error: any) {
+      console.error("❌ Erro ao verificar configuração:", error);
+      console.error("   - Status:", error.status);
+      console.error("   - Message:", error.message);
+      
+      // Se for erro de autenticação, mostrar mensagem específica
+      if (error.status === 401 || error.message === "Unauthorized") {
+        setIsConfigured(false);
+        setConfigMessage("Sessão expirada. Faça login novamente.");
+      } else {
+        setIsConfigured(false);
+        setConfigMessage("Erro ao verificar configuração do Mercado Pago");
+      }
     } finally {
       setIsCheckingConfig(false);
     }
