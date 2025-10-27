@@ -6,6 +6,7 @@ import { insertLeadSchema, insertCreditTransactionSchema, insertUserSchema } fro
 import { sendLeadPurchaseNotification, sendAdminPurchaseNotification } from "./emailService";
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 
 interface ReplitAuthenticatedRequest extends Request {
   user?: {
@@ -36,7 +37,17 @@ const hashPassword = async (password: string): Promise<string> => {
 };
 
 const comparePassword = async (password: string, hash: string): Promise<boolean> => {
-  return await bcrypt.compare(password, hash);
+  // Try bcrypt first (new format)
+  try {
+    const bcryptMatch = await bcrypt.compare(password, hash);
+    if (bcryptMatch) return true;
+  } catch (e) {
+    // Not a bcrypt hash, try SHA256
+  }
+  
+  // Try SHA256 (legacy format)
+  const sha256Hash = crypto.createHash('sha256').update(password).digest('hex');
+  return sha256Hash === hash;
 };
 
 // Admin access middleware
