@@ -418,18 +418,272 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/payment/config', isSimpleAuthenticated, async (req: any, res) => {
     try {
       const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-      const isConfigured = mpToken && mpToken.trim() !== '';
+      const mpPublicKey = process.env.MERCADO_PAGO_PUBLIC_KEY;
+      const isConfigured = mpToken && mpToken.trim() !== '' && mpPublicKey && mpPublicKey.trim() !== '';
       
       res.json({
         configured: isConfigured,
+        publicKey: mpPublicKey || '',
         message: isConfigured 
           ? "Mercado Pago está configurado e pronto para uso" 
-          : "Mercado Pago não está configurado. Configure MERCADO_PAGO_ACCESS_TOKEN nas variáveis de ambiente."
+          : "Mercado Pago não está configurado. Configure MERCADO_PAGO_ACCESS_TOKEN e MERCADO_PAGO_PUBLIC_KEY."
       });
     } catch (error) {
       res.status(500).json({ 
         configured: false,
+        publicKey: '',
         message: "Erro ao verificar configuração do Mercado Pago" 
+      });
+    }
+  });
+
+  // Process credit card payment (transparent checkout)
+  app.post('/api/payment/process-card', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
+    try {
+      const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+      if (!mpToken || mpToken.trim() === '') {
+        return res.status(500).json({ 
+          message: "Mercado Pago não está configurado",
+          code: "MP_TOKEN_NOT_CONFIGURED"
+        });
+      }
+
+      const { amount, token, paymentMethodId, installments, payer } = req.body;
+      
+      if (!amount || typeof amount !== 'number' || amount < 10) {
+        return res.status(400).json({ 
+          message: "Valor inválido. O valor mínimo é R$ 10,00",
+          code: "INVALID_AMOUNT"
+        });
+      }
+
+      if (!token || !paymentMethodId) {
+        return res.status(400).json({ 
+          message: "Dados do cartão inválidos",
+          code: "INVALID_CARD_DATA"
+        });
+      }
+
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      console.log('💳 Processando pagamento com cartão');
+      console.log('   - Usuário:', user.email);
+      console.log('   - Valor:', amount);
+      console.log('   - Parcelas:', installments);
+
+      const { MercadoPagoConfig, Payment } = await import('mercadopago');
+      
+      const client = new MercadoPagoConfig({
+        accessToken: mpToken,
+        options: { timeout: 5000 }
+      });
+
+      const payment = new Payment(client);
+
+      const paymentData: any = {
+        transaction_amount: amount,
+        token,
+        description: `Créditos KeepLeads - R$ ${amount.toFixed(2)}`,
+        installments: installments || 1,
+        payment_method_id: paymentMethodId,
+        payer: {
+          email: payer?.email || user.email,
+          first_name: payer?.firstName || user.firstName,
+          last_name: payer?.lastName || user.lastName,
+        },
+        external_reference: `user_${userId}_credits_${Date.now()}`,
+      };
+
+      console.log('📋 Criando pagamento:', JSON.stringify(paymentData, null, 2));
+
+      const result = await payment.create({ body: paymentData });
+
+      console.log('✅ Pagamento criado:', result.id, 'Status:', result.status);
+
+      // If payment is approved, add credits immediately
+      if (result.status === 'approved') {
+        const newBalance = addCredits(user.credits, amount);
+        await storage.updateUserCredits(userId, newBalance);
+        
+        await storage.addCreditTransaction({
+          userId,
+          type: 'deposit',
+          amount: amount.toString(),
+          description: `Depósito via cartão de crédito`,
+          balanceBefore: user.credits,
+          balanceAfter: newBalance,
+          paymentMethod: 'credit_card',
+          paymentId: result.id?.toString() || null,
+        });
+      }
+
+      res.json({
+        paymentId: result.id,
+        status: result.status,
+        statusDetail: result.status_detail,
+        approved: result.status === 'approved'
+      });
+    } catch (error: any) {
+      console.error("❌ Erro ao processar pagamento com cartão:", error);
+      console.error("   - Mensagem:", error.message);
+      console.error("   - Causa:", JSON.stringify(error.cause, null, 2));
+      
+      res.status(500).json({ 
+        message: error.message || "Erro ao processar pagamento",
+        details: error.cause || {},
+        code: "CARD_PAYMENT_ERROR"
+      });
+    }
+  });
+
+  // Create PIX payment (transparent checkout)
+  app.post('/api/payment/create-pix', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
+    try {
+      const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+      if (!mpToken || mpToken.trim() === '') {
+        return res.status(500).json({ 
+          message: "Mercado Pago não está configurado",
+          code: "MP_TOKEN_NOT_CONFIGURED"
+        });
+      }
+
+      const { amount } = req.body;
+      
+      if (!amount || typeof amount !== 'number' || amount < 10) {
+        return res.status(400).json({ 
+          message: "Valor inválido. O valor mínimo é R$ 10,00",
+          code: "INVALID_AMOUNT"
+        });
+      }
+
+      const userId = req.session.userId;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      console.log('📱 Criando pagamento PIX');
+      console.log('   - Usuário:', user.email);
+      console.log('   - Valor:', amount);
+
+      const { MercadoPagoConfig, Payment } = await import('mercadopago');
+      
+      const client = new MercadoPagoConfig({
+        accessToken: mpToken,
+        options: { timeout: 5000 }
+      });
+
+      const payment = new Payment(client);
+
+      const paymentData: any = {
+        transaction_amount: amount,
+        description: `Créditos KeepLeads - R$ ${amount.toFixed(2)}`,
+        payment_method_id: 'pix',
+        payer: {
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+        },
+        external_reference: `user_${userId}_credits_${Date.now()}`,
+      };
+
+      const result = await payment.create({ body: paymentData });
+
+      console.log('✅ Pagamento PIX criado:', result.id);
+      console.log('   - QR Code:', result.point_of_interaction?.transaction_data?.qr_code ? 'Sim' : 'Não');
+
+      res.json({
+        paymentId: result.id,
+        status: result.status,
+        qrCode: result.point_of_interaction?.transaction_data?.qr_code || '',
+        qrCodeBase64: result.point_of_interaction?.transaction_data?.qr_code_base64 || '',
+        ticketUrl: result.point_of_interaction?.transaction_data?.ticket_url || ''
+      });
+    } catch (error: any) {
+      console.error("❌ Erro ao criar pagamento PIX:", error);
+      console.error("   - Mensagem:", error.message);
+      console.error("   - Causa:", JSON.stringify(error.cause, null, 2));
+      
+      res.status(500).json({ 
+        message: error.message || "Erro ao criar pagamento PIX",
+        details: error.cause || {},
+        code: "PIX_PAYMENT_ERROR"
+      });
+    }
+  });
+
+  // Get payment status
+  app.get('/api/payment/status/:paymentId', isSimpleAuthenticated, async (req: any, res) => {
+    try {
+      const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+      if (!mpToken || mpToken.trim() === '') {
+        return res.status(500).json({ 
+          message: "Mercado Pago não está configurado",
+          code: "MP_TOKEN_NOT_CONFIGURED"
+        });
+      }
+
+      const { paymentId } = req.params;
+
+      const { MercadoPagoConfig, Payment } = await import('mercadopago');
+      
+      const client = new MercadoPagoConfig({
+        accessToken: mpToken,
+        options: { timeout: 5000 }
+      });
+
+      const payment = new Payment(client);
+      const result = await payment.get({ id: paymentId });
+
+      // If payment just got approved, add credits
+      if (result.status === 'approved') {
+        const externalReference = result.external_reference;
+        const userId = externalReference?.split('_')[1];
+        const amount = result.transaction_amount;
+        
+        if (userId && userId === req.session.userId && amount) {
+          const user = await storage.getUser(userId);
+          if (user) {
+            // Check if transaction already exists to avoid duplicates
+            const transactions = await storage.getUserTransactions(userId);
+            const existingTx = transactions.find(tx => tx.paymentId === paymentId);
+            
+            if (!existingTx) {
+              const newBalance = addCredits(user.credits, amount);
+              await storage.updateUserCredits(userId, newBalance);
+              
+              await storage.addCreditTransaction({
+                userId,
+                type: 'deposit',
+                amount: amount.toString(),
+                description: `Depósito via ${result.payment_method?.type || 'desconhecido'}`,
+                balanceBefore: user.credits,
+                balanceAfter: newBalance,
+                paymentMethod: result.payment_method?.type || null,
+                paymentId: paymentId,
+              });
+              
+              console.log('✅ Créditos adicionados após confirmação do pagamento:', paymentId);
+            }
+          }
+        }
+      }
+
+      res.json({
+        paymentId: result.id,
+        status: result.status,
+        statusDetail: result.status_detail,
+        approved: result.status === 'approved'
+      });
+    } catch (error: any) {
+      console.error("❌ Erro ao consultar status do pagamento:", error);
+      res.status(500).json({ 
+        message: error.message || "Erro ao consultar pagamento",
+        code: "PAYMENT_STATUS_ERROR"
       });
     }
   });
@@ -459,22 +713,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (userId && amount) {
             const user = await storage.getUser(userId);
             if (user) {
-              const newBalance = addCredits(user.credits, amount);
+              // Check if transaction already exists to avoid duplicates
+              const transactions = await storage.getUserTransactions(userId);
+              const existingTx = transactions.find(tx => tx.paymentId === data.id);
               
-              // Update user credits
-              await storage.updateUserCredits(userId, newBalance);
-              
-              // Add transaction record
-              await storage.addCreditTransaction({
-                userId,
-                type: 'deposit',
-                amount: amount.toString(),
-                description: `Depósito via ${paymentInfo.payment_method?.type || 'desconhecido'}`,
-                balanceBefore: user.credits,
-                balanceAfter: newBalance,
-                paymentMethod: paymentInfo.payment_method?.type || null,
-                paymentId: paymentInfo.id?.toString() || null,
-              });
+              if (!existingTx) {
+                const newBalance = addCredits(user.credits, amount);
+                
+                // Update user credits
+                await storage.updateUserCredits(userId, newBalance);
+                
+                // Add transaction record
+                await storage.addCreditTransaction({
+                  userId,
+                  type: 'deposit',
+                  amount: amount.toString(),
+                  description: `Depósito via ${paymentInfo.payment_method?.type || 'desconhecido'}`,
+                  balanceBefore: user.credits,
+                  balanceAfter: newBalance,
+                  paymentMethod: paymentInfo.payment_method?.type || null,
+                  paymentId: paymentInfo.id?.toString() || null,
+                });
+                
+                console.log('✅ Webhook: Créditos adicionados via webhook:', data.id);
+              }
             }
           }
         }
