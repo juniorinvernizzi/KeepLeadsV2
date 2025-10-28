@@ -513,7 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId,
           type: 'deposit',
           amount: amount.toString(),
-          description: `Depósito via cartão de crédito`,
+          description: `Depósito via Mercado Pago - Cartão de Crédito`,
           balanceBefore: user.credits,
           balanceAfter: newBalance,
           paymentMethod: 'credit_card',
@@ -656,11 +656,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const newBalance = addCredits(user.credits, amount);
               await storage.updateUserCredits(userId, newBalance);
               
+              // Identify payment method for better description
+              const paymentType = result.payment_method?.type || 'desconhecido';
+              const paymentMethodId = result.payment_method?.id || '';
+              let paymentDescription = 'Depósito via Mercado Pago';
+              
+              if (paymentType === 'credit_card' || paymentType === 'debit_card') {
+                paymentDescription = 'Depósito via Mercado Pago - Cartão de Crédito';
+              } else if (paymentType === 'pix' || paymentMethodId === 'pix') {
+                paymentDescription = 'Depósito via Mercado Pago - PIX';
+              } else if (paymentType === 'ticket') {
+                paymentDescription = 'Depósito via Mercado Pago - Boleto';
+              }
+              
               await storage.addCreditTransaction({
                 userId,
                 type: 'deposit',
                 amount: amount.toString(),
-                description: `Depósito via ${result.payment_method?.type || 'desconhecido'}`,
+                description: paymentDescription,
                 balanceBefore: user.credits,
                 balanceAfter: newBalance,
                 paymentMethod: result.payment_method?.type || null,
@@ -723,12 +736,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 // Update user credits
                 await storage.updateUserCredits(userId, newBalance);
                 
+                // Identify payment method for better description
+                const paymentType = paymentInfo.payment_method?.type || 'desconhecido';
+                const paymentMethodId = paymentInfo.payment_method?.id || '';
+                let paymentDescription = 'Depósito via Mercado Pago';
+                
+                if (paymentType === 'credit_card' || paymentType === 'debit_card') {
+                  paymentDescription = 'Depósito via Mercado Pago - Cartão de Crédito';
+                } else if (paymentType === 'pix' || paymentMethodId === 'pix') {
+                  paymentDescription = 'Depósito via Mercado Pago - PIX';
+                } else if (paymentType === 'ticket') {
+                  paymentDescription = 'Depósito via Mercado Pago - Boleto';
+                }
+                
                 // Add transaction record
                 await storage.addCreditTransaction({
                   userId,
                   type: 'deposit',
                   amount: amount.toString(),
-                  description: `Depósito via ${paymentInfo.payment_method?.type || 'desconhecido'}`,
+                  description: paymentDescription,
                   balanceBefore: user.credits,
                   balanceAfter: newBalance,
                   paymentMethod: paymentInfo.payment_method?.type || null,
