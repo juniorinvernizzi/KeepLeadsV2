@@ -79,14 +79,14 @@ export default function Layout({ children }: LayoutProps) {
             label: "Gerenciar Leads",
             icon: <FolderOpen className="w-5 h-5" />,
           },
-          {
+          /*{
             path: "/admin/test-import",
             label: "Testar Importação",
             icon: <TestTube className="w-5 h-5" />,
-          },
+          },*/
           {
             path: "/admin",
-            label: "Painel Admin",
+            label: "Configurações",
             icon: <Settings className="w-5 h-5" />,
           },
         ]
