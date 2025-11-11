@@ -263,7 +263,7 @@ export default function Layout({ children }: LayoutProps) {
         </header>
 
         {/* Mobile menu button */}
-        <div className="lg:hidden absolute top-4 left-4 z-10">
+        <div className="lg:hidden fixed top-4 left-4 z-50">
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-2 rounded-lg hover:bg-gray-100 bg-white shadow-sm border"
