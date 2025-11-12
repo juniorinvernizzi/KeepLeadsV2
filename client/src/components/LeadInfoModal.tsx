@@ -159,28 +159,10 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
                 </div>
                 
                 <div className="flex items-center space-x-3">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Idade</p>
-                    <p className="font-medium">{lead.age} anos</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
                   <Building className="w-4 h-4 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Tipo de Plano</p>
                     <p className="font-medium capitalize">{lead.planType}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <CreditCard className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-500">Orçamento</p>
-                    <p className="font-medium">
-                      R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}
-                    </p>
                   </div>
                 </div>
               </div>
@@ -232,7 +214,7 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
                 <Tag className="w-4 h-4 text-gray-400" />
                 <div>
                   <p className="text-sm text-gray-500">Origem</p>
-                  <p className="font-medium">{lead.source}</p>
+                  <p className="font-medium">Meta Facebook</p>
                 </div>
               </div>
               
@@ -240,7 +222,7 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
                 <Users className="w-4 h-4 text-gray-400" />
                 <div>
                   <p className="text-sm text-gray-500">Campanha</p>
-                  <p className="font-medium">{lead.campaign || 'Não informado'}</p>
+                  <p className="font-medium">Plano de Saúde</p>
                 </div>
               </div>
             </div>
