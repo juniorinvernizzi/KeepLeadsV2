@@ -149,6 +149,8 @@ export default function ManageLeads() {
         insuranceCompanyId: null, // No company filtering
       };
 
+      console.log("Submitting lead data - quality:", leadData.quality, "status:", leadData.status);
+
       if (editingLead) {
         return apiRequest("PUT", `/api/admin/leads/${editingLead.id}`, leadData);
       } else {

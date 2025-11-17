@@ -1176,13 +1176,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Updating lead:", req.params.id, JSON.stringify(req.body, null, 2));
       
       const validatedData = insertLeadSchema.parse(req.body);
+      console.log("Validated data - quality:", validatedData.quality, "status:", validatedData.status);
+      
       const lead = await storage.updateLead(req.params.id, validatedData);
       
       if (!lead) {
         return res.status(404).json({ message: "Lead não encontrado" });
       }
       
-      console.log("Lead updated successfully:", lead.id);
+      console.log("Lead updated successfully - quality:", lead.quality, "status:", lead.status);
       res.json(lead);
     } catch (error) {
       console.error("Error updating lead:", error);
