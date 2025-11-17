@@ -51,7 +51,6 @@ const leadFormSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("E-mail inválido"),
   phone: z.string().min(1, "Telefone é obrigatório"),
-  age: z.number().min(18, "Idade mínima é 18 anos").max(120, "Idade máxima é 120 anos"),
   city: z.string().optional(),
   state: z.string().min(1, "Estado é obrigatório"),
   planType: z.string().min(1, "Tipo de plano é obrigatório"),
@@ -66,6 +65,36 @@ const leadFormSchema = z.object({
 
 type LeadFormData = z.infer<typeof leadFormSchema>;
 
+const BRAZILIAN_STATES = [
+  { code: "AC", name: "Acre" },
+  { code: "AL", name: "Alagoas" },
+  { code: "AP", name: "Amapá" },
+  { code: "AM", name: "Amazonas" },
+  { code: "BA", name: "Bahia" },
+  { code: "CE", name: "Ceará" },
+  { code: "DF", name: "Distrito Federal" },
+  { code: "ES", name: "Espírito Santo" },
+  { code: "GO", name: "Goiás" },
+  { code: "MA", name: "Maranhão" },
+  { code: "MT", name: "Mato Grosso" },
+  { code: "MS", name: "Mato Grosso do Sul" },
+  { code: "MG", name: "Minas Gerais" },
+  { code: "PA", name: "Pará" },
+  { code: "PB", name: "Paraíba" },
+  { code: "PR", name: "Paraná" },
+  { code: "PE", name: "Pernambuco" },
+  { code: "PI", name: "Piauí" },
+  { code: "RJ", name: "Rio de Janeiro" },
+  { code: "RN", name: "Rio Grande do Norte" },
+  { code: "RS", name: "Rio Grande do Sul" },
+  { code: "RO", name: "Rondônia" },
+  { code: "RR", name: "Roraima" },
+  { code: "SC", name: "Santa Catarina" },
+  { code: "SP", name: "São Paulo" },
+  { code: "SE", name: "Sergipe" },
+  { code: "TO", name: "Tocantins" },
+];
+
 export default function ManageLeads() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -78,7 +107,6 @@ export default function ManageLeads() {
       name: "",
       email: "",
       phone: "",
-      age: 25,
       city: "",
       state: "",
       planType: "individual",
@@ -115,7 +143,10 @@ export default function ManageLeads() {
     mutationFn: async (data: LeadFormData) => {
       const leadData = {
         ...data,
-        price: parseFloat(data.price),
+        age: 30, // Default value for hidden field
+        budgetMin: "0.00", // Default value for hidden field
+        budgetMax: "0.00", // Default value for hidden field
+        insuranceCompanyId: null, // No company filtering
       };
 
       if (editingLead) {
@@ -174,7 +205,6 @@ export default function ManageLeads() {
       name: lead.name,
       email: lead.email,
       phone: lead.phone,
-      age: lead.age,
       city: lead.city || "",
       state: lead.state,
       planType: lead.planType,
@@ -422,9 +452,20 @@ export default function ManageLeads() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Estado</FormLabel>
-                        <FormControl>
-                          <Input placeholder="SP" {...field} />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o estado" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="max-h-60">
+                            {BRAZILIAN_STATES.map((state) => (
+                              <SelectItem key={state.code} value={state.code}>
+                                {state.code} - {state.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -435,7 +476,7 @@ export default function ManageLeads() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tipo de Plano</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione o tipo" />
@@ -500,7 +541,7 @@ export default function ManageLeads() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Qualidade</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione a qualidade" />
@@ -522,7 +563,7 @@ export default function ManageLeads() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione o status" />
