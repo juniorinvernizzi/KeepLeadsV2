@@ -131,23 +131,29 @@ export default function LeadCard({
 
   const getQualityBadge = () => {
     switch (lead.quality) {
-      case "high":
+      case "gold":
         return {
-          label: "Premium",
-          color: "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white",
+          label: "Ouro",
+          color: "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white",
           icon: <Star className="w-3 h-3" />,
         };
-      case "medium":
+      case "silver":
         return {
-          label: "Padrão",
-          color: "bg-gradient-to-r from-blue-500 to-blue-600 text-white",
+          label: "Prata",
+          color: "bg-gradient-to-r from-gray-400 to-gray-500 text-white",
           icon: <Shield className="w-3 h-3" />,
+        };
+      case "bronze":
+        return {
+          label: "Bronze",
+          color: "bg-gradient-to-r from-orange-500 to-orange-600 text-white",
+          icon: <Clock className="w-3 h-3" />,
         };
       default:
         return {
-          label: "Básico",
+          label: "Padrão",
           color: "bg-gradient-to-r from-gray-500 to-gray-600 text-white",
-          icon: <Clock className="w-3 h-3" />,
+          icon: <Shield className="w-3 h-3" />,
         };
     }
   };
@@ -164,19 +170,9 @@ export default function LeadCard({
         {/* Header com gradiente */}
         <div className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600 p-4">
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-lg"
-                style={{ backgroundColor: company?.color || "#7C3AED" }}
-              >
-                {company?.name?.charAt(0) || "L"}
-              </div>
-              <div>
-                <h3 className="font-semibold text-white text-sm">
-                  {company?.name || "Operadora"}
-                </h3>
-                <p className="text-xs text-purple-100">Plano de Saúde</p>
-              </div>
+            <div>
+              <h3 className="font-semibold text-white text-sm">Plano de Saúde</h3>
+              <p className="text-xs text-purple-100">Lead Qualificado</p>
             </div>
             <div
               className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${qualityBadge.color}`}
@@ -193,7 +189,7 @@ export default function LeadCard({
                 className="text-sm font-medium"
                 data-testid={`text-location-${lead.id}`}
               >
-                {lead.city}, {lead.state}
+                {lead.city ? `${lead.city}, ${lead.state}` : lead.state}
               </span>
             </div>
             <div className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
@@ -204,15 +200,7 @@ export default function LeadCard({
 
         <CardContent className="p-4 sm:p-6">
           {/* Informações principais em grid moderno */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4 sm:mb-6">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-blue-100">
-              <div className="flex items-center space-x-1 mb-1">
-                <User className="w-3 h-3 text-blue-600" />
-                <span className="text-[10px] sm:text-xs font-medium text-blue-600">Idade</span>
-              </div>
-              <p className="text-xs sm:text-sm font-bold text-gray-900">{lead.age} anos</p>
-            </div>
-
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
             <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-emerald-100">
               <div className="flex items-center space-x-1 mb-1">
                 <Users className="w-3 h-3 text-emerald-600" />
@@ -244,15 +232,11 @@ export default function LeadCard({
             <div className="relative text-center">
               <p className="text-[10px] sm:text-xs text-gray-800 mb-1">Valor do lead</p>
               <div
-                className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1"
+                className="text-2xl sm:text-3xl font-bold text-gray-800"
                 data-testid={`text-price-${lead.id}`}
               >
                 R$ {parseFloat(lead.price).toFixed(2)}
               </div>
-              <p className="text-[10px] sm:text-xs text-gray-500">
-                Orçamento: R$ {parseFloat(lead.budgetMin).toFixed(0)} - R${" "}
-                {parseFloat(lead.budgetMax).toFixed(0)}
-              </p>
             </div>
           </div>
 

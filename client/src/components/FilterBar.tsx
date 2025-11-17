@@ -13,8 +13,6 @@ import { Slider } from "@/components/ui/slider";
 
 interface FilterBarProps {
   filters: {
-    insuranceCompany: string;
-    ageRange: string;
     city: string;
     planType: string;
     livesCount: string;
@@ -48,14 +46,6 @@ export default function FilterBar({
     "Manaus",
   ];
 
-  const ageRanges = [
-    { value: "18-25", label: "18-25 anos" },
-    { value: "26-35", label: "26-35 anos" },
-    { value: "36-45", label: "36-45 anos" },
-    { value: "46-60", label: "46-60 anos" },
-    { value: "60-120", label: "60+ anos" },
-  ];
-
   const planTypes = [
     { value: "individual", label: "Individual" },
     { value: "familiar", label: "Familiar" },
@@ -87,8 +77,6 @@ export default function FilterBar({
 
   const clearFilters = () => {
     const emptyFilters = {
-      insuranceCompany: "all",
-      ageRange: "all",
       city: "all",
       planType: "all",
       livesCount: "all",
@@ -101,49 +89,7 @@ export default function FilterBar({
   return (
     <Card className="mb-8">
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-          <div className="space-y-2">
-            <Label htmlFor="company">Operadora</Label>
-            <Select
-              value={filters.insuranceCompany}
-              onValueChange={(value) =>
-                handleFilterChange("insuranceCompany", value)
-              }
-            >
-              <SelectTrigger data-testid="select-company">
-                <SelectValue placeholder="Todas as operadoras" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as operadoras</SelectItem>
-                {companies.map((company) => (
-                  <SelectItem key={company.id} value={company.id}>
-                    {company.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="ageRange">Faixa Etária</Label>
-            <Select
-              value={filters.ageRange}
-              onValueChange={(value) => handleFilterChange("ageRange", value)}
-            >
-              <SelectTrigger data-testid="select-age-range">
-                <SelectValue placeholder="Todas as idades" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as idades</SelectItem>
-                {ageRanges.map((range) => (
-                  <SelectItem key={range.value} value={range.value}>
-                    {range.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
           <div className="space-y-2">
             <Label htmlFor="city">Localização</Label>
             <Select

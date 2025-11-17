@@ -67,11 +67,20 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
     (Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24)
   );
 
+  const getQualityLabel = (quality: string) => {
+    switch (quality) {
+      case 'gold': return 'Ouro';
+      case 'silver': return 'Prata';
+      case 'bronze': return 'Bronze';
+      default: return quality;
+    }
+  };
+
   const getQualityColor = (quality: string) => {
-    switch (quality.toUpperCase()) {
-      case 'A': return 'bg-green-100 text-green-800 border-green-200';
-      case 'B': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'C': return 'bg-red-100 text-red-800 border-red-200';
+    switch (quality) {
+      case 'gold': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'silver': return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'bronze': return 'bg-orange-100 text-orange-800 border-orange-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
@@ -86,22 +95,11 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
         {/* Header */}
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center space-x-2">
-              <div 
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm font-bold"
-                style={{ backgroundColor: company?.color || '#7C3AED' }}
-              >
-                {company?.name?.charAt(0) || 'L'}
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 text-sm">
-                  {company?.name || 'Operadora'}
-                </h3>
-                <p className="text-xs text-gray-500">Plano de Saúde</p>
-              </div>
+            <div className="text-sm font-semibold text-gray-900">
+              Plano de Saúde
             </div>
             <Badge className={`text-xs ${getQualityColor(lead.quality)}`}>
-              {lead.quality === 'high' ? 'Alta' : lead.quality === 'medium' ? 'Média' : 'Baixa'}
+              {getQualityLabel(lead.quality)}
             </Badge>
           </div>
           
@@ -126,16 +124,8 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
                 Localização
               </span>
               <span className="font-medium text-gray-900" data-testid={`text-location-${lead.id}`}>
-                {lead.city}, {lead.state}
+                {lead.city ? `${lead.city}, ${lead.state}` : lead.state}
               </span>
-            </div>
-            
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500 flex items-center">
-                <User className="w-3 h-3 mr-1" />
-                Idade
-              </span>
-              <span className="font-medium text-gray-900">{lead.age} anos</span>
             </div>
             
             <div className="flex items-center justify-between text-sm">
@@ -144,10 +134,8 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
             </div>
             
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Orçamento</span>
-              <span className="font-medium text-gray-900">
-                R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}
-              </span>
+              <span className="text-gray-500">Tipo de Plano</span>
+              <span className="font-medium text-gray-900 capitalize">{lead.planType}</span>
             </div>
           </div>
 
@@ -185,16 +173,8 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
                   <div>
                     <p className="text-xs text-gray-500">Localização</p>
                     <p className="font-medium" data-testid={`text-location-${lead.id}`}>
-                      {lead.city}, {lead.state}
+                      {lead.city ? `${lead.city}, ${lead.state}` : lead.state}
                     </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">Idade</p>
-                    <p className="font-medium">{lead.age} anos</p>
                   </div>
                 </div>
                 
@@ -207,20 +187,18 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <Star className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">Orçamento</p>
-                    <p className="font-medium">
-                      R$ {parseFloat(lead.budgetMin).toFixed(0)} - R$ {parseFloat(lead.budgetMax).toFixed(0)}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
                   <User className="w-4 h-4 text-gray-400" />
                   <div>
                     <p className="text-xs text-gray-500">Vidas Disponíveis</p>
                     <p className="font-medium">{lead.availableLives} vida{lead.availableLives > 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Star className="w-4 h-4 text-gray-400" />
+                  <div>
+                    <p className="text-xs text-gray-500">Qualidade</p>
+                    <p className="font-medium">{getQualityLabel(lead.quality)}</p>
                   </div>
                 </div>
               </div>
@@ -266,8 +244,6 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
 export default function PublicLeads() {
   const [filters, setFilters] = useState({
     search: "",
-    insuranceCompany: "all",
-    ageRange: "all",
     city: "all",
     minPrice: "",
     maxPrice: "",
@@ -300,14 +276,6 @@ export default function PublicLeads() {
     "Campinas", "Florianópolis"
   ];
 
-  const ageRanges = [
-    { value: "18-25", label: "18-25 anos" },
-    { value: "26-35", label: "26-35 anos" },
-    { value: "36-45", label: "36-45 anos" },
-    { value: "46-60", label: "46-60 anos" },
-    { value: "60-120", label: "60+ anos" },
-  ];
-
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
@@ -324,8 +292,6 @@ export default function PublicLeads() {
   const clearFilters = () => {
     const emptyFilters = {
       search: "",
-      insuranceCompany: "all",
-      ageRange: "all",
       city: "all",
       minPrice: "",
       maxPrice: "",
@@ -385,41 +351,7 @@ export default function PublicLeads() {
         {/* Filters */}
         <Card className="mb-8">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-              <div className="space-y-2">
-                <Label>Operadora</Label>
-                <Select value={filters.insuranceCompany} onValueChange={(value) => handleFilterChange("insuranceCompany", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todas as operadoras" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as operadoras</SelectItem>
-                    {companies.map((company) => (
-                      <SelectItem key={company.id} value={company.id}>
-                        {company.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Faixa Etária</Label>
-                <Select value={filters.ageRange} onValueChange={(value) => handleFilterChange("ageRange", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todas as idades" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as idades</SelectItem>
-                    {ageRanges.map((range) => (
-                      <SelectItem key={range.value} value={range.value}>
-                        {range.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div className="space-y-2">
                 <Label>Cidade</Label>
                 <Select value={filters.city} onValueChange={(value) => handleFilterChange("city", value)}>

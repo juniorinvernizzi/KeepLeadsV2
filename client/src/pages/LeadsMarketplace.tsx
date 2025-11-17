@@ -32,8 +32,6 @@ interface Lead {
 
 export default function LeadsMarketplace() {
   const [filters, setFilters] = useState({
-    insuranceCompany: "all",
-    ageRange: "all",
     city: "all",
     planType: "all",
     livesCount: "all",
@@ -147,8 +145,6 @@ export default function LeadsMarketplace() {
             <Button 
               variant="outline" 
               onClick={() => handleFilterChange({
-                insuranceCompany: "all",
-                ageRange: "all", 
                 city: "all",
                 planType: "all",
                 livesCount: "all",
