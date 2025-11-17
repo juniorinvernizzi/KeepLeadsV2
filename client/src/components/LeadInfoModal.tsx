@@ -42,12 +42,6 @@ interface LeadInfoModalProps {
 }
 
 export default function LeadInfoModal({ isOpen, onClose, lead, companies }: LeadInfoModalProps) {
-  const company = companies.find(c => c.id === lead.insuranceCompanyId) || {
-    id: lead.insuranceCompanyId,
-    name: lead.insuranceCompanyId,
-    color: "#7C3AED"
-  };
-
   const maskSensitiveInfo = (text: string, type: 'email' | 'phone' | 'name'): string => {
     switch (type) {
       case 'email':
@@ -64,11 +58,20 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
   };
 
   const getQualityColor = (quality: string) => {
-    switch (quality.toUpperCase()) {
-      case 'A': return 'bg-green-100 text-green-800 border-green-200';
-      case 'B': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'C': return 'bg-red-100 text-red-800 border-red-200';
+    switch (quality.toLowerCase()) {
+      case 'gold': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'silver': return 'bg-gray-200 text-gray-800 border-gray-300';
+      case 'bronze': return 'bg-orange-100 text-orange-800 border-orange-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getQualityLabel = (quality: string) => {
+    switch (quality.toLowerCase()) {
+      case 'gold': return 'Ouro';
+      case 'silver': return 'Prata';
+      case 'bronze': return 'Bronze';
+      default: return quality;
     }
   };
 
@@ -81,28 +84,12 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-3">
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: company?.color || '#7C3AED' }}
-            >
-              {company?.logo ? (
-                <img 
-                  src={company.logo.startsWith('@assets/') ? 
-                    new URL(`../../../${company.logo.replace('@assets/', 'attached_assets/')}`, import.meta.url).href : 
-                    company.logo
-                  } 
-                  alt={company.name}
-                  className="w-8 h-8 object-contain filter brightness-0 invert"
-                />
-              ) : (
-                <span className="text-white font-bold text-lg">
-                  {company?.name?.charAt(0) || 'L'}
-                </span>
-              )}
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary">
+              <Users className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-bold">{company?.name || 'Operadora'}</h2>
-              <p className="text-sm text-gray-500">Informações detalhadas do lead</p>
+              <h2 className="text-xl font-bold">Detalhes do Lead</h2>
+              <p className="text-sm text-gray-500">Informações completas sobre este lead</p>
             </div>
           </DialogTitle>
         </DialogHeader>
@@ -134,7 +121,7 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
           <div className="flex items-center justify-between">
             <Badge className={`${getQualityColor(lead.quality)} border font-medium`}>
               <Star className="w-3 h-3 mr-1" />
-              Qualidade {lead.quality}
+              {getQualityLabel(lead.quality)}
             </Badge>
             
             <Badge variant="outline" className="font-medium">
@@ -154,7 +141,7 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
                   <MapPin className="w-4 h-4 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Localização</p>
-                    <p className="font-medium">{lead.city}, {lead.state}</p>
+                    <p className="font-medium">{lead.city && lead.state ? `${lead.city}, ${lead.state}` : lead.state}</p>
                   </div>
                 </div>
                 

@@ -52,16 +52,13 @@ const leadFormSchema = z.object({
   email: z.string().email("E-mail inválido"),
   phone: z.string().min(1, "Telefone é obrigatório"),
   age: z.number().min(18, "Idade mínima é 18 anos").max(120, "Idade máxima é 120 anos"),
-  city: z.string().min(1, "Cidade é obrigatória"),
+  city: z.string().optional(),
   state: z.string().min(1, "Estado é obrigatório"),
-  insuranceCompanyId: z.string().min(1, "Operadora é obrigatória"),
   planType: z.string().min(1, "Tipo de plano é obrigatório"),
-  budgetMin: z.string().optional(),
-  budgetMax: z.string().optional(),
   availableLives: z.number().min(1, "Mínimo 1 vida disponível"),
   source: z.string().min(1, "Origem é obrigatória"),
   campaign: z.string().min(1, "Campanha é obrigatória"),
-  quality: z.enum(["high", "medium", "low"], { required_error: "Qualidade é obrigatória" }),
+  quality: z.enum(["gold", "silver", "bronze"], { required_error: "Qualidade é obrigatória" }),
   status: z.enum(["available", "sold", "reserved", "expired"], { required_error: "Status é obrigatório" }),
   price: z.string().min(1, "Preço é obrigatório"),
   notes: z.string().optional(),
@@ -84,14 +81,11 @@ export default function ManageLeads() {
       age: 25,
       city: "",
       state: "",
-      insuranceCompanyId: "",
       planType: "individual",
-      budgetMin: "",
-      budgetMax: "",
       availableLives: 1,
       source: "",
       campaign: "",
-      quality: "medium",
+      quality: "silver",
       status: "available",
       price: "",
       notes: "",
@@ -115,10 +109,6 @@ export default function ManageLeads() {
     enabled: user?.role === "admin",
   });
 
-  const { data: companies = [] } = useQuery<InsuranceCompany[]>({
-    queryKey: ["/api/insurance-companies"],
-    enabled: user?.role === "admin",
-  });
 
   // Mutation for creating/updating leads
   const leadMutation = useMutation({
@@ -126,8 +116,6 @@ export default function ManageLeads() {
       const leadData = {
         ...data,
         price: parseFloat(data.price),
-        budgetMin: data.budgetMin ? parseFloat(data.budgetMin) : null,
-        budgetMax: data.budgetMax ? parseFloat(data.budgetMax) : null,
       };
 
       if (editingLead) {
@@ -187,16 +175,13 @@ export default function ManageLeads() {
       email: lead.email,
       phone: lead.phone,
       age: lead.age,
-      city: lead.city,
+      city: lead.city || "",
       state: lead.state,
-      insuranceCompanyId: lead.insuranceCompanyId,
       planType: lead.planType,
-      budgetMin: lead.budgetMin,
-      budgetMax: lead.budgetMax,
       availableLives: lead.availableLives,
       source: lead.source,
       campaign: lead.campaign,
-      quality: lead.quality as "high" | "medium" | "low",
+      quality: lead.quality as "gold" | "silver" | "bronze",
       status: lead.status as "available" | "sold" | "reserved" | "expired",
       price: lead.price,
       notes: lead.notes,
@@ -277,7 +262,7 @@ export default function ManageLeads() {
                         Lead
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                        Operadora
+                        Localização
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                         Qualidade
@@ -295,7 +280,7 @@ export default function ManageLeads() {
                   </thead>
                   <tbody className="bg-white divide-y divide-slate-200">
                     {allLeads.map((lead) => {
-                      const company = companies.find(c => c.id === lead.insuranceCompanyId);
+                      const locationText = lead.city && lead.state ? `${lead.city}, ${lead.state}` : lead.state;
                       return (
                         <tr key={lead.id} className="hover:bg-slate-50" data-testid={`row-lead-${lead.id}`}>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -304,23 +289,22 @@ export default function ManageLeads() {
                                 {lead.name}
                               </div>
                               <div className="text-sm text-slate-500">{lead.email}</div>
-                              <div className="text-sm text-slate-500">{lead.city}, {lead.state}</div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-slate-900">{company?.name || "N/A"}</div>
+                            <div className="text-sm text-slate-900">{locationText}</div>
                             <div className="text-sm text-slate-500">{lead.planType}</div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <Badge 
                               className={
-                                lead.quality === "high" ? "bg-green-100 text-green-800" :
-                                lead.quality === "medium" ? "bg-yellow-100 text-yellow-800" :
-                                "bg-red-100 text-red-800"
+                                lead.quality === "gold" ? "bg-yellow-100 text-yellow-800" :
+                                lead.quality === "silver" ? "bg-gray-200 text-gray-800" :
+                                "bg-orange-100 text-orange-800"
                               }
                               data-testid={`text-lead-quality-${lead.id}`}
                             >
-                              {lead.quality === "high" ? "Alta" : lead.quality === "medium" ? "Média" : "Baixa"}
+                              {lead.quality === "gold" ? "Ouro" : lead.quality === "silver" ? "Prata" : "Bronze"}
                             </Badge>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" data-testid={`text-lead-price-${lead.id}`}>
@@ -421,29 +405,12 @@ export default function ManageLeads() {
                   />
                   <FormField
                     control={form.control}
-                    name="age"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Idade</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            {...field} 
-                            onChange={e => field.onChange(parseInt(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
                     name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cidade</FormLabel>
+                        <FormLabel>Localização (Cidade)</FormLabel>
                         <FormControl>
-                          <Input placeholder="São Paulo" {...field} />
+                          <Input placeholder="São Paulo (opcional)" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -458,30 +425,6 @@ export default function ManageLeads() {
                         <FormControl>
                           <Input placeholder="SP" {...field} />
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="insuranceCompanyId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Operadora</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione a operadora" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {companies.map((company) => (
-                              <SelectItem key={company.id} value={company.id}>
-                                {company.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -504,32 +447,6 @@ export default function ManageLeads() {
                             <SelectItem value="empresarial">Empresarial</SelectItem>
                           </SelectContent>
                         </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="budgetMin"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Orçamento Mínimo</FormLabel>
-                        <FormControl>
-                          <Input placeholder="0.00" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="budgetMax"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Orçamento Máximo</FormLabel>
-                        <FormControl>
-                          <Input placeholder="0.00" {...field} />
-                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -590,9 +507,9 @@ export default function ManageLeads() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="high">Alta</SelectItem>
-                            <SelectItem value="medium">Média</SelectItem>
-                            <SelectItem value="low">Baixa</SelectItem>
+                            <SelectItem value="gold">Ouro</SelectItem>
+                            <SelectItem value="silver">Prata</SelectItem>
+                            <SelectItem value="bronze">Bronze</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

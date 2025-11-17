@@ -57,40 +57,22 @@ export default function MyLeads() {
     conversionRate: "32", // Mock data - would be calculated based on actual conversions
   };
 
-  const getCompanyName = (companyId: string) => {
-    const companies: Record<string, string> = {
-      "amil": "Amil",
-      "bradesco": "Bradesco", 
-      "sulamérica": "SulAmérica",
-      "unimed": "Unimed",
-      "porto-seguro": "Porto Seguro",
-    };
-    return companies[companyId] || "Desconhecida";
-  };
-
-  const getCompanyColor = (companyId: string) => {
-    const colors: Record<string, string> = {
-      "amil": "bg-blue-100 text-blue-800",
-      "bradesco": "bg-red-100 text-red-800",
-      "sulamérica": "bg-gray-100 text-gray-800",
-      "unimed": "bg-orange-100 text-orange-800",
-      "porto-seguro": "bg-blue-100 text-blue-800",
-    };
-    return colors[companyId] || "bg-gray-100 text-gray-800";
-  };
-
   const getQualityColor = (quality: string) => {
     const colors: Record<string, string> = {
-      "high": "bg-green-100 text-green-800 border-green-200",
-      "medium": "bg-yellow-100 text-yellow-800 border-yellow-200", 
-      "low": "bg-red-100 text-red-800 border-red-200",
+      "gold": "bg-yellow-100 text-yellow-800 border-yellow-200",
+      "silver": "bg-gray-200 text-gray-800 border-gray-300",
+      "bronze": "bg-orange-100 text-orange-800 border-orange-200",
     };
     return colors[quality] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
-  const formatBudgetRange = (min: string, max: string) => {
-    if (!min || !max) return "Não informado";
-    return `R$ ${parseFloat(min).toFixed(2)} - R$ ${parseFloat(max).toFixed(2)}`;
+  const getQualityLabel = (quality: string) => {
+    const labels: Record<string, string> = {
+      "gold": "Ouro",
+      "silver": "Prata",
+      "bronze": "Bronze",
+    };
+    return labels[quality] || quality;
   };
 
 
@@ -291,28 +273,22 @@ export default function MyLeads() {
                           </div>
                           <div>
                             <h3 className="font-semibold text-white text-sm">
-                              {getCompanyName(purchase.insuranceCompanyId)}
+                              {purchase.name}
                             </h3>
-                            <p className="text-xs text-purple-100">Plano de Saúde</p>
+                            <p className="text-xs text-purple-100">Lead Comprado</p>
                           </div>
                         </div>
                         <Badge className={getQualityColor(purchase.quality)} style={{ backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.3)' }}>
                           <Star className="w-3 h-3 mr-1" />
-                          {purchase.quality === 'high' ? 'Premium' : 
-                           purchase.quality === 'medium' ? 'Padrão' : 'Básico'}
+                          {getQualityLabel(purchase.quality)}
                         </Badge>
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2 text-purple-100">
-                          <MapPin className="w-4 h-4" />
-                          <span className="text-sm font-medium">
-                            {purchase.city}, {purchase.state}
-                          </span>
-                        </div>
-                        <div className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
-                          <span className="text-xs text-white font-medium">{purchase.age} anos</span>
-                        </div>
+                      <div className="flex items-center space-x-2 text-purple-100">
+                        <MapPin className="w-4 h-4" />
+                        <span className="text-sm font-medium">
+                          {purchase.city && purchase.state ? `${purchase.city}, ${purchase.state}` : purchase.state}
+                        </span>
                       </div>
                     </div>
 
@@ -380,7 +356,7 @@ export default function MyLeads() {
               <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-900">{selectedLead.name}</h2>
-                  <p className="text-slate-600">{selectedLead.city}, {selectedLead.state}</p>
+                  <p className="text-slate-600">{selectedLead.city && selectedLead.state ? `${selectedLead.city}, ${selectedLead.state}` : selectedLead.state}</p>
                 </div>
                 <Button
                   variant="ghost"
@@ -416,7 +392,7 @@ export default function MyLeads() {
                         <MapPin className="w-4 h-4 text-green-600 mr-2" />
                         <span className="text-sm font-medium text-green-800">Localização</span>
                       </div>
-                      <p className="font-semibold text-slate-900">{selectedLead.city}, {selectedLead.state}</p>
+                      <p className="font-semibold text-slate-900">{selectedLead.city && selectedLead.state ? `${selectedLead.city}, ${selectedLead.state}` : selectedLead.state}</p>
                     </div>
                   </div>
                 </div>
@@ -424,7 +400,7 @@ export default function MyLeads() {
                 {/* Lead Details */}
                 <div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-4">Detalhes do Lead</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center text-sm font-medium text-slate-600">
                         <Users className="w-4 h-4 mr-2" />
@@ -434,16 +410,6 @@ export default function MyLeads() {
                         {selectedLead.planType === 'individual' ? 'Individual' :
                          selectedLead.planType === 'family' ? 'Familiar' : 
                          selectedLead.planType === 'business' ? 'Empresarial' : selectedLead.planType}
-                      </p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm font-medium text-slate-600">
-                        <DollarSign className="w-4 h-4 mr-2" />
-                        Orçamento
-                      </div>
-                      <p className="font-semibold text-slate-900">
-                        {formatBudgetRange(selectedLead.budgetMin, selectedLead.budgetMax)}
                       </p>
                     </div>
                     
