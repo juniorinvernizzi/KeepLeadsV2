@@ -1139,28 +1139,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/admin/leads', requireAdmin, csrfProtection, async (req: any, res) => {
     try {
+      console.log("Received lead data:", JSON.stringify(req.body, null, 2));
       
       const validatedData = insertLeadSchema.parse(req.body);
+      console.log("Validated lead data:", JSON.stringify(validatedData, null, 2));
+      
       const lead = await storage.createLead(validatedData);
+      console.log("Lead created successfully:", lead.id);
+      
       res.json(lead);
     } catch (error) {
       console.error("Error creating lead:", error);
-      res.status(500).json({ message: "Failed to create lead" });
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        });
+      }
+      
+      res.status(500).json({ message: "Erro ao criar lead. Verifique os dados e tente novamente." });
     }
   });
 
   app.put('/api/admin/leads/:id', requireAdmin, csrfProtection, async (req: any, res) => {
     try {
+      console.log("Updating lead:", req.params.id, JSON.stringify(req.body, null, 2));
       
       const validatedData = insertLeadSchema.parse(req.body);
       const lead = await storage.updateLead(req.params.id, validatedData);
+      
       if (!lead) {
-        return res.status(404).json({ message: "Lead not found" });
+        return res.status(404).json({ message: "Lead não encontrado" });
       }
+      
+      console.log("Lead updated successfully:", lead.id);
       res.json(lead);
     } catch (error) {
       console.error("Error updating lead:", error);
-      res.status(500).json({ message: "Failed to update lead" });
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Dados inválidos", 
+          errors: error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        });
+      }
+      
+      res.status(500).json({ message: "Erro ao atualizar lead. Verifique os dados e tente novamente." });
     }
   });
 
