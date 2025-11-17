@@ -66,7 +66,7 @@ export const leads = pgTable("leads", {
   availableLives: integer("available_lives").default(1), // Quantidade de vidas disponíveis
   source: varchar("source").notNull(), // 'Google Ads', 'Facebook', etc.
   campaign: varchar("campaign"),
-  quality: varchar("quality").default("medium"), // 'high', 'medium', 'low'
+  quality: varchar("quality").default("silver"), // 'gold', 'silver', 'bronze'
   status: varchar("status").default("available"), // 'available', 'reserved', 'sold', 'expired'
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),

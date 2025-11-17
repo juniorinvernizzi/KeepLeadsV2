@@ -816,11 +816,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const filters = {
         search: req.query.search as string,
-        insuranceCompany: req.query.insuranceCompany as string,
-        ageRange: req.query.ageRange as string,
         city: req.query.city as string,
+        planType: req.query.planType as string,
+        livesCount: req.query.livesCount as string,
         minPrice: req.query.minPrice ? Number(req.query.minPrice) : undefined,
         maxPrice: req.query.maxPrice ? Number(req.query.maxPrice) : undefined,
+        quality: req.query.quality as string,
         status: req.query.status as string,
       };
       
@@ -917,6 +918,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Convert lead to email-compatible format
         const emailCompatibleLead = {
           ...lead,
+          age: lead.age || 30,
           insuranceCompanyId: lead.insuranceCompanyId || '',
           budgetMin: lead.budgetMin || '',
           budgetMax: lead.budgetMax || '',
@@ -925,7 +927,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           income: lead.income || '3000.00',
           planType: lead.planType || 'individual',
           category: lead.category || 'health_insurance',
-          quality: lead.quality || 'medium',
+          quality: lead.quality || 'silver',
           status: lead.status || 'available',
           availableLives: lead.availableLives || 1,
           createdAt: lead.createdAt?.toISOString() || new Date().toISOString(),

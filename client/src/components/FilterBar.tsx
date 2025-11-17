@@ -18,6 +18,8 @@ interface FilterBarProps {
     livesCount: string;
     minPrice: string;
     maxPrice: string;
+    quality: string;
+    status: string;
   };
   onFiltersChange: (filters: any) => void;
   companies: Array<{ id: string; name: string }>;
@@ -48,9 +50,7 @@ export default function FilterBar({
 
   const planTypes = [
     { value: "individual", label: "Individual" },
-    { value: "familiar", label: "Familiar" },
     { value: "empresarial", label: "Empresarial" },
-    { value: "coletivo", label: "Coletivo" },
   ];
 
   const livesOptions = [
@@ -59,6 +59,19 @@ export default function FilterBar({
     { value: "3-5", label: "3-5 vidas" },
     { value: "6-10", label: "6-10 vidas" },
     { value: "11+", label: "11+ vidas" },
+  ];
+
+  const qualityOptions = [
+    { value: "gold", label: "Ouro" },
+    { value: "silver", label: "Prata" },
+    { value: "bronze", label: "Bronze" },
+  ];
+
+  const statusOptions = [
+    { value: "available", label: "Disponível" },
+    { value: "sold", label: "Vendido" },
+    { value: "reserved", label: "Reservado" },
+    { value: "expired", label: "Expirado" },
   ];
 
   const handleFilterChange = (key: string, value: string) => {
@@ -82,6 +95,8 @@ export default function FilterBar({
       livesCount: "all",
       minPrice: "",
       maxPrice: "",
+      quality: "all",
+      status: "all",
     };
     onFiltersChange(emptyFilters);
   };
@@ -142,6 +157,46 @@ export default function FilterBar({
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
                 {livesOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="quality">Qualidade do Plano</Label>
+            <Select
+              value={filters.quality}
+              onValueChange={(value) => handleFilterChange("quality", value)}
+            >
+              <SelectTrigger data-testid="select-quality">
+                <SelectValue placeholder="Todas as qualidades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as qualidades</SelectItem>
+                {qualityOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={filters.status}
+              onValueChange={(value) => handleFilterChange("status", value)}
+            >
+              <SelectTrigger data-testid="select-status">
+                <SelectValue placeholder="Todos os status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                {statusOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>

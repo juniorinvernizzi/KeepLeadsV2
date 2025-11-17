@@ -29,11 +29,12 @@ export interface IStorage {
   // Lead operations
   getLeads(filters?: {
     search?: string;
-    insuranceCompany?: string;
-    ageRange?: string;
     city?: string;
+    planType?: string;
+    livesCount?: string;
     minPrice?: number;
     maxPrice?: number;
+    quality?: string;
     status?: string;
   }): Promise<Lead[]>;
   getAllLeads(): Promise<Lead[]>;
@@ -120,11 +121,12 @@ export class DatabaseStorage implements IStorage {
 
   async getLeads(filters?: {
     search?: string;
-    insuranceCompany?: string;
-    ageRange?: string;
     city?: string;
+    planType?: string;
+    livesCount?: string;
     minPrice?: number;
     maxPrice?: number;
+    quality?: string;
     status?: string;
   }): Promise<Lead[]> {
     const conditions: any[] = [];
@@ -140,12 +142,32 @@ export class DatabaseStorage implements IStorage {
         );
       }
       
-      if (filters.insuranceCompany && filters.insuranceCompany !== "all") {
-        conditions.push(eq(leads.insuranceCompanyId, filters.insuranceCompany));
-      }
-      
       if (filters.city && filters.city !== "all") {
         conditions.push(eq(leads.city, filters.city));
+      }
+      
+      if (filters.planType && filters.planType !== "all") {
+        conditions.push(eq(leads.planType, filters.planType));
+      }
+      
+      if (filters.livesCount && filters.livesCount !== "all") {
+        // Handle lives count ranges
+        if (filters.livesCount.includes('-')) {
+          const [min, max] = filters.livesCount.split('-').map(Number);
+          if (!isNaN(min) && !isNaN(max)) {
+            conditions.push(and(gte(leads.availableLives, min), lte(leads.availableLives, max)));
+          }
+        } else if (filters.livesCount.endsWith('+')) {
+          const min = parseInt(filters.livesCount);
+          if (!isNaN(min)) {
+            conditions.push(gte(leads.availableLives, min));
+          }
+        } else {
+          const exact = parseInt(filters.livesCount);
+          if (!isNaN(exact)) {
+            conditions.push(eq(leads.availableLives, exact));
+          }
+        }
       }
       
       if (filters.minPrice) {
@@ -156,19 +178,17 @@ export class DatabaseStorage implements IStorage {
         conditions.push(lte(leads.price, filters.maxPrice.toString()));
       }
       
-      if (filters.status) {
-        conditions.push(eq(leads.status, filters.status));
-      } else {
-        conditions.push(eq(leads.status, "available"));
+      if (filters.quality && filters.quality !== "all") {
+        conditions.push(eq(leads.quality, filters.quality));
       }
       
-      if (filters.ageRange && filters.ageRange !== "all") {
-        const [min, max] = filters.ageRange.split('-').map(Number);
-        if (!isNaN(min) && !isNaN(max)) {
-          conditions.push(and(gte(leads.age, min), lte(leads.age, max)));
-        }
+      if (filters.status && filters.status !== "all") {
+        conditions.push(eq(leads.status, filters.status));
       }
+      // Note: If filters exist but status is "all" or undefined, we don't add any status condition
+      // This allows admins to see all leads regardless of status
     } else {
+      // No filters object at all - default to only showing available leads
       conditions.push(eq(leads.status, "available"));
     }
 

@@ -37,6 +37,8 @@ export default function LeadsMarketplace() {
     livesCount: "all",
     minPrice: "",
     maxPrice: "",
+    quality: "all",
+    status: "all",
   });
 
   const { data: leads = [], isLoading, refetch } = useQuery<Lead[]>({
@@ -150,6 +152,8 @@ export default function LeadsMarketplace() {
                 livesCount: "all",
                 minPrice: "",
                 maxPrice: "",
+                quality: "all",
+                status: "all",
               })}
               data-testid="button-clear-filters"
             >

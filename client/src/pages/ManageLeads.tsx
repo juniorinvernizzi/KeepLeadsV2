@@ -486,7 +486,6 @@ export default function ManageLeads() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="individual">Individual</SelectItem>
-                            <SelectItem value="familiar">Familiar</SelectItem>
                             <SelectItem value="empresarial">Empresarial</SelectItem>
                           </SelectContent>
                         </Select>
