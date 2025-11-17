@@ -922,6 +922,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           budgetMax: lead.budgetMax || '',
           campaign: lead.campaign || '',
           notes: lead.notes || '',
+          income: lead.income || '3000.00',
+          planType: lead.planType || 'individual',
+          category: lead.category || 'health_insurance',
+          quality: lead.quality || 'medium',
+          status: lead.status || 'available',
+          availableLives: lead.availableLives || 1,
           createdAt: lead.createdAt?.toISOString() || new Date().toISOString(),
           updatedAt: lead.updatedAt?.toISOString() || new Date().toISOString()
         };

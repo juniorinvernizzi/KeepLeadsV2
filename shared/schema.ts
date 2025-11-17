@@ -57,17 +57,17 @@ export const leads = pgTable("leads", {
   age: integer("age").notNull(),
   city: varchar("city").notNull(),
   state: varchar("state").notNull(),
-  income: varchar("income").notNull().default("3000.00"),
+  income: varchar("income").default("3000.00"),
   insuranceCompanyId: varchar("insurance_company_id").references(() => insuranceCompanies.id),
-  planType: varchar("plan_type").notNull().default("individual"),
-  category: varchar("category").notNull().default("health_insurance"),
+  planType: varchar("plan_type").default("individual"),
+  category: varchar("category").default("health_insurance"),
   budgetMin: decimal("budget_min", { precision: 10, scale: 2 }),
   budgetMax: decimal("budget_max", { precision: 10, scale: 2 }),
-  availableLives: integer("available_lives").notNull().default(1), // Quantidade de vidas disponíveis
+  availableLives: integer("available_lives").default(1), // Quantidade de vidas disponíveis
   source: varchar("source").notNull(), // 'Google Ads', 'Facebook', etc.
   campaign: varchar("campaign"),
-  quality: varchar("quality").notNull().default("medium"), // 'high', 'medium', 'low'
-  status: varchar("status").notNull().default("available"), // 'available', 'reserved', 'sold', 'expired'
+  quality: varchar("quality").default("medium"), // 'high', 'medium', 'low'
+  status: varchar("status").default("available"), // 'available', 'reserved', 'sold', 'expired'
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
