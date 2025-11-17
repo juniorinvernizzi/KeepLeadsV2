@@ -245,6 +245,10 @@ export default function PublicLeads() {
   const [filters, setFilters] = useState({
     search: "",
     city: "all",
+    planType: "all",
+    livesCount: "all",
+    quality: "all",
+    status: "all",
     minPrice: "",
     maxPrice: "",
   });
@@ -293,6 +297,10 @@ export default function PublicLeads() {
     const emptyFilters = {
       search: "",
       city: "all",
+      planType: "all",
+      livesCount: "all",
+      quality: "all",
+      status: "all",
       minPrice: "",
       maxPrice: "",
     };
@@ -351,11 +359,42 @@ export default function PublicLeads() {
         {/* Filters */}
         <Card className="mb-8">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="space-y-2">
+                <Label>Tipo de Plano</Label>
+                <Select value={filters.planType} onValueChange={(value) => handleFilterChange("planType", value)}>
+                  <SelectTrigger data-testid="select-plan-type">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="individual">Individual</SelectItem>
+                    <SelectItem value="empresarial">Empresarial</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Quantidade de Vidas</Label>
+                <Select value={filters.livesCount} onValueChange={(value) => handleFilterChange("livesCount", value)}>
+                  <SelectTrigger data-testid="select-lives-count">
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="1">1 vida</SelectItem>
+                    <SelectItem value="2">2 vidas</SelectItem>
+                    <SelectItem value="3-5">3-5 vidas</SelectItem>
+                    <SelectItem value="6-10">6-10 vidas</SelectItem>
+                    <SelectItem value="11+">11+ vidas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
               <div className="space-y-2">
                 <Label>Cidade</Label>
                 <Select value={filters.city} onValueChange={(value) => handleFilterChange("city", value)}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="select-city">
                     <SelectValue placeholder="Todas as cidades" />
                   </SelectTrigger>
                   <SelectContent>
@@ -365,6 +404,37 @@ export default function PublicLeads() {
                         {city}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Qualidade do Plano</Label>
+                <Select value={filters.quality} onValueChange={(value) => handleFilterChange("quality", value)}>
+                  <SelectTrigger data-testid="select-quality">
+                    <SelectValue placeholder="Todos os planos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os planos</SelectItem>
+                    <SelectItem value="gold">Ouro</SelectItem>
+                    <SelectItem value="silver">Prata</SelectItem>
+                    <SelectItem value="bronze">Bronze</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select value={filters.status} onValueChange={(value) => handleFilterChange("status", value)}>
+                  <SelectTrigger data-testid="select-status">
+                    <SelectValue placeholder="Todos os status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os status</SelectItem>
+                    <SelectItem value="available">Disponível</SelectItem>
+                    <SelectItem value="sold">Vendido</SelectItem>
+                    <SelectItem value="reserved">Reservado</SelectItem>
+                    <SelectItem value="expired">Expirado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -388,7 +458,7 @@ export default function PublicLeads() {
             </div>
             
             <div className="flex items-center space-x-2">
-              <Button onClick={clearFilters} variant="outline">
+              <Button onClick={clearFilters} variant="outline" data-testid="button-clear-filters">
                 Limpar Filtros
               </Button>
             </div>
