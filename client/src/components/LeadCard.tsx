@@ -140,7 +140,7 @@ export default function LeadCard({
       case "silver":
         return {
           label: "Prata",
-          color: "bg-gradient-to-r from-gray-400 to-gray-500 text-white",
+          color: "bg-gradient-to-r from-gray-500 to-gray-600 text-white",
           icon: <Shield className="w-3 h-3" />,
         };
       case "bronze":
@@ -168,10 +168,12 @@ export default function LeadCard({
         onClick={() => setShowInfoModal(true)}
       >
         {/* Header com gradiente */}
-        <div className="relative bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600 p-4">
+        <div className="relative bg-gradient-to-br from-gray-600 via-gray-600 to-gray-700 p-4">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h3 className="font-semibold text-white text-sm">Plano de Saúde</h3>
+              <h3 className="font-semibold text-white text-sm">
+                Plano de Saúde
+              </h3>
               <p className="text-xs text-purple-100">Lead Qualificado</p>
             </div>
             <div
@@ -230,7 +232,9 @@ export default function LeadCard({
           <div className="relative bg-gradient-to-br from-gray-100 to-gray-20 rounded-xl p-4 sm:p-5 mb-4 sm:mb-6 overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-gray-200/50 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
             <div className="relative text-center">
-              <p className="text-[10px] sm:text-xs text-gray-800 mb-1">Valor do lead</p>
+              <p className="text-[10px] sm:text-xs text-gray-800 mb-1">
+                Valor do lead
+              </p>
               <div
                 className="text-2xl sm:text-3xl font-bold text-gray-800"
                 data-testid={`text-price-${lead.id}`}
