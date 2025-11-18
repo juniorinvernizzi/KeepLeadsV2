@@ -48,7 +48,12 @@ export default function Login() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: async (data: { email: string; password: string; firstName: string; lastName: string }) => {
+    mutationFn: async (data: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+    }) => {
       return await apiRequest("POST", "/api/simple-register", data);
     },
     onSuccess: () => {
@@ -74,7 +79,7 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.email || !formData.password) {
       toast({
         title: "Campos obrigatórios",
@@ -87,30 +92,33 @@ export default function Login() {
     if (isRegister) {
       registerMutation.mutate(formData);
     } else {
-      loginMutation.mutate({ email: formData.email, password: formData.password });
+      loginMutation.mutate({
+        email: formData.email,
+        password: formData.password,
+      });
     }
   };
 
   const isLoading = loginMutation.isPending || registerMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="flex items-center justify-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-600 to-orange-700 rounded-xl flex items-center justify-center">
               <Target className="w-7 h-7 text-white" />
             </div>
             <div>
               <span className="text-2xl font-bold text-gray-900">Keep</span>
-              <span className="text-2xl font-bold text-purple-600">Leads</span>
+              <span className="text-2xl font-bold text-orange-600">Leads</span>
             </div>
           </div>
           <CardTitle className="text-xl">
             {isRegister ? "Criar conta" : "Entrar na sua conta"}
           </CardTitle>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {isRegister && (
@@ -121,7 +129,9 @@ export default function Login() {
                     id="firstName"
                     type="text"
                     value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, firstName: e.target.value })
+                    }
                     placeholder="Seu nome"
                     data-testid="input-first-name"
                   />
@@ -132,27 +142,31 @@ export default function Login() {
                     id="lastName"
                     type="text"
                     value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, lastName: e.target.value })
+                    }
                     placeholder="Seu sobrenome"
                     data-testid="input-last-name"
                   />
                 </div>
               </div>
             )}
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
                 placeholder="seu@email.com"
                 required
                 data-testid="input-email"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
               <div className="relative">
@@ -160,7 +174,9 @@ export default function Login() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   placeholder="Sua senha"
                   required
                   data-testid="input-password"
@@ -171,32 +187,39 @@ export default function Login() {
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   data-testid="button-toggle-password"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
-            
+
             <Button
               type="submit"
-              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+              className="w-full bg-gradient-to-r from-gray-600 to-gray-600 hover:from-gray-700 hover:to-gray-700"
               disabled={isLoading}
               data-testid="button-submit"
             >
-              {isLoading ? "Carregando..." : (isRegister ? "Criar conta" : "Entrar")}
+              {isLoading
+                ? "Carregando..."
+                : isRegister
+                  ? "Criar conta"
+                  : "Entrar"}
             </Button>
           </form>
-          
+
           <div className="text-center">
             <button
               type="button"
               onClick={() => setIsRegister(!isRegister)}
-              className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+              className="text-gray-600 hover:text-gray-700 text-sm font-medium"
               data-testid="button-toggle-mode"
             >
-              {isRegister 
-                ? "Já tem uma conta? Entre aqui" 
-                : "Não tem conta? Registre-se aqui"
-              }
+              {isRegister
+                ? "Já tem uma conta? Entre aqui"
+                : "Não tem conta? Registre-se aqui"}
             </button>
           </div>
         </CardContent>
