@@ -184,9 +184,11 @@ export class DatabaseStorage implements IStorage {
       
       if (filters.status && filters.status !== "all") {
         conditions.push(eq(leads.status, filters.status));
+      } else {
+        // If no status filter provided, default to showing only available leads
+        // This ensures marketplace and public pages only show available leads
+        conditions.push(eq(leads.status, "available"));
       }
-      // Note: If filters exist but status is "all" or undefined, we don't add any status condition
-      // This allows admins to see all leads regardless of status
     } else {
       // No filters object at all - default to only showing available leads
       conditions.push(eq(leads.status, "available"));
