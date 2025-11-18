@@ -141,11 +141,15 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
-export const insertLeadSchema = createInsertSchema(leads).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+export const insertLeadSchema = createInsertSchema(leads)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    quality: z.enum(["gold", "silver", "bronze"]).default("silver"),
+  });
 
 export const insertLeadPurchaseSchema = createInsertSchema(leadPurchases).omit({
   id: true,
