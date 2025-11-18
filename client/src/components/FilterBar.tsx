@@ -19,7 +19,6 @@ interface FilterBarProps {
     minPrice: string;
     maxPrice: string;
     quality: string;
-    status: string;
   };
   onFiltersChange: (filters: any) => void;
   companies: Array<{ id: string; name: string }>;
@@ -67,12 +66,6 @@ export default function FilterBar({
     { value: "bronze", label: "Bronze" },
   ];
 
-  const statusOptions = [
-    { value: "available", label: "Disponível" },
-    { value: "sold", label: "Vendido" },
-    { value: "reserved", label: "Reservado" },
-    { value: "expired", label: "Expirado" },
-  ];
 
   const handleFilterChange = (key: string, value: string) => {
     const newFilters = { ...filters, [key]: value };
@@ -96,7 +89,6 @@ export default function FilterBar({
       minPrice: "",
       maxPrice: "",
       quality: "all",
-      status: "all",
     };
     onFiltersChange(emptyFilters);
   };
@@ -185,25 +177,6 @@ export default function FilterBar({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={filters.status}
-              onValueChange={(value) => handleFilterChange("status", value)}
-            >
-              <SelectTrigger data-testid="select-status">
-                <SelectValue placeholder="Todos os status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os status</SelectItem>
-                {statusOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

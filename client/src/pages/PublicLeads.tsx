@@ -248,7 +248,6 @@ export default function PublicLeads() {
     planType: "all",
     livesCount: "all",
     quality: "all",
-    status: "all",
     minPrice: "",
     maxPrice: "",
   });
@@ -300,7 +299,6 @@ export default function PublicLeads() {
       planType: "all",
       livesCount: "all",
       quality: "all",
-      status: "all",
       minPrice: "",
       maxPrice: "",
     };
@@ -423,22 +421,6 @@ export default function PublicLeads() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={filters.status} onValueChange={(value) => handleFilterChange("status", value)}>
-                  <SelectTrigger data-testid="select-status">
-                    <SelectValue placeholder="Todos os status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos os status</SelectItem>
-                    <SelectItem value="available">Disponível</SelectItem>
-                    <SelectItem value="sold">Vendido</SelectItem>
-                    <SelectItem value="reserved">Reservado</SelectItem>
-                    <SelectItem value="expired">Expirado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
               <div className="space-y-2">
                 <Label>Faixa de Preço</Label>
                 <div className="space-y-2">
