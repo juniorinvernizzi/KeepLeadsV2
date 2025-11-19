@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { MapPin, Calendar, CreditCard, User, Star, Eye, EyeOff, Phone } from "lucide-react";
+import { MapPin, Calendar, CreditCard, User, Star } from "lucide-react";
 import LeadInfoModal from "@/components/LeadInfoModal";
 
 interface Lead {
@@ -40,7 +40,6 @@ interface PublicLeadCardProps {
 
 function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
   const [showInfoModal, setShowInfoModal] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   
   const company = companies.find(c => c.id === lead.insuranceCompanyId) || {
     id: lead.insuranceCompanyId,
@@ -48,187 +47,133 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
     color: "#7C3AED"
   };
 
-  const maskSensitiveInfo = (text: string, type: 'email' | 'phone' | 'name'): string => {
-    switch (type) {
-      case 'email':
-        const [name, domain] = text.split('@');
-        return `${name.slice(0, 2)}***@${domain}`;
-      case 'phone':
-        return text.slice(0, 5) + '****-****';
-      case 'name':
-        const names = text.split(' ');
-        return `${names[0]} ${'*'.repeat(names.slice(1).join(' ').length)}`;
+  const getQualityBadge = () => {
+    switch (lead.quality) {
+      case "gold":
+        return {
+          label: "Ouro",
+          color: "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white",
+          icon: <Star className="w-3 h-3" />,
+        };
+      case "silver":
+        return {
+          label: "Prata",
+          color: "bg-gradient-to-r from-gray-500 to-gray-600 text-white",
+          icon: <User className="w-3 h-3" />,
+        };
+      case "bronze":
+        return {
+          label: "Bronze",
+          color: "bg-gradient-to-r from-orange-500 to-orange-600 text-white",
+          icon: <Calendar className="w-3 h-3" />,
+        };
       default:
-        return text;
+        return {
+          label: "Padrão",
+          color: "bg-gradient-to-r from-gray-500 to-gray-600 text-white",
+          icon: <User className="w-3 h-3" />,
+        };
     }
   };
 
-  const daysSinceCreated = Math.floor(
-    (Date.now() - new Date(lead.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  const getQualityLabel = (quality: string) => {
-    switch (quality) {
-      case 'gold': return 'Ouro';
-      case 'silver': return 'Prata';
-      case 'bronze': return 'Bronze';
-      default: return quality;
-    }
-  };
-
-  const getQualityColor = (quality: string) => {
-    switch (quality) {
-      case 'gold': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'silver': return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'bronze': return 'bg-orange-100 text-orange-800 border-orange-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
+  const qualityBadge = getQualityBadge();
   
   return (
     <>
       <Card 
-        className="w-full max-w-sm bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 cursor-pointer group" 
+        className="group relative w-full max-w-sm bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border-0 overflow-hidden cursor-pointer transform hover:-translate-y-1" 
         data-testid={`card-lead-${lead.id}`}
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => setShowInfoModal(true)}
       >
-        {/* Header */}
-        <div className="p-4 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-2">
-            <div className="text-sm font-semibold text-gray-900">
-              Plano de Saúde
+        {/* Header com gradiente */}
+        <div className="relative bg-gradient-to-br from-gray-600 via-gray-600 to-gray-700 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="font-semibold text-white text-sm">
+                Plano de Saúde
+              </h3>
+              <p className="text-xs text-purple-100">Lead Qualificado</p>
             </div>
-            <Badge className={`text-xs ${getQualityColor(lead.quality)}`}>
-              {getQualityLabel(lead.quality)}
-            </Badge>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-gray-500 flex items-center space-x-1">
-              <Calendar className="w-3 h-3" />
-              <span>{daysSinceCreated === 0 ? 'Hoje' : `${daysSinceCreated}d`}</span>
+            <div
+              className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${qualityBadge.color}`}
+            >
+              {qualityBadge.icon}
+              <span>{qualityBadge.label}</span>
             </div>
-            <Badge className="bg-green-100 text-green-800">
-              Disponível
-            </Badge>
           </div>
-        </div>
 
-        {/* Content */}
-        <div className="p-4">
-          {/* Basic Info */}
-          <div className="space-y-2 mb-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500 flex items-center">
-                <MapPin className="w-3 h-3 mr-1" />
-                Localização
-              </span>
-              <span className="font-medium text-gray-900" data-testid={`text-location-${lead.id}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-purple-100">
+              <MapPin className="w-4 h-4" />
+              <span
+                className="text-sm font-medium"
+                data-testid={`text-location-${lead.id}`}
+              >
                 {lead.city ? `${lead.city}, ${lead.state}` : lead.state}
               </span>
             </div>
-            
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Vidas</span>
-              <span className="font-medium text-gray-900">{lead.availableLives}</span>
+            <div className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
+              <span className="text-xs text-white font-medium">Disponível</span>
             </div>
-            
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Tipo de Plano</span>
-              <span className="font-medium text-gray-900 capitalize">{lead.planType}</span>
+          </div>
+        </div>
+
+        <CardContent className="p-4 sm:p-6">
+          {/* Informações principais em grid moderno */}
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-emerald-100">
+              <div className="flex items-center space-x-1 mb-1">
+                <User className="w-3 h-3 text-emerald-600" />
+                <span className="text-[10px] sm:text-xs font-medium text-emerald-600">
+                  Vidas
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm font-bold text-gray-900">
+                {lead.availableLives}
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-orange-100">
+              <div className="flex items-center space-x-1 mb-1">
+                <CreditCard className="w-3 h-3 text-orange-600" />
+                <span className="text-[10px] sm:text-xs font-medium text-orange-600">
+                  Plano
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm font-bold text-gray-900 capitalize truncate">
+                {lead.planType}
+              </p>
             </div>
           </div>
 
-          {/* Price */}
-          <div className="bg-gray-50 rounded-lg p-3 mb-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900 mb-1" data-testid={`text-price-${lead.id}`}>
+          {/* Preço com destaque especial */}
+          <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-4 sm:p-5 mb-4 sm:mb-6 overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-gray-200/50 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="relative text-center">
+              <p className="text-[10px] sm:text-xs text-gray-800 mb-1">
+                Valor do lead
+              </p>
+              <div
+                className="text-2xl sm:text-3xl font-bold text-gray-800"
+                data-testid={`text-price-${lead.id}`}
+              >
                 R$ {parseFloat(lead.price).toFixed(2)}
               </div>
-              <p className="text-xs text-gray-500">Preço do lead</p>
             </div>
           </div>
 
-          {/* Action Button */}
+          {/* Botão de ação moderno */}
           <Button
             onClick={(e) => {
               e.stopPropagation();
               window.location.href = "/login";
             }}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-lg text-sm transition-all duration-200"
+            className="w-full h-12 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 group"
             data-testid={`button-login-to-buy-${lead.id}`}
           >
-            FAZER LOGIN PARA COMPRAR
+            <span>FAZER LOGIN PARA COMPRAR</span>
           </Button>
-        </div>
-
-        {/* Expandable details - Same as authenticated cards */}
-        {isExpanded && (
-          <div className="border-t border-gray-100 p-4 bg-gray-50">
-            <div className="space-y-3">
-              {/* Basic Lead Information */}
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center space-x-2">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">Localização</p>
-                    <p className="font-medium" data-testid={`text-location-${lead.id}`}>
-                      {lead.city ? `${lead.city}, ${lead.state}` : lead.state}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <CreditCard className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">Tipo de Plano</p>
-                    <p className="font-medium capitalize">{lead.planType}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <User className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">Vidas Disponíveis</p>
-                    <p className="font-medium">{lead.availableLives} vida{lead.availableLives > 1 ? 's' : ''}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Star className="w-4 h-4 text-gray-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">Qualidade</p>
-                    <p className="font-medium">{getQualityLabel(lead.quality)}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Login Notice */}
-              <div className="border-t border-gray-200 pt-3">
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                  <p className="text-sm text-purple-700 text-center flex items-center justify-center">
-                    <span className="mr-2">🔐</span>
-                    Faça login para ver informações de contato e comprar este lead
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Action buttons at bottom */}
-        <div className="border-t border-gray-100 p-3">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowInfoModal(true);
-            }}
-            className="w-full flex items-center justify-center py-2 text-purple-600 hover:text-purple-700 transition-colors rounded-lg hover:bg-purple-50"
-          >
-            <Eye className="w-4 h-4 mr-2" />
-            <span className="text-sm">Ver detalhes</span>
-          </button>
-        </div>
+        </CardContent>
       </Card>
 
       <LeadInfoModal
