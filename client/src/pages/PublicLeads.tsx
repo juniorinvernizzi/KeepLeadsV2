@@ -102,19 +102,14 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-purple-100">
-              <MapPin className="w-4 h-4" />
-              <span
-                className="text-sm font-medium"
-                data-testid={`text-location-${lead.id}`}
-              >
-                {lead.city ? `${lead.city}, ${lead.state}` : lead.state}
-              </span>
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
-              <span className="text-xs text-white font-medium">Disponível</span>
-            </div>
+          <div className="flex items-center space-x-2 text-purple-100">
+            <MapPin className="w-4 h-4" />
+            <span
+              className="text-sm font-medium"
+              data-testid={`text-location-${lead.id}`}
+            >
+              {lead.city ? `${lead.city}, ${lead.state}` : lead.state}
+            </span>
           </div>
         </div>
 
