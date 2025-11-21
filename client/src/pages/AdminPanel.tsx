@@ -26,6 +26,7 @@ interface User {
   firstName: string;
   lastName: string;
   role: string;
+  status: string;
   credits: string;
   createdAt: string;
 }
@@ -228,6 +229,50 @@ export default function AdminPanel() {
     },
   });
 
+  // Mutation for toggling user status (suspend/activate)
+  const toggleUserStatusMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("PATCH", `/api/admin/users/${userId}/toggle-status`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Sucesso",
+        description: "Status do usuário atualizado com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: `Falha ao atualizar status: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for deleting users
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return apiRequest("DELETE", `/api/admin/users/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Sucesso",
+        description: "Usuário excluído com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: `Falha ao excluir usuário: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEditLead = (lead: Lead) => {
     setEditingLead(lead);
     form.reset({
@@ -290,6 +335,16 @@ export default function AdminPanel() {
       credits: user.credits,
     });
     setShowUserModal(true);
+  };
+
+  const handleToggleUserStatus = (userId: string) => {
+    toggleUserStatusMutation.mutate(userId);
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    if (confirm("Tem certeza que deseja excluir este usuário?")) {
+      deleteUserMutation.mutate(userId);
+    }
   };
 
   // Don't render for non-admin users
@@ -490,18 +545,30 @@ export default function AdminPanel() {
                               {user.email || "N/A"}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <Badge 
-                                className={
-                                  user.role === "admin" 
-                                    ? "bg-purple-100 text-purple-800" 
-                                    : user.role === "manager"
-                                    ? "bg-orange-100 text-orange-800"
-                                    : "bg-blue-100 text-blue-800"
-                                }
-                                data-testid={`text-user-role-${user.id}`}
-                              >
-                                {user.role === "admin" ? "Administrador" : user.role === "manager" ? "Gerente" : "Cliente"}
-                              </Badge>
+                              <div className="flex flex-col gap-1">
+                                <Badge 
+                                  className={
+                                    user.role === "admin" 
+                                      ? "bg-purple-100 text-purple-800" 
+                                      : user.role === "manager"
+                                      ? "bg-orange-100 text-orange-800"
+                                      : "bg-blue-100 text-blue-800"
+                                  }
+                                  data-testid={`text-user-role-${user.id}`}
+                                >
+                                  {user.role === "admin" ? "Administrador" : user.role === "manager" ? "Gerente" : "Cliente"}
+                                </Badge>
+                                <Badge 
+                                  className={
+                                    user.status === "suspended"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-green-100 text-green-800"
+                                  }
+                                  data-testid={`text-user-status-${user.id}`}
+                                >
+                                  {user.status === "suspended" ? "Suspenso" : "Ativo"}
+                                </Badge>
+                              </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" data-testid={`text-user-credits-${user.id}`}>
                               R$ {parseFloat(user.credits).toFixed(2)}
@@ -522,10 +589,11 @@ export default function AdminPanel() {
                               <Button 
                                 variant="ghost" 
                                 size="sm" 
-                                className="text-red-600 hover:text-red-800" 
+                                className={user.status === 'suspended' ? "text-green-600 hover:text-green-800" : "text-orange-600 hover:text-orange-800"}
+                                onClick={() => handleToggleUserStatus(user.id)}
                                 data-testid={`button-suspend-user-${user.id}`}
                               >
-                                Suspender
+                                {user.status === 'suspended' ? 'Ativar' : 'Suspender'}
                               </Button>
                             </td>
                           </tr>
