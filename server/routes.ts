@@ -1124,6 +1124,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Toggle user status (suspend/activate)
+  app.patch('/api/admin/users/:id/toggle-status', requireAdmin, csrfProtection, async (req: any, res) => {
+    try {
+      const targetUserId = req.params.id;
+      
+      // Check if target user exists
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent admin from suspending themselves
+      if (req.user?.id === targetUserId) {
+        return res.status(400).json({ message: "Você não pode suspender sua própria conta" });
+      }
+      
+      // Toggle status
+      const newStatus = targetUser.status === 'active' ? 'suspended' : 'active';
+      const updatedUser = await storage.updateUser(targetUserId, {
+        status: newStatus,
+      });
+      
+      res.json(sanitizeUser(updatedUser));
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+      res.status(500).json({ message: "Failed to toggle user status" });
+    }
+  });
+
+  // Delete user (admin only)
+  app.delete('/api/admin/users/:id', requireAdmin, csrfProtection, async (req: any, res) => {
+    try {
+      const targetUserId = req.params.id;
+      
+      // Check if target user exists
+      const targetUser = await storage.getUser(targetUserId);
+      if (!targetUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent admin from deleting themselves
+      if (req.user?.id === targetUserId) {
+        return res.status(400).json({ message: "Você não pode deletar sua própria conta" });
+      }
+      
+      // Delete user
+      await storage.deleteUser(targetUserId);
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   app.get('/api/admin/stats', requireAdmin, async (req: any, res) => {
     try {
       const stats = await storage.getUserStats();

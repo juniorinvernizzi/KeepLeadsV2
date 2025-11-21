@@ -23,7 +23,8 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: UpsertUser): Promise<User>;
-  updateUser(userId: string, updateData: { email?: string; firstName?: string; lastName?: string; role?: string; credits?: string }): Promise<User | undefined>;
+  updateUser(userId: string, updateData: { email?: string; firstName?: string; lastName?: string; role?: string; credits?: string; status?: string }): Promise<User | undefined>;
+  deleteUser(userId: string): Promise<boolean>;
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Lead operations
@@ -257,7 +258,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  async updateUser(userId: string, updateData: { email?: string; firstName?: string; lastName?: string; role?: string; credits?: string }): Promise<User | undefined> {
+  async updateUser(userId: string, updateData: { email?: string; firstName?: string; lastName?: string; role?: string; credits?: string; status?: string }): Promise<User | undefined> {
     const [user] = await db
       .update(users)
       .set({ 
@@ -267,6 +268,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user;
+  }
+
+  async deleteUser(userId: string): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, userId));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async updateUserProfile(userId: string, profileData: { firstName?: string; lastName?: string; email?: string }): Promise<void> {
