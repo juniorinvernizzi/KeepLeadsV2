@@ -51,7 +51,11 @@ type LeadFormData = z.infer<typeof leadFormSchema>;
 // Form schema for user creation/editing
 const userFormSchema = z.object({
   email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
+  password: z.union([
+    z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+    z.literal(""),
+    z.undefined()
+  ]).optional(),
   firstName: z.string().min(1, "Nome é obrigatório"),
   lastName: z.string().min(1, "Sobrenome é obrigatório"),
   role: z.enum(["admin", "manager", "client"], {
@@ -198,10 +202,18 @@ export default function AdminPanel() {
   // Mutation for creating/updating users
   const userMutation = useMutation({
     mutationFn: async (data: UserFormData) => {
-      const userData = {
-        ...data,
-        credits: data.credits ? parseFloat(data.credits) : 0,
+      const userData: any = {
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: data.role,
+        credits: data.credits || "0",
       };
+
+      // Only include password when creating a new user or if it's provided
+      if (!editingUser && data.password) {
+        userData.password = data.password;
+      }
 
       if (editingUser) {
         return apiRequest("PUT", `/api/admin/users/${editingUser.id}`, userData);
@@ -328,11 +340,11 @@ export default function AdminPanel() {
     setEditingUser(user);
     userForm.reset({
       email: user.email,
-      password: "", // Don't show current password
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role as "admin" | "manager" | "client",
       credits: user.credits,
+      password: undefined, // Explicitly undefined when editing
     });
     setShowUserModal(true);
   };

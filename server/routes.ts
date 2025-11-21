@@ -1100,12 +1100,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const targetUserId = req.params.id;
       
-      const { email, firstName, lastName, role, credits } = req.body;
+      const { email, firstName, lastName, role, credits, status } = req.body;
       
       // Check if target user exists
       const targetUser = await storage.getUser(targetUserId);
       if (!targetUser) {
         return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent admin from changing their own role to non-admin
+      if (req.user?.id === targetUserId && role && role !== 'admin') {
+        return res.status(400).json({ message: "Você não pode alterar seu próprio tipo de usuário" });
+      }
+      
+      // Prevent admin from changing their own status
+      if (req.user?.id === targetUserId && status && status !== targetUser.status) {
+        return res.status(400).json({ message: "Você não pode alterar seu próprio status" });
       }
       
       // Update user
@@ -1115,6 +1125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName: lastName || targetUser.lastName,
         role: role || targetUser.role,
         credits: credits !== undefined ? credits : targetUser.credits,
+        status: status || targetUser.status,
       });
       
       res.json(sanitizeUser(updatedUser));
