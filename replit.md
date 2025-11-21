@@ -22,11 +22,22 @@ Authentication is implemented using Replit's OpenID Connect integration with Pas
 The application uses PostgreSQL as the primary database with Drizzle ORM for type-safe database operations. The database schema is well-structured with proper relationships between users, leads, insurance companies, purchases, and credit transactions. Drizzle provides migration support and ensures type safety between the database schema and application code.
 
 The data layer includes comprehensive models for:
-- User management with role-based permissions
+- User management with role-based permissions and status tracking (active/suspended)
 - Lead storage with detailed metadata and filtering capabilities
 - Purchase tracking and transaction history
 - Credit system for lead purchases
 - Insurance company categorization
+
+### User Management Features (November 2025)
+The admin panel includes comprehensive user management capabilities:
+- **User Status System**: Users can be marked as "active" or "suspended"
+- **Edit User Details**: Admins can update user information (name, email, role, credits)
+- **Status Toggle**: Quick suspend/activate functionality with visual badge indicators
+- **Security Protections**: 
+  - Admins cannot change their own role to non-admin
+  - Admins cannot suspend themselves
+  - Password field properly validates: required for new users, optional for edits
+- **Form Validation**: Password accepts minimum 6 characters, empty string, or undefined for flexibility during edits
 
 ## Development and Build System
 The project uses Vite as the build tool for the frontend, providing fast development server and optimized production builds. The backend uses esbuild for server-side bundling. TypeScript is configured with path mapping for clean imports and proper type checking across the entire codebase.
