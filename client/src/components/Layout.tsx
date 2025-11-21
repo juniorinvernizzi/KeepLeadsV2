@@ -97,7 +97,7 @@ export default function Layout({ children }: LayoutProps) {
     const isActive = location === path;
     return `flex items-center w-full px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
       isActive
-        ? "bg-purple-50 text-purple-700 border border-purple-200"
+        ? "bg-primary text-white border border-primary"
         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
     }`;
   };
@@ -112,12 +112,12 @@ export default function Layout({ children }: LayoutProps) {
         {/* Sidebar Header */}
         <div className="flex items-center justify-between h-20 px-6 border-b border-gray-100">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center">
               <Target className="w-6 h-6 text-white" />
             </div>
             <div>
               <span className="text-xl font-bold text-gray-900">Keep</span>
-              <span className="text-xl font-bold text-purple-600">Leads</span>
+              <span className="text-xl font-bold text-gray-600">Leads</span>
             </div>
           </div>
 

@@ -11,9 +11,9 @@
   --card-foreground: hsl(222.2, 84%, 4.9%);
   --popover: hsl(0, 0%, 100%);
   --popover-foreground: hsl(222.2, 84%, 4.9%);
-  --primary: hsl(262.1, 83.3%, 57.8%);
+  --primary: hsl(14, 83%, 57%);
   --primary-foreground: hsl(210, 20%, 98%);
-  --primary-light: hsl(270, 95%, 75%);
+  --primary-light: hsl(14, 88%, 64%);
   --primary-dark: hsl(262.1, 83.3%, 45%);
   --secondary: hsl(210, 40%, 96%);
   --secondary-foreground: hsl(222.2, 84%, 4.9%);
@@ -23,7 +23,7 @@
   --accent-foreground: hsl(222.2, 84%, 4.9%);
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(210, 20%, 98%);
-  --border: hsl(214.3, 31.8%, 91.4%);
+  --border: hsl(0, 0%, 72%);
   --input: hsl(214.3, 31.8%, 91.4%);
   --ring: hsl(262.1, 83.3%, 57.8%);
   --chart-1: hsl(12, 76%, 61%);
@@ -46,7 +46,7 @@
   --popover-foreground: hsl(210, 20%, 98%);
   --primary: hsl(262.1, 83.3%, 57.8%);
   --primary-foreground: hsl(210, 20%, 98%);
-  --primary-light: hsl(270, 95%, 75%);
+  --primary-light: hsl(14, 88%, 64%);
   --primary-dark: hsl(262.1, 83.3%, 45%);
   --secondary: hsl(217.2, 32.6%, 17.5%);
   --secondary-foreground: hsl(210, 20%, 98%);
@@ -70,6 +70,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground font-sans;
     font-family: "Inter Tight", Inter, system-ui, sans-serif;
@@ -159,6 +160,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -174,6 +176,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -204,11 +207,11 @@
   .text-responsive-xl {
     @apply text-xl;
   }
-  
+
   .text-responsive-2xl {
     @apply text-xl;
   }
-  
+
   .text-responsive-3xl {
     @apply text-2xl;
   }
@@ -218,11 +221,11 @@
   .text-responsive-xl {
     @apply text-2xl;
   }
-  
+
   .text-responsive-2xl {
     @apply text-3xl;
   }
-  
+
   .text-responsive-3xl {
     @apply text-4xl;
   }

@@ -7,16 +7,38 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { insertLeadSchema, type Lead, type InsuranceCompany } from "@shared/schema";
+import {
+  insertLeadSchema,
+  type Lead,
+  type InsuranceCompany,
+} from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Plus, Edit, Trash2, DollarSign, Users } from "lucide-react";
 
@@ -51,11 +73,13 @@ type LeadFormData = z.infer<typeof leadFormSchema>;
 // Form schema for user creation/editing
 const userFormSchema = z.object({
   email: z.string().email("Email inválido"),
-  password: z.union([
-    z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-    z.literal(""),
-    z.undefined()
-  ]).optional(),
+  password: z
+    .union([
+      z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+      z.literal(""),
+      z.undefined(),
+    ])
+    .optional(),
   firstName: z.string().min(1, "Nome é obrigatório"),
   lastName: z.string().min(1, "Sobrenome é obrigatório"),
   role: z.enum(["admin", "manager", "client"], {
@@ -73,7 +97,7 @@ export default function AdminPanel() {
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  
+
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadFormSchema),
     defaultValues: {
@@ -152,7 +176,11 @@ export default function AdminPanel() {
       };
 
       if (editingLead) {
-        return apiRequest("PUT", `/api/admin/leads/${editingLead.id}`, leadData);
+        return apiRequest(
+          "PUT",
+          `/api/admin/leads/${editingLead.id}`,
+          leadData,
+        );
       } else {
         return apiRequest("POST", "/api/admin/leads", leadData);
       }
@@ -165,7 +193,9 @@ export default function AdminPanel() {
       form.reset();
       toast({
         title: "Sucesso",
-        description: editingLead ? "Lead atualizado com sucesso!" : "Lead criado com sucesso!",
+        description: editingLead
+          ? "Lead atualizado com sucesso!"
+          : "Lead criado com sucesso!",
       });
     },
     onError: (error) => {
@@ -177,7 +207,7 @@ export default function AdminPanel() {
     },
   });
 
-  // Mutation for deleting leads  
+  // Mutation for deleting leads
   const deleteMutation = useMutation({
     mutationFn: async (leadId: string) => {
       return apiRequest("DELETE", `/api/admin/leads/${leadId}`);
@@ -192,7 +222,7 @@ export default function AdminPanel() {
     },
     onError: (error) => {
       toast({
-        title: "Erro", 
+        title: "Erro",
         description: `Falha ao excluir lead: ${error.message}`,
         variant: "destructive",
       });
@@ -216,7 +246,11 @@ export default function AdminPanel() {
       }
 
       if (editingUser) {
-        return apiRequest("PUT", `/api/admin/users/${editingUser.id}`, userData);
+        return apiRequest(
+          "PUT",
+          `/api/admin/users/${editingUser.id}`,
+          userData,
+        );
       } else {
         return apiRequest("POST", "/api/admin/users", userData);
       }
@@ -229,7 +263,9 @@ export default function AdminPanel() {
       userForm.reset();
       toast({
         title: "Sucesso",
-        description: editingUser ? "Usuário atualizado com sucesso!" : "Usuário criado com sucesso!",
+        description: editingUser
+          ? "Usuário atualizado com sucesso!"
+          : "Usuário criado com sucesso!",
       });
     },
     onError: (error) => {
@@ -244,7 +280,11 @@ export default function AdminPanel() {
   // Mutation for toggling user status (suspend/activate)
   const toggleUserStatusMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return apiRequest("PATCH", `/api/admin/users/${userId}/toggle-status`, {});
+      return apiRequest(
+        "PATCH",
+        `/api/admin/users/${userId}/toggle-status`,
+        {},
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -366,12 +406,24 @@ export default function AdminPanel() {
         <div className="w-full">
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clipRule="evenodd" />
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z"
+                  clipRule="evenodd"
+                />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-slate-900 mb-2">Acesso Restrito</h3>
-            <p className="text-slate-500">Esta área é restrita para administradores.</p>
+            <h3 className="text-lg font-medium text-slate-900 mb-2">
+              Acesso Restrito
+            </h3>
+            <p className="text-slate-500">
+              Esta área é restrita para administradores.
+            </p>
           </div>
         </div>
       </Layout>
@@ -382,10 +434,15 @@ export default function AdminPanel() {
     <Layout>
       <div className="w-9/10 mx-auto py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2" data-testid="text-page-title">
+          <h1
+            className="text-3xl font-bold text-slate-800 mb-2"
+            data-testid="text-page-title"
+          >
             Painel Administrativo
           </h1>
-          <p className="text-slate-600">Gerencie usuários, leads, transações e configurações do sistema</p>
+          <p className="text-slate-600">
+            Gerencie usuários, leads, transações e configurações do sistema
+          </p>
         </div>
 
         {/* Admin Stats */}
@@ -395,74 +452,133 @@ export default function AdminPanel() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Total de Leads</p>
-                    <p className="text-2xl font-bold text-slate-800" data-testid="text-total-leads">
+                    <p className="text-sm font-medium text-slate-600">
+                      Total de Leads
+                    </p>
+                    <p
+                      className="text-2xl font-bold text-slate-800"
+                      data-testid="text-total-leads"
+                    >
                       {stats.totalLeads.toLocaleString()}
                     </p>
-                    <p className="text-xs text-green-600 font-medium">Sistema ativo</p>
+                    <p className="text-xs text-green-600 font-medium">
+                      Sistema ativo
+                    </p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-6 h-6 text-blue-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                     </svg>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Leads Vendidos</p>
-                    <p className="text-2xl font-bold text-slate-800" data-testid="text-sold-leads">
+                    <p className="text-sm font-medium text-slate-600">
+                      Leads Vendidos
+                    </p>
+                    <p
+                      className="text-2xl font-bold text-slate-800"
+                      data-testid="text-sold-leads"
+                    >
                       {stats.soldLeads.toLocaleString()}
                     </p>
                     <p className="text-xs text-green-600 font-medium">
-                      Taxa: {stats.totalLeads > 0 ? ((stats.soldLeads / stats.totalLeads) * 100).toFixed(1) : 0}%
+                      Taxa:{" "}
+                      {stats.totalLeads > 0
+                        ? ((stats.soldLeads / stats.totalLeads) * 100).toFixed(
+                            1,
+                          )
+                        : 0}
+                      %
                     </p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    <svg
+                      className="w-6 h-6 text-green-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Receita Total</p>
-                    <p className="text-2xl font-bold text-slate-800" data-testid="text-total-revenue">
-                      R$ {parseFloat(stats.totalRevenue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    <p className="text-sm font-medium text-slate-600">
+                      Receita Total
                     </p>
-                    <p className="text-xs text-green-600 font-medium">Acumulado</p>
+                    <p
+                      className="text-2xl font-bold text-slate-800"
+                      data-testid="text-total-revenue"
+                    >
+                      R${" "}
+                      {parseFloat(stats.totalRevenue).toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </p>
+                    <p className="text-xs text-green-600 font-medium">
+                      Acumulado
+                    </p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      className="w-6 h-6 text-green-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-600">Usuários Ativos</p>
-                    <p className="text-2xl font-bold text-slate-800" data-testid="text-active-users">
+                    <p className="text-sm font-medium text-slate-600">
+                      Usuários Ativos
+                    </p>
+                    <p
+                      className="text-2xl font-bold text-slate-800"
+                      data-testid="text-active-users"
+                    >
                       {stats.activeUsers}
                     </p>
-                    <p className="text-xs text-green-600 font-medium">Total: {stats.totalUsers}</p>
+                    <p className="text-xs text-green-600 font-medium">
+                      Total: {stats.totalUsers}
+                    </p>
                   </div>
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <svg
+                      className="w-6 h-6 text-gray-600"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
                     </svg>
                   </div>
@@ -482,15 +598,22 @@ export default function AdminPanel() {
               </TabsList>
             </div>
 
-
             {/* Users Tab */}
             <TabsContent value="users" className="mt-0">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Gerenciar Usuários</CardTitle>
                   <Button onClick={handleAddUser} data-testid="button-add-user">
-                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     Adicionar Usuário
                   </Button>
@@ -500,11 +623,17 @@ export default function AdminPanel() {
                 {users.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="w-12 h-12 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
-                      <svg className="w-6 h-6 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                      <svg
+                        className="w-6 h-6 text-slate-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
                         <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                       </svg>
                     </div>
-                    <p className="text-slate-600" data-testid="text-no-users">Nenhum usuário encontrado</p>
+                    <p className="text-slate-600" data-testid="text-no-users">
+                      Nenhum usuário encontrado
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -533,44 +662,61 @@ export default function AdminPanel() {
                       </thead>
                       <tbody className="bg-white divide-y divide-slate-200">
                         {users.map((user) => (
-                          <tr key={user.id} className="hover:bg-slate-50" data-testid={`row-user-${user.id}`}>
+                          <tr
+                            key={user.id}
+                            className="hover:bg-slate-50"
+                            data-testid={`row-user-${user.id}`}
+                          >
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center">
-                                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mr-3">
                                   <span className="text-purple-600 font-medium text-sm">
-                                    {user.firstName?.charAt(0) || user.email?.charAt(0) || "?"}
+                                    {user.firstName?.charAt(0) ||
+                                      user.email?.charAt(0) ||
+                                      "?"}
                                     {user.lastName?.charAt(0) || ""}
                                   </span>
                                 </div>
                                 <div>
-                                  <div className="text-sm font-medium text-slate-900" data-testid={`text-user-name-${user.id}`}>
-                                    {user.firstName && user.lastName 
+                                  <div
+                                    className="text-sm font-medium text-slate-900"
+                                    data-testid={`text-user-name-${user.id}`}
+                                  >
+                                    {user.firstName && user.lastName
                                       ? `${user.firstName} ${user.lastName}`
-                                      : user.email
-                                    }
+                                      : user.email}
                                   </div>
-                                  <div className="text-sm text-slate-500">ID: {user.id.slice(0, 8)}...</div>
+                                  <div className="text-sm text-slate-500">
+                                    ID: {user.id.slice(0, 8)}...
+                                  </div>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900" data-testid={`text-user-email-${user.id}`}>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm text-slate-900"
+                              data-testid={`text-user-email-${user.id}`}
+                            >
                               {user.email || "N/A"}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex flex-col gap-1">
-                                <Badge 
+                                <Badge
                                   className={
-                                    user.role === "admin" 
-                                      ? "bg-purple-100 text-purple-800" 
+                                    user.role === "admin"
+                                      ? "bg-purple-100 text-purple-800"
                                       : user.role === "manager"
-                                      ? "bg-orange-100 text-orange-800"
-                                      : "bg-blue-100 text-blue-800"
+                                        ? "bg-orange-100 text-orange-800"
+                                        : "bg-blue-100 text-blue-800"
                                   }
                                   data-testid={`text-user-role-${user.id}`}
                                 >
-                                  {user.role === "admin" ? "Administrador" : user.role === "manager" ? "Gerente" : "Cliente"}
+                                  {user.role === "admin"
+                                    ? "Administrador"
+                                    : user.role === "manager"
+                                      ? "Gerente"
+                                      : "Cliente"}
                                 </Badge>
-                                <Badge 
+                                <Badge
                                   className={
                                     user.status === "suspended"
                                       ? "bg-red-100 text-red-800"
@@ -578,34 +724,50 @@ export default function AdminPanel() {
                                   }
                                   data-testid={`text-user-status-${user.id}`}
                                 >
-                                  {user.status === "suspended" ? "Suspenso" : "Ativo"}
+                                  {user.status === "suspended"
+                                    ? "Suspenso"
+                                    : "Ativo"}
                                 </Badge>
                               </div>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" data-testid={`text-user-credits-${user.id}`}>
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900"
+                              data-testid={`text-user-credits-${user.id}`}
+                            >
                               R$ {parseFloat(user.credits).toFixed(2)}
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500" data-testid={`text-user-created-${user.id}`}>
-                              {new Date(user.createdAt).toLocaleDateString('pt-BR')}
+                            <td
+                              className="px-6 py-4 whitespace-nowrap text-sm text-slate-500"
+                              data-testid={`text-user-created-${user.id}`}
+                            >
+                              {new Date(user.createdAt).toLocaleDateString(
+                                "pt-BR",
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-primary hover:text-primary-dark mr-2" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-primary hover:text-primary-dark mr-2"
                                 onClick={() => handleEditUser(user)}
                                 data-testid={`button-edit-user-${user.id}`}
                               >
                                 Editar
                               </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className={user.status === 'suspended' ? "text-green-600 hover:text-green-800" : "text-orange-600 hover:text-orange-800"}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={
+                                  user.status === "suspended"
+                                    ? "text-green-600 hover:text-green-800"
+                                    : "text-orange-600 hover:text-orange-800"
+                                }
                                 onClick={() => handleToggleUserStatus(user.id)}
                                 data-testid={`button-suspend-user-${user.id}`}
                               >
-                                {user.status === 'suspended' ? 'Ativar' : 'Suspender'}
+                                {user.status === "suspended"
+                                  ? "Ativar"
+                                  : "Suspender"}
                               </Button>
                             </td>
                           </tr>
@@ -627,50 +789,78 @@ export default function AdminPanel() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-lg">Configurações de Leads</CardTitle>
+                        <CardTitle className="text-lg">
+                          Configurações de Leads
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-600">Preço mínimo por lead</span>
+                          <span className="text-sm text-slate-600">
+                            Preço mínimo por lead
+                          </span>
                           <span className="font-medium">R$ 10,00</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-600">Preço máximo por lead</span>
+                          <span className="text-sm text-slate-600">
+                            Preço máximo por lead
+                          </span>
                           <span className="font-medium">R$ 200,00</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-600">Tempo de reserva (min)</span>
+                          <span className="text-sm text-slate-600">
+                            Tempo de reserva (min)
+                          </span>
                           <span className="font-medium">15</span>
                         </div>
-                        <Button size="sm" data-testid="button-edit-lead-settings">Editar</Button>
+                        <Button
+                          size="sm"
+                          data-testid="button-edit-lead-settings"
+                        >
+                          Editar
+                        </Button>
                       </CardContent>
                     </Card>
 
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-lg">Configurações de Pagamento</CardTitle>
+                        <CardTitle className="text-lg">
+                          Configurações de Pagamento
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-600">Depósito mínimo</span>
+                          <span className="text-sm text-slate-600">
+                            Depósito mínimo
+                          </span>
                           <span className="font-medium">R$ 10,00</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-600">Taxa de processamento</span>
+                          <span className="text-sm text-slate-600">
+                            Taxa de processamento
+                          </span>
                           <span className="font-medium">0%</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-600">Métodos aceitos</span>
+                          <span className="text-sm text-slate-600">
+                            Métodos aceitos
+                          </span>
                           <span className="font-medium">PIX, Cartão</span>
                         </div>
-                        <Button size="sm" data-testid="button-edit-payment-settings">Editar</Button>
+                        <Button
+                          size="sm"
+                          data-testid="button-edit-payment-settings"
+                        >
+                          Editar
+                        </Button>
                       </CardContent>
                     </Card>
                   </div>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Operadoras de Saúde</CardTitle>
+                      <CardTitle className="text-lg">
+                        Operadoras de Saúde
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="text-sm text-slate-600 mb-4">
@@ -695,9 +885,12 @@ export default function AdminPanel() {
                 {editingUser ? "Editar Usuário" : "Adicionar Novo Usuário"}
               </DialogTitle>
             </DialogHeader>
-            
+
             <Form {...userForm}>
-              <form onSubmit={userForm.handleSubmit(onUserSubmit)} className="space-y-4">
+              <form
+                onSubmit={userForm.handleSubmit(onUserSubmit)}
+                className="space-y-4"
+              >
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={userForm.control}
@@ -706,7 +899,11 @@ export default function AdminPanel() {
                       <FormItem>
                         <FormLabel>Nome</FormLabel>
                         <FormControl>
-                          <Input placeholder="João" {...field} data-testid="input-user-firstname" />
+                          <Input
+                            placeholder="João"
+                            {...field}
+                            data-testid="input-user-firstname"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -719,7 +916,11 @@ export default function AdminPanel() {
                       <FormItem>
                         <FormLabel>Sobrenome</FormLabel>
                         <FormControl>
-                          <Input placeholder="Silva" {...field} data-testid="input-user-lastname" />
+                          <Input
+                            placeholder="Silva"
+                            {...field}
+                            data-testid="input-user-lastname"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -734,7 +935,12 @@ export default function AdminPanel() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="joao@exemplo.com" {...field} data-testid="input-user-email" />
+                        <Input
+                          type="email"
+                          placeholder="joao@exemplo.com"
+                          {...field}
+                          data-testid="input-user-email"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -749,7 +955,12 @@ export default function AdminPanel() {
                       <FormItem>
                         <FormLabel>Senha</FormLabel>
                         <FormControl>
-                          <Input type="password" placeholder="Mínimo 6 caracteres" {...field} data-testid="input-user-password" />
+                          <Input
+                            type="password"
+                            placeholder="Mínimo 6 caracteres"
+                            {...field}
+                            data-testid="input-user-password"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -764,7 +975,10 @@ export default function AdminPanel() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tipo de Usuário</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger data-testid="select-user-role">
                               <SelectValue placeholder="Selecionar tipo" />
@@ -788,13 +1002,13 @@ export default function AdminPanel() {
                       <FormItem>
                         <FormLabel>Créditos Iniciais</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            min="0" 
+                          <Input
+                            type="number"
+                            min="0"
                             step="0.01"
-                            placeholder="0.00" 
-                            {...field} 
-                            data-testid="input-user-credits" 
+                            placeholder="0.00"
+                            {...field}
+                            data-testid="input-user-credits"
                           />
                         </FormControl>
                         <FormMessage />
@@ -805,16 +1019,21 @@ export default function AdminPanel() {
 
                 {/* Permissions Info */}
                 <div className="bg-slate-50 rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-slate-900 mb-2">Permissões por Tipo:</h4>
+                  <h4 className="text-sm font-medium text-slate-900 mb-2">
+                    Permissões por Tipo:
+                  </h4>
                   <div className="space-y-2 text-sm text-slate-600">
                     <div>
-                      <strong>Cliente:</strong> Dashboard, Marketplace, Meus Leads, Adicionar Crédito
+                      <strong>Cliente:</strong> Dashboard, Marketplace, Meus
+                      Leads, Adicionar Crédito
                     </div>
                     <div>
-                      <strong>Gerente:</strong> Todas as permissões de Cliente + Relatórios
+                      <strong>Gerente:</strong> Todas as permissões de Cliente +
+                      Relatórios
                     </div>
                     <div>
-                      <strong>Administrador:</strong> Todas as permissões + Painel Admin
+                      <strong>Administrador:</strong> Todas as permissões +
+                      Painel Admin
                     </div>
                   </div>
                 </div>
@@ -840,8 +1059,10 @@ export default function AdminPanel() {
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                         Salvando...
                       </>
+                    ) : editingUser ? (
+                      "Atualizar"
                     ) : (
-                      editingUser ? "Atualizar" : "Criar Usuário"
+                      "Criar Usuário"
                     )}
                   </Button>
                 </div>
@@ -858,9 +1079,12 @@ export default function AdminPanel() {
                 {editingLead ? "Editar Lead" : "Adicionar Novo Lead"}
               </DialogTitle>
             </DialogHeader>
-            
+
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -875,7 +1099,7 @@ export default function AdminPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="email"
@@ -883,13 +1107,17 @@ export default function AdminPanel() {
                       <FormItem>
                         <FormLabel>E-mail</FormLabel>
                         <FormControl>
-                          <Input type="email" placeholder="email@exemplo.com" {...field} />
+                          <Input
+                            type="email"
+                            placeholder="email@exemplo.com"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="phone"
@@ -903,7 +1131,7 @@ export default function AdminPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="age"
@@ -911,18 +1139,20 @@ export default function AdminPanel() {
                       <FormItem>
                         <FormLabel>Idade</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="25" 
+                          <Input
+                            type="number"
+                            placeholder="25"
                             {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value))
+                            }
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="city"
@@ -936,7 +1166,7 @@ export default function AdminPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="state"
@@ -950,14 +1180,17 @@ export default function AdminPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="insuranceCompanyId"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Operadora</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || undefined}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || undefined}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecione a operadora" />
@@ -975,30 +1208,37 @@ export default function AdminPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="planType"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tipo de Plano</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Tipo do plano" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="individual">Individual</SelectItem>
+                            <SelectItem value="individual">
+                              Individual
+                            </SelectItem>
                             <SelectItem value="familiar">Familiar</SelectItem>
-                            <SelectItem value="empresarial">Empresarial</SelectItem>
+                            <SelectItem value="empresarial">
+                              Empresarial
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="budgetMin"
@@ -1012,7 +1252,7 @@ export default function AdminPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="budgetMax"
@@ -1026,7 +1266,7 @@ export default function AdminPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="availableLives"
@@ -1034,18 +1274,20 @@ export default function AdminPanel() {
                       <FormItem>
                         <FormLabel>Vidas Disponíveis</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="1" 
+                          <Input
+                            type="number"
+                            placeholder="1"
                             {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value))
+                            }
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="source"
@@ -1059,7 +1301,7 @@ export default function AdminPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="campaign"
@@ -1067,20 +1309,27 @@ export default function AdminPanel() {
                       <FormItem>
                         <FormLabel>Campanha</FormLabel>
                         <FormControl>
-                          <Input placeholder="Campanha Verão" {...field} value={field.value || ""} />
+                          <Input
+                            placeholder="Campanha Verão"
+                            {...field}
+                            value={field.value || ""}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="quality"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Qualidade</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Qualidade do lead" />
@@ -1096,21 +1345,26 @@ export default function AdminPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="status"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Status do lead" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="available">Disponível</SelectItem>
+                            <SelectItem value="available">
+                              Disponível
+                            </SelectItem>
                             <SelectItem value="reserved">Reservado</SelectItem>
                             <SelectItem value="sold">Vendido</SelectItem>
                             <SelectItem value="expired">Expirado</SelectItem>
@@ -1120,7 +1374,7 @@ export default function AdminPanel() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="price"
@@ -1128,14 +1382,19 @@ export default function AdminPanel() {
                       <FormItem>
                         <FormLabel>Preço (R$)</FormLabel>
                         <FormControl>
-                          <Input type="number" step="0.01" placeholder="50.00" {...field} />
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="50.00"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
-                
+
                 <FormField
                   control={form.control}
                   name="notes"
@@ -1143,24 +1402,32 @@ export default function AdminPanel() {
                     <FormItem>
                       <FormLabel>Observações</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Observações sobre o lead..." 
+                        <Textarea
+                          placeholder="Observações sobre o lead..."
                           className="min-h-[80px]"
                           {...field}
-                          value={field.value || ""} 
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="flex justify-end space-x-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setShowLeadModal(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowLeadModal(false)}
+                  >
                     Cancelar
                   </Button>
                   <Button type="submit" disabled={leadMutation.isPending}>
-                    {leadMutation.isPending ? "Salvando..." : editingLead ? "Atualizar" : "Criar"}
+                    {leadMutation.isPending
+                      ? "Salvando..."
+                      : editingLead
+                        ? "Atualizar"
+                        : "Criar"}
                   </Button>
                 </div>
               </form>

@@ -247,7 +247,7 @@ export default function LeadCard({
                 setShowPurchaseModal(true);
               }}
               disabled={!hasSufficientCredits}
-              className="w-full h-12 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 group disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
+              className="w-full h-12 bg-gradient-to-r from-primary-600 to-gray-600 hover:from-gray-700 hover:to-gray-500 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 group disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
               data-testid={`button-purchase-${lead.id}`}
             >
               <span>
