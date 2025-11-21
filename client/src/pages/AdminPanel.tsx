@@ -594,7 +594,6 @@ export default function AdminPanel() {
             <div className="border-b border-slate-200 px-6 py-4">
               <TabsList className="grid w-full max-w-lg grid-cols-2">
                 <TabsTrigger value="users">Usuários</TabsTrigger>
-                <TabsTrigger value="settings">Configurações</TabsTrigger>
               </TabsList>
             </div>
 
