@@ -40,7 +40,18 @@ import {
   type InsuranceCompany,
 } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Edit, Trash2, DollarSign, Users } from "lucide-react";
+import { Plus, Edit, Trash2, DollarSign, Users, UserX, UserCheck, Pencil } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface User {
   id: string;
@@ -97,6 +108,7 @@ export default function AdminPanel() {
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
 
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadFormSchema),
@@ -309,6 +321,7 @@ export default function AdminPanel() {
       return apiRequest("DELETE", `/api/admin/users/${userId}`);
     },
     onSuccess: () => {
+      setDeleteUserId(null);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
       toast({
@@ -744,30 +757,68 @@ export default function AdminPanel() {
                               )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-primary hover:text-primary-dark mr-2"
-                                onClick={() => handleEditUser(user)}
-                                data-testid={`button-edit-user-${user.id}`}
-                              >
-                                Editar
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={
-                                  user.status === "suspended"
-                                    ? "text-green-600 hover:text-green-800"
-                                    : "text-orange-600 hover:text-orange-800"
-                                }
-                                onClick={() => handleToggleUserStatus(user.id)}
-                                data-testid={`button-suspend-user-${user.id}`}
-                              >
-                                {user.status === "suspended"
-                                  ? "Ativar"
-                                  : "Suspender"}
-                              </Button>
+                              <TooltipProvider>
+                                <div className="flex items-center gap-1">
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-primary hover:text-primary-dark hover:bg-primary/10"
+                                        onClick={() => handleEditUser(user)}
+                                        data-testid={`button-edit-user-${user.id}`}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Editar usuário</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className={`h-8 w-8 ${
+                                          user.status === "suspended"
+                                            ? "text-green-600 hover:text-green-800 hover:bg-green-50"
+                                            : "text-orange-600 hover:text-orange-800 hover:bg-orange-50"
+                                        }`}
+                                        onClick={() => handleToggleUserStatus(user.id)}
+                                        data-testid={`button-suspend-user-${user.id}`}
+                                      >
+                                        {user.status === "suspended" ? (
+                                          <UserCheck className="h-4 w-4" />
+                                        ) : (
+                                          <UserX className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>{user.status === "suspended" ? "Ativar usuário" : "Suspender usuário"}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50"
+                                        onClick={() => setDeleteUserId(user.id)}
+                                        data-testid={`button-delete-user-${user.id}`}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Excluir usuário</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </div>
+                              </TooltipProvider>
                             </td>
                           </tr>
                         ))}
@@ -1433,6 +1484,35 @@ export default function AdminPanel() {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* Delete User Confirmation Dialog */}
+        <AlertDialog open={deleteUserId !== null} onOpenChange={() => setDeleteUserId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.
+                Todos os dados do usuário serão permanentemente removidos do sistema.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel data-testid="button-cancel-delete-user">
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (deleteUserId) {
+                    deleteUserMutation.mutate(deleteUserId);
+                  }
+                }}
+                className="bg-red-600 hover:bg-red-700"
+                data-testid="button-confirm-delete-user"
+              >
+                {deleteUserMutation.isPending ? "Excluindo..." : "Excluir Usuário"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </Layout>
   );
