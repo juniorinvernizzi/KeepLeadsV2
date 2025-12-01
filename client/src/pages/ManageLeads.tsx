@@ -15,7 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Edit, Trash2, Users } from "lucide-react";
+import { Plus, Edit, Trash2, Users, Download, Upload, FileSpreadsheet, AlertCircle, CheckCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Lead {
   id: string;
@@ -95,11 +96,21 @@ const BRAZILIAN_STATES = [
   { code: "TO", name: "Tocantins" },
 ];
 
+interface ImportResults {
+  total: number;
+  success: number;
+  errors: { row: number; error: string }[];
+}
+
 export default function ManageLeads() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [importResults, setImportResults] = useState<ImportResults | null>(null);
+  const [showImportResults, setShowImportResults] = useState(false);
   
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadFormSchema),
@@ -231,6 +242,122 @@ export default function ManageLeads() {
     leadMutation.mutate(data);
   };
 
+  // Download Excel template
+  const handleDownloadTemplate = async () => {
+    try {
+      setIsDownloading(true);
+      const response = await fetch('/api/admin/leads/template', {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Falha ao baixar template');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template_leads_keepleads.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Sucesso",
+        description: "Template baixado com sucesso!",
+      });
+    } catch (error) {
+      console.error("Error downloading template:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao baixar o template",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Upload Excel file
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      '.xlsx',
+      '.xls'
+    ];
+    
+    if (!validTypes.some(type => file.type.includes(type) || file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+      toast({
+        title: "Erro",
+        description: "Por favor, selecione um arquivo Excel (.xlsx ou .xls)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setImportResults(null);
+      
+      // Read file as base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const base64 = e.target?.result?.toString().split(',')[1];
+          
+          const response = await apiRequest('POST', '/api/admin/leads/import', {
+            fileData: base64,
+            fileName: file.name,
+          });
+
+          const data = await response.json();
+          
+          setImportResults(data.results);
+          setShowImportResults(true);
+          
+          // Refresh leads list
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/leads"] });
+          queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+          
+          if (data.results.success > 0) {
+            toast({
+              title: "Importação Concluída",
+              description: data.message,
+            });
+          }
+        } catch (error) {
+          console.error("Error uploading file:", error);
+          toast({
+            title: "Erro",
+            description: error instanceof Error ? error.message : "Erro ao importar leads",
+            variant: "destructive",
+          });
+        } finally {
+          setIsUploading(false);
+          // Reset file input
+          event.target.value = '';
+        }
+      };
+      
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error reading file:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao ler o arquivo",
+        variant: "destructive",
+      });
+      setIsUploading(false);
+    }
+  };
+
   // Don't render for non-admin users
   if (!user || user.role !== "admin") {
     return (
@@ -259,6 +386,106 @@ export default function ManageLeads() {
           </h1>
           <p className="text-slate-600">Adicione, edite e exclua leads criados manualmente</p>
         </div>
+
+        {/* Import Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5 text-green-600" />
+              <CardTitle>Importar Leads via Excel</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+              <div className="flex-1">
+                <p className="text-sm text-slate-600 mb-2">
+                  Importe múltiplos leads de uma vez usando uma planilha Excel. 
+                  Baixe o template, preencha com os dados e faça upload.
+                </p>
+                <p className="text-xs text-slate-500">
+                  Formatos aceitos: .xlsx, .xls
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadTemplate}
+                  disabled={isDownloading}
+                  data-testid="button-download-template"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  {isDownloading ? "Baixando..." : "Baixar Template"}
+                </Button>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={isUploading}
+                    data-testid="input-upload-file"
+                  />
+                  <Button
+                    disabled={isUploading}
+                    data-testid="button-upload-file"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    {isUploading ? "Importando..." : "Importar Planilha"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Import Results */}
+            {showImportResults && importResults && (
+              <div className="mt-4 space-y-3">
+                {/* Success Summary */}
+                <Alert className={importResults.success > 0 ? "border-green-200 bg-green-50" : "border-yellow-200 bg-yellow-50"}>
+                  <CheckCircle className={`h-4 w-4 ${importResults.success > 0 ? "text-green-600" : "text-yellow-600"}`} />
+                  <AlertTitle className={importResults.success > 0 ? "text-green-800" : "text-yellow-800"}>
+                    Resultado da Importação
+                  </AlertTitle>
+                  <AlertDescription className={importResults.success > 0 ? "text-green-700" : "text-yellow-700"}>
+                    {importResults.success} de {importResults.total} leads importados com sucesso.
+                  </AlertDescription>
+                </Alert>
+
+                {/* Errors List */}
+                {importResults.errors.length > 0 && (
+                  <Alert className="border-red-200 bg-red-50">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertTitle className="text-red-800">
+                      Erros na Importação ({importResults.errors.length})
+                    </AlertTitle>
+                    <AlertDescription className="text-red-700">
+                      <div className="mt-2 max-h-40 overflow-y-auto">
+                        <ul className="list-disc list-inside space-y-1 text-sm">
+                          {importResults.errors.map((err, idx) => (
+                            <li key={idx}>
+                              <span className="font-medium">Linha {err.row}:</span> {err.error}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setShowImportResults(false);
+                    setImportResults(null);
+                  }}
+                  className="text-slate-500"
+                >
+                  Fechar resultados
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
