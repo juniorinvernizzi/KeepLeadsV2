@@ -1374,7 +1374,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Vidas Disponíveis': 1,
           'Origem *': 'Google Ads',
           'Campanha': 'Campanha Verão 2024',
-          'Qualidade *': 'gold',
+          'Qualidade *': 'ouro',
           'Preço *': '50.00',
           'Observações': 'Cliente interessado em plano familiar'
         }
@@ -1424,7 +1424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ['Vidas Disponíveis: Número de pessoas a serem cobertas'],
         ['Origem *: Fonte do lead (ex: Google Ads, Facebook, Instagram, Indicação)'],
         ['Campanha: Nome da campanha de marketing'],
-        ['Qualidade *: "gold", "silver" ou "bronze"'],
+        ['Qualidade *: "ouro", "prata" ou "bronze"'],
         ['Preço *: Preço de venda do lead (valor numérico)'],
         ['Observações: Notas adicionais sobre o lead'],
         [''],
@@ -1516,7 +1516,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const availableLives = row['Vidas Disponíveis'] || row['Vidas Disponiveis'] || 1;
           const source = row['Origem *'] || row['Origem'];
           const campaign = row['Campanha'];
-          const quality = (row['Qualidade *'] || row['Qualidade'] || 'silver').toString().toLowerCase().trim();
+          const qualityRaw = (row['Qualidade *'] || row['Qualidade'] || 'prata').toString().toLowerCase().trim();
+          // Map Portuguese to internal values
+          const qualityMap: { [key: string]: string } = {
+            'ouro': 'gold',
+            'prata': 'silver',
+            'bronze': 'bronze',
+            'gold': 'gold',
+            'silver': 'silver'
+          };
+          const quality = qualityMap[qualityRaw] || qualityRaw;
           const price = row['Preço *'] || row['Preco *'] || row['Preço'] || row['Preco'];
           const notes = row['Observações'] || row['Observacoes'];
 
@@ -1542,7 +1551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             continue;
           }
           if (!['gold', 'silver', 'bronze'].includes(quality)) {
-            results.errors.push({ row: rowNum, error: `Qualidade inválida: ${quality}. Use gold, silver ou bronze` });
+            results.errors.push({ row: rowNum, error: `Qualidade inválida: ${qualityRaw}. Use ouro, prata ou bronze` });
             continue;
           }
           if (!price || isNaN(parseFloat(price))) {
