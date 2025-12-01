@@ -163,10 +163,10 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
               e.stopPropagation();
               window.location.href = "/login";
             }}
-            className="w-full h-12 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 group"
+            className="w-full h-12 bg-gradient-to-r from-primary-600 to-primary-light-600 hover:from-primary-light-700 hover:to-primary-light-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 group"
             data-testid={`button-login-to-buy-${lead.id}`}
           >
-            <span>FAZER LOGIN PARA COMPRAR</span>
+            <span>Fazer login para comprar</span>
           </Button>
         </CardContent>
       </Card>
