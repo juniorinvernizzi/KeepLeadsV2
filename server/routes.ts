@@ -7,6 +7,7 @@ import { sendLeadPurchaseNotification, sendAdminPurchaseNotification } from "./e
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import * as XLSX from "xlsx";
 
 interface ReplitAuthenticatedRequest extends Request {
   user?: {
@@ -1347,6 +1348,251 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error testing webhook:", error);
       res.status(500).json({ message: "Failed to test webhook" });
+    }
+  });
+
+  // Excel Template Download - Generate and download leads template
+  app.get('/api/admin/leads/template', requireAdmin, async (req: any, res) => {
+    try {
+      // Get insurance companies for the template
+      const companies = await storage.getInsuranceCompanies();
+      const companyNames = companies.map(c => c.name).join(', ');
+      
+      // Create template data with example row and instructions
+      const templateData = [
+        {
+          'Nome *': 'João da Silva',
+          'Email *': 'joao@email.com',
+          'Telefone *': '(11) 99999-9999',
+          'Idade': 35,
+          'Cidade': 'São Paulo',
+          'Estado *': 'SP',
+          'Renda': '5000.00',
+          'Tipo de Plano': 'individual',
+          'Orçamento Mínimo': '200.00',
+          'Orçamento Máximo': '500.00',
+          'Vidas Disponíveis': 1,
+          'Origem *': 'Google Ads',
+          'Campanha': 'Campanha Verão 2024',
+          'Qualidade *': 'gold',
+          'Preço *': '50.00',
+          'Observações': 'Cliente interessado em plano familiar'
+        }
+      ];
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(templateData);
+
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 25 }, // Nome
+        { wch: 30 }, // Email
+        { wch: 18 }, // Telefone
+        { wch: 8 },  // Idade
+        { wch: 20 }, // Cidade
+        { wch: 8 },  // Estado
+        { wch: 12 }, // Renda
+        { wch: 15 }, // Tipo de Plano
+        { wch: 15 }, // Orçamento Mínimo
+        { wch: 15 }, // Orçamento Máximo
+        { wch: 18 }, // Vidas Disponíveis
+        { wch: 15 }, // Origem
+        { wch: 25 }, // Campanha
+        { wch: 12 }, // Qualidade
+        { wch: 12 }, // Preço
+        { wch: 40 }, // Observações
+      ];
+
+      // Add instructions sheet
+      const instructionsData = [
+        ['INSTRUÇÕES PARA PREENCHIMENTO DA PLANILHA DE LEADS'],
+        [''],
+        ['Campos obrigatórios estão marcados com * (asterisco)'],
+        [''],
+        ['CAMPOS:'],
+        ['Nome *: Nome completo do lead'],
+        ['Email *: Email válido do lead'],
+        ['Telefone *: Telefone com DDD (formato: (XX) XXXXX-XXXX)'],
+        ['Idade: Idade do lead (número inteiro)'],
+        ['Cidade: Cidade de residência'],
+        ['Estado *: Sigla do estado (ex: SP, RJ, MG)'],
+        ['Renda: Renda mensal (valor numérico, ex: 5000.00)'],
+        ['Tipo de Plano: "individual" ou "empresarial"'],
+        ['Orçamento Mínimo: Valor mínimo que o cliente pode pagar'],
+        ['Orçamento Máximo: Valor máximo que o cliente pode pagar'],
+        ['Vidas Disponíveis: Número de pessoas a serem cobertas'],
+        ['Origem *: Fonte do lead (ex: Google Ads, Facebook, Instagram, Indicação)'],
+        ['Campanha: Nome da campanha de marketing'],
+        ['Qualidade *: "gold", "silver" ou "bronze"'],
+        ['Preço *: Preço de venda do lead (valor numérico)'],
+        ['Observações: Notas adicionais sobre o lead'],
+        [''],
+        ['DICAS:'],
+        ['- Delete a linha de exemplo antes de importar'],
+        ['- Não altere os nomes das colunas'],
+        ['- Valores numéricos devem usar ponto como separador decimal'],
+        ['- Estados devem usar a sigla (SP, RJ, MG, etc.)'],
+        [''],
+        ['SEGURADORAS CADASTRADAS:'],
+        [companyNames || 'Nenhuma seguradora cadastrada ainda'],
+      ];
+      
+      const wsInstructions = XLSX.utils.aoa_to_sheet(instructionsData);
+      wsInstructions['!cols'] = [{ wch: 80 }];
+
+      // Add sheets to workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+      XLSX.utils.book_append_sheet(wb, wsInstructions, 'Instruções');
+
+      // Generate buffer
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      // Set headers for download
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=template_leads_keepleads.xlsx');
+      res.setHeader('Content-Length', buffer.length);
+      
+      res.send(buffer);
+    } catch (error) {
+      console.error("Error generating template:", error);
+      res.status(500).json({ message: "Failed to generate template" });
+    }
+  });
+
+  // Excel Import - Upload and process leads from Excel file
+  app.post('/api/admin/leads/import', requireAdmin, async (req: any, res) => {
+    try {
+      // Check if file data is provided (base64 encoded)
+      const { fileData, fileName } = req.body;
+      
+      if (!fileData) {
+        return res.status(400).json({ message: "No file data provided" });
+      }
+
+      // Convert base64 to buffer
+      const buffer = Buffer.from(fileData, 'base64');
+      
+      // Parse Excel file
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      
+      // Get the first sheet (Leads)
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      
+      // Convert to JSON
+      const rawData = XLSX.utils.sheet_to_json(worksheet);
+      
+      if (!rawData || rawData.length === 0) {
+        return res.status(400).json({ message: "A planilha está vazia ou não contém dados válidos" });
+      }
+
+      const results = {
+        total: rawData.length,
+        success: 0,
+        errors: [] as { row: number; error: string }[]
+      };
+
+      // Brazilian states
+      const validStates = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
+
+      // Process each row
+      for (let i = 0; i < rawData.length; i++) {
+        const row = rawData[i] as any;
+        const rowNum = i + 2; // +2 because Excel is 1-indexed and has header row
+
+        try {
+          // Map Excel columns to lead fields
+          const name = row['Nome *'] || row['Nome'];
+          const email = row['Email *'] || row['Email'];
+          const phone = row['Telefone *'] || row['Telefone'];
+          const age = row['Idade'];
+          const city = row['Cidade'];
+          const state = (row['Estado *'] || row['Estado'] || '').toString().toUpperCase().trim();
+          const income = row['Renda'];
+          const planType = (row['Tipo de Plano'] || 'individual').toString().toLowerCase().trim();
+          const budgetMin = row['Orçamento Mínimo'] || row['Orcamento Minimo'];
+          const budgetMax = row['Orçamento Máximo'] || row['Orcamento Maximo'];
+          const availableLives = row['Vidas Disponíveis'] || row['Vidas Disponiveis'] || 1;
+          const source = row['Origem *'] || row['Origem'];
+          const campaign = row['Campanha'];
+          const quality = (row['Qualidade *'] || row['Qualidade'] || 'silver').toString().toLowerCase().trim();
+          const price = row['Preço *'] || row['Preco *'] || row['Preço'] || row['Preco'];
+          const notes = row['Observações'] || row['Observacoes'];
+
+          // Validate required fields
+          if (!name || name.toString().trim() === '') {
+            results.errors.push({ row: rowNum, error: 'Nome é obrigatório' });
+            continue;
+          }
+          if (!email || email.toString().trim() === '') {
+            results.errors.push({ row: rowNum, error: 'Email é obrigatório' });
+            continue;
+          }
+          if (!phone || phone.toString().trim() === '') {
+            results.errors.push({ row: rowNum, error: 'Telefone é obrigatório' });
+            continue;
+          }
+          if (!state || !validStates.includes(state)) {
+            results.errors.push({ row: rowNum, error: `Estado inválido: ${state}. Use a sigla (SP, RJ, MG, etc.)` });
+            continue;
+          }
+          if (!source || source.toString().trim() === '') {
+            results.errors.push({ row: rowNum, error: 'Origem é obrigatória' });
+            continue;
+          }
+          if (!['gold', 'silver', 'bronze'].includes(quality)) {
+            results.errors.push({ row: rowNum, error: `Qualidade inválida: ${quality}. Use gold, silver ou bronze` });
+            continue;
+          }
+          if (!price || isNaN(parseFloat(price))) {
+            results.errors.push({ row: rowNum, error: 'Preço é obrigatório e deve ser um número' });
+            continue;
+          }
+          if (!['individual', 'empresarial'].includes(planType)) {
+            results.errors.push({ row: rowNum, error: `Tipo de plano inválido: ${planType}. Use individual ou empresarial` });
+            continue;
+          }
+
+          // Create lead object
+          const leadData = {
+            name: name.toString().trim(),
+            email: email.toString().trim(),
+            phone: phone.toString().trim(),
+            age: age ? parseInt(age) : null,
+            city: city ? city.toString().trim() : null,
+            state: state,
+            income: income ? income.toString() : null,
+            planType: planType as 'individual' | 'empresarial',
+            budgetMin: budgetMin ? budgetMin.toString() : null,
+            budgetMax: budgetMax ? budgetMax.toString() : null,
+            availableLives: availableLives ? parseInt(availableLives) : 1,
+            source: source.toString().trim(),
+            campaign: campaign ? campaign.toString().trim() : null,
+            quality: quality as 'gold' | 'silver' | 'bronze',
+            price: price.toString(),
+            notes: notes ? notes.toString().trim() : null,
+            status: 'available' as const,
+          };
+
+          // Insert lead into database
+          await storage.createLead(leadData);
+          results.success++;
+        } catch (rowError) {
+          const errorMessage = rowError instanceof Error ? rowError.message : 'Erro desconhecido';
+          results.errors.push({ row: rowNum, error: errorMessage });
+        }
+      }
+
+      // Return results
+      res.json({
+        message: `Importação concluída: ${results.success} de ${results.total} leads importados com sucesso`,
+        results
+      });
+    } catch (error) {
+      console.error("Error importing leads:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      res.status(500).json({ message: `Falha ao importar leads: ${errorMessage}` });
     }
   });
 
