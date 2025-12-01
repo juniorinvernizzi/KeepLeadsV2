@@ -1367,10 +1367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Idade': 35,
           'Cidade': 'São Paulo',
           'Estado *': 'SP',
-          'Renda': '5000.00',
           'Tipo de Plano': 'individual',
-          'Orçamento Mínimo': '200.00',
-          'Orçamento Máximo': '500.00',
           'Vidas Disponíveis': 1,
           'Origem *': 'Google Ads',
           'Campanha': 'Campanha Verão 2024',
@@ -1392,10 +1389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { wch: 8 },  // Idade
         { wch: 20 }, // Cidade
         { wch: 8 },  // Estado
-        { wch: 12 }, // Renda
         { wch: 15 }, // Tipo de Plano
-        { wch: 15 }, // Orçamento Mínimo
-        { wch: 15 }, // Orçamento Máximo
         { wch: 18 }, // Vidas Disponíveis
         { wch: 15 }, // Origem
         { wch: 25 }, // Campanha
@@ -1417,10 +1411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ['Idade: Idade do lead (número inteiro)'],
         ['Cidade: Cidade de residência'],
         ['Estado *: Sigla do estado (ex: SP, RJ, MG)'],
-        ['Renda: Renda mensal (valor numérico, ex: 5000.00)'],
         ['Tipo de Plano: "individual" ou "empresarial"'],
-        ['Orçamento Mínimo: Valor mínimo que o cliente pode pagar'],
-        ['Orçamento Máximo: Valor máximo que o cliente pode pagar'],
         ['Vidas Disponíveis: Número de pessoas a serem cobertas'],
         ['Origem *: Fonte do lead (ex: Google Ads, Facebook, Instagram, Indicação)'],
         ['Campanha: Nome da campanha de marketing'],
@@ -1509,10 +1500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const age = row['Idade'];
           const city = row['Cidade'];
           const state = (row['Estado *'] || row['Estado'] || '').toString().toUpperCase().trim();
-          const income = row['Renda'];
           const planType = (row['Tipo de Plano'] || 'individual').toString().toLowerCase().trim();
-          const budgetMin = row['Orçamento Mínimo'] || row['Orcamento Minimo'];
-          const budgetMax = row['Orçamento Máximo'] || row['Orcamento Maximo'];
           const availableLives = row['Vidas Disponíveis'] || row['Vidas Disponiveis'] || 1;
           const source = row['Origem *'] || row['Origem'];
           const campaign = row['Campanha'];
@@ -1571,10 +1559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             age: age ? parseInt(age) : null,
             city: city ? city.toString().trim() : null,
             state: state,
-            income: income ? income.toString() : null,
             planType: planType as 'individual' | 'empresarial',
-            budgetMin: budgetMin ? budgetMin.toString() : null,
-            budgetMax: budgetMax ? budgetMax.toString() : null,
             availableLives: availableLives ? parseInt(availableLives) : 1,
             source: source.toString().trim(),
             campaign: campaign ? campaign.toString().trim() : null,
