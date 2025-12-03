@@ -589,7 +589,7 @@ export default function ManageLeads() {
                               variant="ghost" 
                               size="sm" 
                               onClick={() => handleEditLead(lead)}
-                              className="text-primary hover:text-primary-dark mr-2" 
+                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 mr-2" 
                               data-testid={`button-edit-lead-${lead.id}`}
                             >
                               <Edit className="w-4 h-4" />
@@ -598,7 +598,7 @@ export default function ManageLeads() {
                               variant="ghost" 
                               size="sm" 
                               onClick={() => handleDeleteLead(lead.id)}
-                              className="text-red-600 hover:text-red-800" 
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50" 
                               data-testid={`button-delete-lead-${lead.id}`}
                             >
                               <Trash2 className="w-4 h-4" />

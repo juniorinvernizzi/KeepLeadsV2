@@ -764,7 +764,7 @@ export default function AdminPanel() {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-8 w-8 text-primary hover:text-primary-dark hover:bg-primary/10"
+                                        className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                                         onClick={() => handleEditUser(user)}
                                         data-testid={`button-edit-user-${user.id}`}
                                       >
@@ -784,7 +784,7 @@ export default function AdminPanel() {
                                         className={`h-8 w-8 ${
                                           user.status === "suspended"
                                             ? "text-green-600 hover:text-green-800 hover:bg-green-50"
-                                            : "text-orange-600 hover:text-orange-800 hover:bg-orange-50"
+                                            : "text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
                                         }`}
                                         onClick={() => handleToggleUserStatus(user.id)}
                                         data-testid={`button-suspend-user-${user.id}`}

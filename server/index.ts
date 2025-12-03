@@ -4,9 +4,9 @@ import { registerRoutes } from "./routes";
 
 const app = express();
 
-// Add JSON and URL-encoded body parsing middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Add JSON and URL-encoded body parsing middleware with increased limit for file uploads
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 (async () => {
   // Register routes
