@@ -59,7 +59,7 @@ const leadFormSchema = z.object({
   availableLives: z.number().min(1, "Mínimo 1 vida disponível"),
   source: z.string().min(1, "Origem é obrigatória"),
   campaign: z.string().optional(),
-  quality: z.enum(["gold", "silver", "bronze"], { required_error: "Qualidade é obrigatória" }),
+  quality: z.enum(["diamond", "gold", "silver", "bronze"], { required_error: "Qualidade é obrigatória" }),
   status: z.enum(["available", "sold", "reserved", "expired"], { required_error: "Status é obrigatório" }),
   price: z.string().min(1, "Preço é obrigatório"),
   notes: z.string().optional(),
@@ -225,7 +225,7 @@ export default function ManageLeads() {
       availableLives: lead.availableLives,
       source: lead.source,
       campaign: lead.campaign || "",
-      quality: lead.quality as "gold" | "silver" | "bronze",
+      quality: lead.quality as "diamond" | "gold" | "silver" | "bronze",
       status: lead.status as "available" | "sold" | "reserved" | "expired",
       price: lead.price,
       notes: lead.notes,
@@ -562,13 +562,14 @@ export default function ManageLeads() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <Badge 
                               className={
+                                lead.quality === "diamond" ? "bg-cyan-100 text-cyan-800" :
                                 lead.quality === "gold" ? "bg-yellow-100 text-yellow-800" :
                                 lead.quality === "silver" ? "bg-gray-200 text-gray-800" :
                                 "bg-orange-100 text-orange-800"
                               }
                               data-testid={`text-lead-quality-${lead.id}`}
                             >
-                              {lead.quality === "gold" ? "Ouro" : lead.quality === "silver" ? "Prata" : "Bronze"}
+                              {lead.quality === "diamond" ? "Diamante" : lead.quality === "gold" ? "Ouro" : lead.quality === "silver" ? "Prata" : "Bronze"}
                             </Badge>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" data-testid={`text-lead-price-${lead.id}`}>
@@ -782,6 +783,7 @@ export default function ManageLeads() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            <SelectItem value="diamond">Diamante</SelectItem>
                             <SelectItem value="gold">Ouro</SelectItem>
                             <SelectItem value="silver">Prata</SelectItem>
                             <SelectItem value="bronze">Bronze</SelectItem>

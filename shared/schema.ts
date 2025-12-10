@@ -67,7 +67,7 @@ export const leads = pgTable("leads", {
   availableLives: integer("available_lives").default(1), // Quantidade de vidas disponíveis
   source: varchar("source").notNull(), // 'Google Ads', 'Facebook', etc.
   campaign: varchar("campaign"),
-  quality: varchar("quality").default("silver"), // 'gold', 'silver', 'bronze'
+  quality: varchar("quality").default("silver"), // 'diamond', 'gold', 'silver', 'bronze'
   status: varchar("status").default("available"), // 'available', 'reserved', 'sold', 'expired'
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),
@@ -149,7 +149,7 @@ export const insertLeadSchema = createInsertSchema(leads)
     updatedAt: true,
   })
   .extend({
-    quality: z.enum(["gold", "silver", "bronze"]).default("silver"),
+    quality: z.enum(["diamond", "gold", "silver", "bronze"]).default("silver"),
   });
 
 export const insertLeadPurchaseSchema = createInsertSchema(leadPurchases).omit({

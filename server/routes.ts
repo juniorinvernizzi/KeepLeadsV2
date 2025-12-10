@@ -1765,9 +1765,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .trim();
           // Map Portuguese to internal values
           const qualityMap: { [key: string]: string } = {
+            diamante: "diamond",
             ouro: "gold",
             prata: "silver",
             bronze: "bronze",
+            diamond: "diamond",
             gold: "gold",
             silver: "silver",
           };
@@ -1803,10 +1805,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             results.errors.push({ row: rowNum, error: "Origem é obrigatória" });
             continue;
           }
-          if (!["gold", "silver", "bronze"].includes(quality)) {
+          if (!["diamond", "gold", "silver", "bronze"].includes(quality)) {
             results.errors.push({
               row: rowNum,
-              error: `Qualidade inválida: ${qualityRaw}. Use ouro, prata ou bronze`,
+              error: `Qualidade inválida: ${qualityRaw}. Use diamante, ouro, prata ou bronze`,
             });
             continue;
           }
@@ -1837,7 +1839,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             availableLives: availableLives ? parseInt(availableLives) : 1,
             source: source.toString().trim(),
             campaign: campaign ? campaign.toString().trim() : null,
-            quality: quality as "gold" | "silver" | "bronze",
+            quality: quality as "diamond" | "gold" | "silver" | "bronze",
             price: price.toString(),
             notes: notes ? notes.toString().trim() : null,
             status: "available" as const,

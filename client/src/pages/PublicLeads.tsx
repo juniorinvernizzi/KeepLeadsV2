@@ -49,6 +49,12 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
 
   const getQualityBadge = () => {
     switch (lead.quality) {
+      case "diamond":
+        return {
+          label: "Diamante",
+          color: "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white",
+          icon: <Star className="w-3 h-3" />,
+        };
       case "gold":
         return {
           label: "Ouro",
@@ -306,8 +312,9 @@ export default function PublicLeads() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="individual">Individual</SelectItem>
-                    <SelectItem value="empresarial">Empresarial</SelectItem>
+                    <SelectItem value="pf">PF</SelectItem>
+                    <SelectItem value="pj">PJ</SelectItem>
+                    <SelectItem value="pme">PME</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -354,6 +361,7 @@ export default function PublicLeads() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os planos</SelectItem>
+                    <SelectItem value="diamond">Diamante</SelectItem>
                     <SelectItem value="gold">Ouro</SelectItem>
                     <SelectItem value="silver">Prata</SelectItem>
                     <SelectItem value="bronze">Bronze</SelectItem>
