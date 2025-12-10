@@ -228,7 +228,7 @@ export default function ManageLeads() {
       quality: lead.quality as "diamond" | "gold" | "silver" | "bronze",
       status: lead.status as "available" | "sold" | "reserved" | "expired",
       price: lead.price,
-      notes: lead.notes,
+      notes: lead.notes || "",
     });
     setShowLeadModal(true);
   };
