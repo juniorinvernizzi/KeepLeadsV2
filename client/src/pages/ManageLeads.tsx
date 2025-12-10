@@ -122,7 +122,7 @@ export default function ManageLeads() {
       age: undefined,
       city: "",
       state: "",
-      planType: "individual",
+      planType: "pf",
       availableLives: 1,
       source: "",
       campaign: "",
