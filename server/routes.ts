@@ -2,8 +2,15 @@ import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertLeadSchema, insertCreditTransactionSchema, insertUserSchema } from "@shared/schema";
-import { sendLeadPurchaseNotification, sendAdminPurchaseNotification } from "./emailService";
+import {
+  insertLeadSchema,
+  insertCreditTransactionSchema,
+  insertUserSchema,
+} from "@shared/schema";
+import {
+  sendLeadPurchaseNotification,
+  sendAdminPurchaseNotification,
+} from "./emailService";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
@@ -37,7 +44,10 @@ const hashPassword = async (password: string): Promise<string> => {
   return await bcrypt.hash(password, SALT_ROUNDS);
 };
 
-const comparePassword = async (password: string, hash: string): Promise<boolean> => {
+const comparePassword = async (
+  password: string,
+  hash: string,
+): Promise<boolean> => {
   // Try bcrypt first (new format)
   try {
     const bcryptMatch = await bcrypt.compare(password, hash);
@@ -45,9 +55,9 @@ const comparePassword = async (password: string, hash: string): Promise<boolean>
   } catch (e) {
     // Not a bcrypt hash, try SHA256
   }
-  
+
   // Try SHA256 (legacy format)
-  const sha256Hash = crypto.createHash('sha256').update(password).digest('hex');
+  const sha256Hash = crypto.createHash("sha256").update(password).digest("hex");
   return sha256Hash === hash;
 };
 
@@ -57,12 +67,12 @@ const requireAdmin = async (req: any, res: any, next: any) => {
     if (!req.session?.userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    
+
     const currentUser = await storage.getUser(req.session.userId);
     if (!currentUser || currentUser.role !== "admin") {
       return res.status(403).json({ message: "Admin access required" });
     }
-    
+
     req.currentUser = currentUser;
     return next();
   } catch (error) {
@@ -79,8 +89,8 @@ const sanitizeUser = (user: any) => {
 
 // Credit handling helper functions for type consistency
 const parseCredits = (credits: string | number): number => {
-  if (typeof credits === 'number') return credits;
-  const parsed = parseFloat(credits || '0');
+  if (typeof credits === "number") return credits;
+  const parsed = parseFloat(credits || "0");
   return isNaN(parsed) ? 0 : parsed;
 };
 
@@ -101,41 +111,41 @@ const subtractCredits = (currentCredits: string, amount: number): string => {
 // CSRF Protection Middleware
 const csrfProtection = (req: any, res: any, next: any) => {
   const method = req.method;
-  
+
   // Only apply CSRF protection to state-changing methods
-  if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+  if (!["POST", "PUT", "DELETE", "PATCH"].includes(method)) {
     return next();
   }
 
-  const origin = req.get('Origin');
-  const referer = req.get('Referer');
-  
+  const origin = req.get("Origin");
+  const referer = req.get("Referer");
+
   // Get host information
-  const host = req.get('Host');
-  const protocol = req.get('X-Forwarded-Proto') || req.protocol || 'https';
-  
+  const host = req.get("Host");
+  const protocol = req.get("X-Forwarded-Proto") || req.protocol || "https";
+
   // Define allowed origins
   const allowedOrigins = [
-    'http://localhost:5000',
-    'http://localhost:3000', 
-    'http://127.0.0.1:5000',
-    'http://127.0.0.1:3000'
+    "http://localhost:5000",
+    "http://localhost:3000",
+    "http://127.0.0.1:5000",
+    "http://127.0.0.1:3000",
   ];
-  
+
   // Add current host to allowed origins if available
   if (host) {
     allowedOrigins.push(`${protocol}://${host}`);
     allowedOrigins.push(`https://${host}`);
     allowedOrigins.push(`http://${host}`);
   }
-  
+
   // Check Origin header first (more reliable)
   if (origin) {
     if (allowedOrigins.includes(origin)) {
       return next();
     }
   }
-  
+
   // Fallback to Referer header if Origin is not present
   if (referer) {
     const refererOrigin = new URL(referer).origin;
@@ -143,20 +153,22 @@ const csrfProtection = (req: any, res: any, next: any) => {
       return next();
     }
   }
-  
+
   // Special handling for webhooks and external API calls
   const path = req.path;
-  if (path === '/api/payment/webhook') {
+  if (path === "/api/payment/webhook") {
     // Allow webhooks from external sources (MercadoPago)
     return next();
   }
-  
+
   // Log the blocked request for debugging
-  console.warn(`CSRF: Blocked request to ${method} ${path} from origin: ${origin || 'none'}, referer: ${referer || 'none'}`);
-  
-  return res.status(403).json({ 
+  console.warn(
+    `CSRF: Blocked request to ${method} ${path} from origin: ${origin || "none"}, referer: ${referer || "none"}`,
+  );
+
+  return res.status(403).json({
     message: "CSRF protection: Invalid origin",
-    code: "CSRF_ERROR"
+    code: "CSRF_ERROR",
   });
 };
 
@@ -165,10 +177,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Simple login routes
-  app.post('/api/simple-login', async (req, res) => {
+  app.post("/api/simple-login", async (req, res) => {
     try {
       const { email, password } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password required" });
       }
@@ -178,7 +190,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      const isPasswordValid = await comparePassword(password, user.password || '');
+      const isPasswordValid = await comparePassword(
+        password,
+        user.password || "",
+      );
       if (!isPasswordValid) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -186,10 +201,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Set session
       (req.session as any).userId = user.id;
       (req.session as any).user = user;
-      
-      res.json({ 
-        success: true, 
-        user: sanitizeUser(user)
+
+      res.json({
+        success: true,
+        user: sanitizeUser(user),
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -197,10 +212,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/simple-register', csrfProtection, async (req, res) => {
+  app.post("/api/simple-register", csrfProtection, async (req, res) => {
     try {
       const { email, password, firstName, lastName } = req.body;
-      
+
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password required" });
       }
@@ -215,18 +230,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const newUser = await storage.createUser({
         email,
         password: hashedPassword,
-        firstName: firstName || '',
-        lastName: lastName || '',
-        role: 'client'
+        firstName: firstName || "",
+        lastName: lastName || "",
+        role: "client",
       });
 
       // Set session
       (req.session as any).userId = newUser.id;
       (req.session as any).user = newUser;
 
-      res.json({ 
-        success: true, 
-        user: sanitizeUser(newUser)
+      res.json({
+        success: true,
+        user: sanitizeUser(newUser),
       });
     } catch (error) {
       console.error("Register error:", error);
@@ -234,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/simple-logout', csrfProtection, (req, res) => {
+  app.post("/api/simple-logout", csrfProtection, (req, res) => {
     req.session?.destroy((err) => {
       if (err) {
         console.error("Logout error:", err);
@@ -244,22 +259,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get('/api/simple-auth/user', isSimpleAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
+  app.get(
+    "/api/simple-auth/user",
+    isSimpleAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        res.json(user);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        res.status(500).json({ message: "Failed to fetch user" });
       }
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+    },
+  );
 
   // Auth routes (original)
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user!.claims.sub;
       const user = await storage.getUser(userId);
@@ -274,486 +293,561 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Profile update route
-  app.put('/api/profile', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      const { firstName, lastName, email } = req.body;
-      
-      await storage.updateUserProfile(userId, { firstName, lastName, email });
-      
-      const updatedUser = await storage.getUser(userId);
-      res.json(updatedUser);
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      res.status(500).json({ message: "Failed to update profile" });
-    }
-  });
+  app.put(
+    "/api/profile",
+    isSimpleAuthenticated,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const { firstName, lastName, email } = req.body;
+
+        await storage.updateUserProfile(userId, { firstName, lastName, email });
+
+        const updatedUser = await storage.getUser(userId);
+        res.json(updatedUser);
+      } catch (error) {
+        console.error("Error updating profile:", error);
+        res.status(500).json({ message: "Failed to update profile" });
+      }
+    },
+  );
 
   // Mercado Pago payment routes
-  app.post('/api/payment/create-preference', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
-    try {
-      // Validate Mercado Pago token
-      const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-      if (!mpToken || mpToken.trim() === '') {
-        console.error('❌ MERCADO_PAGO_ACCESS_TOKEN não está configurado');
-        return res.status(500).json({ 
-          message: "Mercado Pago não está configurado. Entre em contato com o administrador.",
-          code: "MP_TOKEN_NOT_CONFIGURED"
+  app.post(
+    "/api/payment/create-preference",
+    isSimpleAuthenticated,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        // Validate Mercado Pago token
+        const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+        if (!mpToken || mpToken.trim() === "") {
+          console.error("❌ MERCADO_PAGO_ACCESS_TOKEN não está configurado");
+          return res.status(500).json({
+            message:
+              "Mercado Pago não está configurado. Entre em contato com o administrador.",
+            code: "MP_TOKEN_NOT_CONFIGURED",
+          });
+        }
+
+        // Validate request body
+        const { amount, paymentMethod } = req.body;
+        if (!amount || typeof amount !== "number" || amount < 10) {
+          console.error("❌ Valor inválido:", amount);
+          return res.status(400).json({
+            message: "Valor inválido. O valor mínimo é R$ 10,00",
+            code: "INVALID_AMOUNT",
+          });
+        }
+
+        if (!paymentMethod) {
+          console.error("❌ Método de pagamento não especificado");
+          return res.status(400).json({
+            message: "Método de pagamento não especificado",
+            code: "PAYMENT_METHOD_REQUIRED",
+          });
+        }
+
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        console.log("✅ Iniciando criação de preferência Mercado Pago");
+        console.log("   - Usuário:", user.email);
+        console.log("   - Valor:", amount);
+        console.log("   - Método:", paymentMethod);
+
+        const { MercadoPagoConfig, Preference } = await import("mercadopago");
+
+        const client = new MercadoPagoConfig({
+          accessToken: mpToken,
+          options: { timeout: 5000 },
+        });
+
+        const preference = new Preference(client);
+
+        // Get current host to build dynamic URLs with fallback
+        // Mercado Pago requires public URLs (not localhost) in production mode
+        const replitDomain = process.env.REPLIT_DOMAINS;
+        let baseUrl: string;
+
+        if (replitDomain) {
+          // Use Replit public domain (HTTPS required for Mercado Pago)
+          baseUrl = `https://${replitDomain}`;
+        } else {
+          // Fallback to request host (might be localhost in dev)
+          const host = req.get("host") || "localhost:5000";
+          const protocol =
+            req.get("X-Forwarded-Proto") || req.protocol || "http";
+          baseUrl = `${protocol}://${host}`;
+        }
+
+        console.log("🌐 Base URL para Mercado Pago:", baseUrl);
+
+        const preferenceData: any = {
+          items: [
+            {
+              id: `credits_${Date.now()}`,
+              title: `Créditos KeepLeads - R$ ${amount.toFixed(2)}`,
+              unit_price: amount,
+              quantity: 1,
+              currency_id: "BRL",
+            },
+          ],
+          payer: {
+            email: user.email || "user@keepleads.com",
+            first_name: user.firstName || "Usuario",
+            last_name: user.lastName || "KeepLeads",
+          },
+          payment_methods: {
+            excluded_payment_types:
+              paymentMethod === "credit_card" ? [{ id: "ticket" }] : [],
+            excluded_payment_methods: [],
+            installments: 12,
+          },
+          back_urls: {
+            success: `${baseUrl}/credits?status=success`,
+            failure: `${baseUrl}/credits?status=failure`,
+            pending: `${baseUrl}/credits?status=pending`,
+          },
+          auto_return: "approved",
+          external_reference: `user_${userId}_credits_${Date.now()}`,
+          notification_url: `${baseUrl}/api/payment/webhook`,
+        };
+
+        console.log(
+          "📋 Dados da preferência:",
+          JSON.stringify(preferenceData, null, 2),
+        );
+
+        const result = await preference.create({ body: preferenceData });
+
+        console.log("✅ Preferência criada com sucesso:", result.id);
+
+        res.json({
+          preferenceId: result.id,
+          initPoint: result.init_point,
+          sandboxInitPoint: result.sandbox_init_point,
+        });
+      } catch (error: any) {
+        console.error("❌ Erro ao criar preferência Mercado Pago:");
+        console.error("   - Mensagem:", error.message);
+        console.error("   - Código de status:", error.status);
+        console.error(
+          "   - Resposta da API:",
+          JSON.stringify(error.cause, null, 2),
+        );
+        console.error("   - Stack:", error.stack);
+
+        // Return detailed error to frontend
+        res.status(500).json({
+          message: error.message || "Erro ao criar preferência de pagamento",
+          details:
+            error.cause || error.response?.data || "Sem detalhes adicionais",
+          code: "MP_CREATE_PREFERENCE_ERROR",
         });
       }
-
-      // Validate request body
-      const { amount, paymentMethod } = req.body;
-      if (!amount || typeof amount !== 'number' || amount < 10) {
-        console.error('❌ Valor inválido:', amount);
-        return res.status(400).json({ 
-          message: "Valor inválido. O valor mínimo é R$ 10,00",
-          code: "INVALID_AMOUNT"
-        });
-      }
-
-      if (!paymentMethod) {
-        console.error('❌ Método de pagamento não especificado');
-        return res.status(400).json({ 
-          message: "Método de pagamento não especificado",
-          code: "PAYMENT_METHOD_REQUIRED"
-        });
-      }
-
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId);
-
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      console.log('✅ Iniciando criação de preferência Mercado Pago');
-      console.log('   - Usuário:', user.email);
-      console.log('   - Valor:', amount);
-      console.log('   - Método:', paymentMethod);
-
-      const { MercadoPagoConfig, Preference } = await import('mercadopago');
-      
-      const client = new MercadoPagoConfig({
-        accessToken: mpToken,
-        options: { timeout: 5000 }
-      });
-
-      const preference = new Preference(client);
-
-      // Get current host to build dynamic URLs with fallback
-      // Mercado Pago requires public URLs (not localhost) in production mode
-      const replitDomain = process.env.REPLIT_DOMAINS;
-      let baseUrl: string;
-      
-      if (replitDomain) {
-        // Use Replit public domain (HTTPS required for Mercado Pago)
-        baseUrl = `https://${replitDomain}`;
-      } else {
-        // Fallback to request host (might be localhost in dev)
-        const host = req.get('host') || 'localhost:5000';
-        const protocol = req.get('X-Forwarded-Proto') || req.protocol || 'http';
-        baseUrl = `${protocol}://${host}`;
-      }
-      
-      console.log('🌐 Base URL para Mercado Pago:', baseUrl);
-
-      const preferenceData: any = {
-        items: [
-          {
-            id: `credits_${Date.now()}`,
-            title: `Créditos KeepLeads - R$ ${amount.toFixed(2)}`,
-            unit_price: amount,
-            quantity: 1,
-            currency_id: 'BRL',
-          }
-        ],
-        payer: {
-          email: user.email || 'user@keepleads.com',
-          first_name: user.firstName || 'Usuario',
-          last_name: user.lastName || 'KeepLeads',
-        },
-        payment_methods: {
-          excluded_payment_types: paymentMethod === 'credit_card' ? [{ id: 'ticket' }] : [],
-          excluded_payment_methods: [],
-          installments: 12,
-        },
-        back_urls: {
-          success: `${baseUrl}/credits?status=success`,
-          failure: `${baseUrl}/credits?status=failure`,
-          pending: `${baseUrl}/credits?status=pending`,
-        },
-        auto_return: 'approved',
-        external_reference: `user_${userId}_credits_${Date.now()}`,
-        notification_url: `${baseUrl}/api/payment/webhook`,
-      };
-
-      console.log('📋 Dados da preferência:', JSON.stringify(preferenceData, null, 2));
-      
-      const result = await preference.create({ body: preferenceData });
-      
-      console.log('✅ Preferência criada com sucesso:', result.id);
-      
-      res.json({
-        preferenceId: result.id,
-        initPoint: result.init_point,
-        sandboxInitPoint: result.sandbox_init_point,
-      });
-    } catch (error: any) {
-      console.error("❌ Erro ao criar preferência Mercado Pago:");
-      console.error("   - Mensagem:", error.message);
-      console.error("   - Código de status:", error.status);
-      console.error("   - Resposta da API:", JSON.stringify(error.cause, null, 2));
-      console.error("   - Stack:", error.stack);
-      
-      // Return detailed error to frontend
-      res.status(500).json({ 
-        message: error.message || "Erro ao criar preferência de pagamento",
-        details: error.cause || error.response?.data || "Sem detalhes adicionais",
-        code: "MP_CREATE_PREFERENCE_ERROR"
-      });
-    }
-  });
+    },
+  );
 
   // Check Mercado Pago configuration
-  app.get('/api/payment/config', isSimpleAuthenticated, async (req: any, res) => {
-    try {
-      const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-      const mpPublicKey = process.env.MERCADO_PAGO_PUBLIC_KEY;
-      const isConfigured = mpToken && mpToken.trim() !== '' && mpPublicKey && mpPublicKey.trim() !== '';
-      
-      res.json({
-        configured: isConfigured,
-        publicKey: mpPublicKey || '',
-        message: isConfigured 
-          ? "Mercado Pago está configurado e pronto para uso" 
-          : "Mercado Pago não está configurado. Configure MERCADO_PAGO_ACCESS_TOKEN e MERCADO_PAGO_PUBLIC_KEY."
-      });
-    } catch (error) {
-      res.status(500).json({ 
-        configured: false,
-        publicKey: '',
-        message: "Erro ao verificar configuração do Mercado Pago" 
-      });
-    }
-  });
+  app.get(
+    "/api/payment/config",
+    isSimpleAuthenticated,
+    async (req: any, res) => {
+      try {
+        const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+        const mpPublicKey = process.env.MERCADO_PAGO_PUBLIC_KEY;
+        const isConfigured =
+          mpToken &&
+          mpToken.trim() !== "" &&
+          mpPublicKey &&
+          mpPublicKey.trim() !== "";
+
+        res.json({
+          configured: isConfigured,
+          publicKey: mpPublicKey || "",
+          message: isConfigured
+            ? "Mercado Pago está configurado e pronto para uso"
+            : "Mercado Pago não está configurado. Configure MERCADO_PAGO_ACCESS_TOKEN e MERCADO_PAGO_PUBLIC_KEY.",
+        });
+      } catch (error) {
+        res.status(500).json({
+          configured: false,
+          publicKey: "",
+          message: "Erro ao verificar configuração do Mercado Pago",
+        });
+      }
+    },
+  );
 
   // Process credit card payment (transparent checkout)
-  app.post('/api/payment/process-card', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
-    try {
-      const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-      if (!mpToken || mpToken.trim() === '') {
-        return res.status(500).json({ 
-          message: "Mercado Pago não está configurado",
-          code: "MP_TOKEN_NOT_CONFIGURED"
+  app.post(
+    "/api/payment/process-card",
+    isSimpleAuthenticated,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+        if (!mpToken || mpToken.trim() === "") {
+          return res.status(500).json({
+            message: "Mercado Pago não está configurado",
+            code: "MP_TOKEN_NOT_CONFIGURED",
+          });
+        }
+
+        const { amount, token, paymentMethodId, installments, payer } =
+          req.body;
+
+        if (!amount || typeof amount !== "number" || amount < 10) {
+          return res.status(400).json({
+            message: "Valor inválido. O valor mínimo é R$ 10,00",
+            code: "INVALID_AMOUNT",
+          });
+        }
+
+        if (!token || !paymentMethodId) {
+          return res.status(400).json({
+            message: "Dados do cartão inválidos",
+            code: "INVALID_CARD_DATA",
+          });
+        }
+
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        console.log("💳 Processando pagamento com cartão");
+        console.log("   - Usuário:", user.email);
+        console.log("   - Valor:", amount);
+        console.log("   - Parcelas:", installments);
+
+        const { MercadoPagoConfig, Payment } = await import("mercadopago");
+
+        const client = new MercadoPagoConfig({
+          accessToken: mpToken,
+          options: { timeout: 5000 },
+        });
+
+        const payment = new Payment(client);
+
+        const paymentData: any = {
+          transaction_amount: amount,
+          token,
+          description: `Créditos KeepLeads - R$ ${amount.toFixed(2)}`,
+          installments: installments || 1,
+          payment_method_id: paymentMethodId,
+          payer: {
+            email: payer?.email || user.email,
+            first_name: payer?.firstName || user.firstName,
+            last_name: payer?.lastName || user.lastName,
+          },
+          external_reference: `user_${userId}_credits_${Date.now()}`,
+        };
+
+        console.log(
+          "📋 Criando pagamento:",
+          JSON.stringify(paymentData, null, 2),
+        );
+
+        const result = await payment.create({ body: paymentData });
+
+        console.log(
+          "✅ Pagamento criado:",
+          result.id,
+          "Status:",
+          result.status,
+        );
+
+        // If payment is approved, add credits immediately
+        if (result.status === "approved") {
+          const newBalance = addCredits(user.credits, amount);
+          await storage.updateUserCredits(userId, newBalance);
+
+          await storage.addCreditTransaction({
+            userId,
+            type: "deposit",
+            amount: amount.toString(),
+            description: `Depósito via Mercado Pago - Cartão de Crédito`,
+            balanceBefore: user.credits,
+            balanceAfter: newBalance,
+            paymentMethod: "credit_card",
+            paymentId: result.id?.toString() || null,
+          });
+        }
+
+        res.json({
+          paymentId: result.id,
+          status: result.status,
+          statusDetail: result.status_detail,
+          approved: result.status === "approved",
+        });
+      } catch (error: any) {
+        console.error("❌ Erro ao processar pagamento com cartão:", error);
+        console.error("   - Mensagem:", error.message);
+        console.error("   - Causa:", JSON.stringify(error.cause, null, 2));
+
+        res.status(500).json({
+          message: error.message || "Erro ao processar pagamento",
+          details: error.cause || {},
+          code: "CARD_PAYMENT_ERROR",
         });
       }
-
-      const { amount, token, paymentMethodId, installments, payer } = req.body;
-      
-      if (!amount || typeof amount !== 'number' || amount < 10) {
-        return res.status(400).json({ 
-          message: "Valor inválido. O valor mínimo é R$ 10,00",
-          code: "INVALID_AMOUNT"
-        });
-      }
-
-      if (!token || !paymentMethodId) {
-        return res.status(400).json({ 
-          message: "Dados do cartão inválidos",
-          code: "INVALID_CARD_DATA"
-        });
-      }
-
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      console.log('💳 Processando pagamento com cartão');
-      console.log('   - Usuário:', user.email);
-      console.log('   - Valor:', amount);
-      console.log('   - Parcelas:', installments);
-
-      const { MercadoPagoConfig, Payment } = await import('mercadopago');
-      
-      const client = new MercadoPagoConfig({
-        accessToken: mpToken,
-        options: { timeout: 5000 }
-      });
-
-      const payment = new Payment(client);
-
-      const paymentData: any = {
-        transaction_amount: amount,
-        token,
-        description: `Créditos KeepLeads - R$ ${amount.toFixed(2)}`,
-        installments: installments || 1,
-        payment_method_id: paymentMethodId,
-        payer: {
-          email: payer?.email || user.email,
-          first_name: payer?.firstName || user.firstName,
-          last_name: payer?.lastName || user.lastName,
-        },
-        external_reference: `user_${userId}_credits_${Date.now()}`,
-      };
-
-      console.log('📋 Criando pagamento:', JSON.stringify(paymentData, null, 2));
-
-      const result = await payment.create({ body: paymentData });
-
-      console.log('✅ Pagamento criado:', result.id, 'Status:', result.status);
-
-      // If payment is approved, add credits immediately
-      if (result.status === 'approved') {
-        const newBalance = addCredits(user.credits, amount);
-        await storage.updateUserCredits(userId, newBalance);
-        
-        await storage.addCreditTransaction({
-          userId,
-          type: 'deposit',
-          amount: amount.toString(),
-          description: `Depósito via Mercado Pago - Cartão de Crédito`,
-          balanceBefore: user.credits,
-          balanceAfter: newBalance,
-          paymentMethod: 'credit_card',
-          paymentId: result.id?.toString() || null,
-        });
-      }
-
-      res.json({
-        paymentId: result.id,
-        status: result.status,
-        statusDetail: result.status_detail,
-        approved: result.status === 'approved'
-      });
-    } catch (error: any) {
-      console.error("❌ Erro ao processar pagamento com cartão:", error);
-      console.error("   - Mensagem:", error.message);
-      console.error("   - Causa:", JSON.stringify(error.cause, null, 2));
-      
-      res.status(500).json({ 
-        message: error.message || "Erro ao processar pagamento",
-        details: error.cause || {},
-        code: "CARD_PAYMENT_ERROR"
-      });
-    }
-  });
+    },
+  );
 
   // Create PIX payment (transparent checkout)
-  app.post('/api/payment/create-pix', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
-    try {
-      const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-      if (!mpToken || mpToken.trim() === '') {
-        return res.status(500).json({ 
-          message: "Mercado Pago não está configurado",
-          code: "MP_TOKEN_NOT_CONFIGURED"
+  app.post(
+    "/api/payment/create-pix",
+    isSimpleAuthenticated,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+        if (!mpToken || mpToken.trim() === "") {
+          return res.status(500).json({
+            message: "Mercado Pago não está configurado",
+            code: "MP_TOKEN_NOT_CONFIGURED",
+          });
+        }
+
+        const { amount } = req.body;
+
+        if (!amount || typeof amount !== "number" || amount < 10) {
+          return res.status(400).json({
+            message: "Valor inválido. O valor mínimo é R$ 10,00",
+            code: "INVALID_AMOUNT",
+          });
+        }
+
+        const userId = req.session.userId;
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        console.log("📱 Criando pagamento PIX");
+        console.log("   - Usuário:", user.email);
+        console.log("   - Valor:", amount);
+
+        const { MercadoPagoConfig, Payment } = await import("mercadopago");
+
+        const client = new MercadoPagoConfig({
+          accessToken: mpToken,
+          options: { timeout: 5000 },
+        });
+
+        const payment = new Payment(client);
+
+        const paymentData: any = {
+          transaction_amount: amount,
+          description: `Créditos KeepLeads - R$ ${amount.toFixed(2)}`,
+          payment_method_id: "pix",
+          payer: {
+            email: user.email,
+            first_name: user.firstName,
+            last_name: user.lastName,
+          },
+          external_reference: `user_${userId}_credits_${Date.now()}`,
+        };
+
+        const result = await payment.create({ body: paymentData });
+
+        console.log("✅ Pagamento PIX criado:", result.id);
+        console.log(
+          "   - QR Code:",
+          result.point_of_interaction?.transaction_data?.qr_code
+            ? "Sim"
+            : "Não",
+        );
+
+        res.json({
+          paymentId: result.id,
+          status: result.status,
+          qrCode: result.point_of_interaction?.transaction_data?.qr_code || "",
+          qrCodeBase64:
+            result.point_of_interaction?.transaction_data?.qr_code_base64 || "",
+          ticketUrl:
+            result.point_of_interaction?.transaction_data?.ticket_url || "",
+        });
+      } catch (error: any) {
+        console.error("❌ Erro ao criar pagamento PIX:", error);
+        console.error("   - Mensagem:", error.message);
+        console.error("   - Causa:", JSON.stringify(error.cause, null, 2));
+
+        res.status(500).json({
+          message: error.message || "Erro ao criar pagamento PIX",
+          details: error.cause || {},
+          code: "PIX_PAYMENT_ERROR",
         });
       }
-
-      const { amount } = req.body;
-      
-      if (!amount || typeof amount !== 'number' || amount < 10) {
-        return res.status(400).json({ 
-          message: "Valor inválido. O valor mínimo é R$ 10,00",
-          code: "INVALID_AMOUNT"
-        });
-      }
-
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      console.log('📱 Criando pagamento PIX');
-      console.log('   - Usuário:', user.email);
-      console.log('   - Valor:', amount);
-
-      const { MercadoPagoConfig, Payment } = await import('mercadopago');
-      
-      const client = new MercadoPagoConfig({
-        accessToken: mpToken,
-        options: { timeout: 5000 }
-      });
-
-      const payment = new Payment(client);
-
-      const paymentData: any = {
-        transaction_amount: amount,
-        description: `Créditos KeepLeads - R$ ${amount.toFixed(2)}`,
-        payment_method_id: 'pix',
-        payer: {
-          email: user.email,
-          first_name: user.firstName,
-          last_name: user.lastName,
-        },
-        external_reference: `user_${userId}_credits_${Date.now()}`,
-      };
-
-      const result = await payment.create({ body: paymentData });
-
-      console.log('✅ Pagamento PIX criado:', result.id);
-      console.log('   - QR Code:', result.point_of_interaction?.transaction_data?.qr_code ? 'Sim' : 'Não');
-
-      res.json({
-        paymentId: result.id,
-        status: result.status,
-        qrCode: result.point_of_interaction?.transaction_data?.qr_code || '',
-        qrCodeBase64: result.point_of_interaction?.transaction_data?.qr_code_base64 || '',
-        ticketUrl: result.point_of_interaction?.transaction_data?.ticket_url || ''
-      });
-    } catch (error: any) {
-      console.error("❌ Erro ao criar pagamento PIX:", error);
-      console.error("   - Mensagem:", error.message);
-      console.error("   - Causa:", JSON.stringify(error.cause, null, 2));
-      
-      res.status(500).json({ 
-        message: error.message || "Erro ao criar pagamento PIX",
-        details: error.cause || {},
-        code: "PIX_PAYMENT_ERROR"
-      });
-    }
-  });
+    },
+  );
 
   // Get payment status
-  app.get('/api/payment/status/:paymentId', isSimpleAuthenticated, async (req: any, res) => {
-    try {
-      const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-      if (!mpToken || mpToken.trim() === '') {
-        return res.status(500).json({ 
-          message: "Mercado Pago não está configurado",
-          code: "MP_TOKEN_NOT_CONFIGURED"
+  app.get(
+    "/api/payment/status/:paymentId",
+    isSimpleAuthenticated,
+    async (req: any, res) => {
+      try {
+        const mpToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+        if (!mpToken || mpToken.trim() === "") {
+          return res.status(500).json({
+            message: "Mercado Pago não está configurado",
+            code: "MP_TOKEN_NOT_CONFIGURED",
+          });
+        }
+
+        const { paymentId } = req.params;
+
+        const { MercadoPagoConfig, Payment } = await import("mercadopago");
+
+        const client = new MercadoPagoConfig({
+          accessToken: mpToken,
+          options: { timeout: 5000 },
         });
-      }
 
-      const { paymentId } = req.params;
+        const payment = new Payment(client);
+        const result = await payment.get({ id: paymentId });
 
-      const { MercadoPagoConfig, Payment } = await import('mercadopago');
-      
-      const client = new MercadoPagoConfig({
-        accessToken: mpToken,
-        options: { timeout: 5000 }
-      });
+        // If payment just got approved, add credits
+        if (result.status === "approved") {
+          const externalReference = result.external_reference;
+          const userId = externalReference?.split("_")[1];
+          const amount = result.transaction_amount;
 
-      const payment = new Payment(client);
-      const result = await payment.get({ id: paymentId });
+          if (userId && userId === req.session.userId && amount) {
+            const user = await storage.getUser(userId);
+            if (user) {
+              // Check if transaction already exists to avoid duplicates
+              const transactions = await storage.getUserTransactions(userId);
+              const existingTx = transactions.find(
+                (tx) => tx.paymentId === paymentId,
+              );
 
-      // If payment just got approved, add credits
-      if (result.status === 'approved') {
-        const externalReference = result.external_reference;
-        const userId = externalReference?.split('_')[1];
-        const amount = result.transaction_amount;
-        
-        if (userId && userId === req.session.userId && amount) {
-          const user = await storage.getUser(userId);
-          if (user) {
-            // Check if transaction already exists to avoid duplicates
-            const transactions = await storage.getUserTransactions(userId);
-            const existingTx = transactions.find(tx => tx.paymentId === paymentId);
-            
-            if (!existingTx) {
-              const newBalance = addCredits(user.credits, amount);
-              await storage.updateUserCredits(userId, newBalance);
-              
-              // Identify payment method for better description
-              const paymentType = result.payment_method?.type || 'desconhecido';
-              const paymentMethodId = result.payment_method?.id || '';
-              let paymentDescription = 'Depósito via Mercado Pago';
-              
-              if (paymentType === 'credit_card' || paymentType === 'debit_card') {
-                paymentDescription = 'Depósito via Mercado Pago - Cartão de Crédito';
-              } else if (paymentType === 'pix' || paymentMethodId === 'pix') {
-                paymentDescription = 'Depósito via Mercado Pago - PIX';
-              } else if (paymentType === 'ticket') {
-                paymentDescription = 'Depósito via Mercado Pago - Boleto';
+              if (!existingTx) {
+                const newBalance = addCredits(user.credits, amount);
+                await storage.updateUserCredits(userId, newBalance);
+
+                // Identify payment method for better description
+                const paymentType =
+                  result.payment_method?.type || "desconhecido";
+                const paymentMethodId = result.payment_method?.id || "";
+                let paymentDescription = "Depósito via Mercado Pago";
+
+                if (
+                  paymentType === "credit_card" ||
+                  paymentType === "debit_card"
+                ) {
+                  paymentDescription =
+                    "Depósito via Mercado Pago - Cartão de Crédito";
+                } else if (paymentType === "pix" || paymentMethodId === "pix") {
+                  paymentDescription = "Depósito via Mercado Pago - PIX";
+                } else if (paymentType === "ticket") {
+                  paymentDescription = "Depósito via Mercado Pago - Boleto";
+                }
+
+                await storage.addCreditTransaction({
+                  userId,
+                  type: "deposit",
+                  amount: amount.toString(),
+                  description: paymentDescription,
+                  balanceBefore: user.credits,
+                  balanceAfter: newBalance,
+                  paymentMethod: result.payment_method?.type || null,
+                  paymentId: paymentId,
+                });
+
+                console.log(
+                  "✅ Créditos adicionados após confirmação do pagamento:",
+                  paymentId,
+                );
               }
-              
-              await storage.addCreditTransaction({
-                userId,
-                type: 'deposit',
-                amount: amount.toString(),
-                description: paymentDescription,
-                balanceBefore: user.credits,
-                balanceAfter: newBalance,
-                paymentMethod: result.payment_method?.type || null,
-                paymentId: paymentId,
-              });
-              
-              console.log('✅ Créditos adicionados após confirmação do pagamento:', paymentId);
             }
           }
         }
-      }
 
-      res.json({
-        paymentId: result.id,
-        status: result.status,
-        statusDetail: result.status_detail,
-        approved: result.status === 'approved'
-      });
-    } catch (error: any) {
-      console.error("❌ Erro ao consultar status do pagamento:", error);
-      res.status(500).json({ 
-        message: error.message || "Erro ao consultar pagamento",
-        code: "PAYMENT_STATUS_ERROR"
-      });
-    }
-  });
+        res.json({
+          paymentId: result.id,
+          status: result.status,
+          statusDetail: result.status_detail,
+          approved: result.status === "approved",
+        });
+      } catch (error: any) {
+        console.error("❌ Erro ao consultar status do pagamento:", error);
+        res.status(500).json({
+          message: error.message || "Erro ao consultar pagamento",
+          code: "PAYMENT_STATUS_ERROR",
+        });
+      }
+    },
+  );
 
   // Webhook to handle payment notifications
-  app.post('/api/payment/webhook', async (req, res) => {
+  app.post("/api/payment/webhook", async (req, res) => {
     try {
-      const { MercadoPagoConfig, Payment } = await import('mercadopago');
-      
+      const { MercadoPagoConfig, Payment } = await import("mercadopago");
+
       const client = new MercadoPagoConfig({
         accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN!,
-        options: { timeout: 5000 }
+        options: { timeout: 5000 },
       });
 
       const payment = new Payment(client);
-      
+
       const { type, data } = req.body;
-      
-      if (type === 'payment' && data?.id) {
+
+      if (type === "payment" && data?.id) {
         const paymentInfo = await payment.get({ id: data.id });
-        
-        if (paymentInfo.status === 'approved') {
+
+        if (paymentInfo.status === "approved") {
           const externalReference = paymentInfo.external_reference;
-          const userId = externalReference?.split('_')[1];
+          const userId = externalReference?.split("_")[1];
           const amount = paymentInfo.transaction_amount;
-          
+
           if (userId && amount) {
             const user = await storage.getUser(userId);
             if (user) {
               // Check if transaction already exists to avoid duplicates
               const transactions = await storage.getUserTransactions(userId);
-              const existingTx = transactions.find(tx => tx.paymentId === data.id);
-              
+              const existingTx = transactions.find(
+                (tx) => tx.paymentId === data.id,
+              );
+
               if (!existingTx) {
                 const newBalance = addCredits(user.credits, amount);
-                
+
                 // Update user credits
                 await storage.updateUserCredits(userId, newBalance);
-                
+
                 // Identify payment method for better description
-                const paymentType = paymentInfo.payment_method?.type || 'desconhecido';
-                const paymentMethodId = paymentInfo.payment_method?.id || '';
-                let paymentDescription = 'Depósito via Mercado Pago';
-                
-                if (paymentType === 'credit_card' || paymentType === 'debit_card') {
-                  paymentDescription = 'Depósito via Mercado Pago - Cartão de Crédito';
-                } else if (paymentType === 'pix' || paymentMethodId === 'pix') {
-                  paymentDescription = 'Depósito via Mercado Pago - PIX';
-                } else if (paymentType === 'ticket') {
-                  paymentDescription = 'Depósito via Mercado Pago - Boleto';
+                const paymentType =
+                  paymentInfo.payment_method?.type || "desconhecido";
+                const paymentMethodId = paymentInfo.payment_method?.id || "";
+                let paymentDescription = "Depósito via Mercado Pago";
+
+                if (
+                  paymentType === "credit_card" ||
+                  paymentType === "debit_card"
+                ) {
+                  paymentDescription =
+                    "Depósito via Mercado Pago - Cartão de Crédito";
+                } else if (paymentType === "pix" || paymentMethodId === "pix") {
+                  paymentDescription = "Depósito via Mercado Pago - PIX";
+                } else if (paymentType === "ticket") {
+                  paymentDescription = "Depósito via Mercado Pago - Boleto";
                 }
-                
+
                 // Add transaction record
                 await storage.addCreditTransaction({
                   userId,
-                  type: 'deposit',
+                  type: "deposit",
                   amount: amount.toString(),
                   description: paymentDescription,
                   balanceBefore: user.credits,
@@ -761,14 +855,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   paymentMethod: paymentInfo.payment_method?.type || null,
                   paymentId: paymentInfo.id?.toString() || null,
                 });
-                
-                console.log('✅ Webhook: Créditos adicionados via webhook:', data.id);
+
+                console.log(
+                  "✅ Webhook: Créditos adicionados via webhook:",
+                  data.id,
+                );
               }
             }
           }
         }
       }
-      
+
       res.status(200).json({ received: true });
     } catch (error) {
       console.error("Error processing webhook:", error);
@@ -777,43 +874,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Manual credit addition (for development/testing)
-  app.post('/api/credits/add', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      const { amount, paymentMethod, paymentId } = req.body;
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
+  app.post(
+    "/api/credits/add",
+    isSimpleAuthenticated,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        const userId = req.session.userId;
+        const { amount, paymentMethod, paymentId } = req.body;
+
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        const newBalance = addCredits(user.credits, amount);
+
+        // Update user credits
+        await storage.updateUserCredits(userId, newBalance);
+
+        // Add transaction record
+        await storage.addCreditTransaction({
+          userId,
+          type: "deposit",
+          amount: amount.toString(),
+          description: `Depósito via ${paymentMethod}`,
+          balanceBefore: user.credits,
+          balanceAfter: newBalance,
+          paymentMethod,
+          paymentId,
+        });
+
+        const updatedUser = await storage.getUser(userId);
+        res.json({ success: true, user: updatedUser });
+      } catch (error) {
+        console.error("Error adding credits:", error);
+        res.status(500).json({ message: "Failed to add credits" });
       }
-      
-      const newBalance = addCredits(user.credits, amount);
-      
-      // Update user credits
-      await storage.updateUserCredits(userId, newBalance);
-      
-      // Add transaction record
-      await storage.addCreditTransaction({
-        userId,
-        type: 'deposit',
-        amount: amount.toString(),
-        description: `Depósito via ${paymentMethod}`,
-        balanceBefore: user.credits,
-        balanceAfter: newBalance,
-        paymentMethod,
-        paymentId,
-      });
-      
-      const updatedUser = await storage.getUser(userId);
-      res.json({ success: true, user: updatedUser });
-    } catch (error) {
-      console.error("Error adding credits:", error);
-      res.status(500).json({ message: "Failed to add credits" });
-    }
-  });
+    },
+  );
 
   // Lead routes
-  app.get('/api/leads', async (req, res) => {
+  app.get("/api/leads", async (req, res) => {
     try {
       const filters = {
         search: req.query.search as string,
@@ -825,7 +927,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         quality: req.query.quality as string,
         status: req.query.status as string,
       };
-      
+
       const leads = await storage.getLeads(filters);
       res.json(leads);
     } catch (error) {
@@ -834,7 +936,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/leads/:id', async (req, res) => {
+  app.get("/api/leads/:id", async (req, res) => {
     try {
       const lead = await storage.getLeadById(req.params.id);
       if (!lead) {
@@ -848,120 +950,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Purchase lead
-  app.post('/api/leads/:id/purchase', isSimpleAuthenticated, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      const leadId = req.params.id;
-      
-      // Get lead details
-      const lead = await storage.getLeadById(leadId);
-      if (!lead) {
-        return res.status(404).json({ message: "Lead not found" });
-      }
-      
-      if (lead.status !== "available") {
-        return res.status(400).json({ message: "Lead is not available for purchase" });
-      }
-      
-      // Get user details
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Check if user has sufficient credits
-      const userCredits = parseCredits(user.credits);
-      const leadPrice = parseCredits(lead.price);
-      
-      if (userCredits < leadPrice) {
-        return res.status(400).json({ message: "Insufficient credits" });
-      }
-      
-      // Create purchase
-      const purchase = await storage.purchaseLead({
-        leadId,
-        userId,
-        price: lead.price,
-      });
-      
-      // Deduct credits
-      const newBalance = subtractCredits(user.credits, leadPrice);
-      await storage.updateUserCredits(userId, newBalance);
-      
-      // Add credit transaction
-      await storage.addCreditTransaction({
-        userId,
-        type: "purchase",
-        amount: `-${lead.price}`,
-        description: `Lead purchase - ${lead.name}`,
-        balanceBefore: user.credits,
-        balanceAfter: newBalance,
-      });
-      
-      // Send email notifications
+  app.post(
+    "/api/leads/:id/purchase",
+    isSimpleAuthenticated,
+    csrfProtection,
+    async (req: any, res) => {
       try {
-        // Get company details for email
-        const companies = await storage.getInsuranceCompanies();
-        const company = companies.find(c => c.id === lead.insuranceCompanyId) || {
-          id: lead.insuranceCompanyId || '',
-          name: lead.insuranceCompanyId || '',
-          color: "#7C3AED"
-        };
-        
-        // Update user object with new balance for email
-        const updatedUser = { 
-          ...user, 
-          credits: newBalance,
-          firstName: user.firstName || '',
-          lastName: user.lastName || ''
-        };
-        
-        // Convert lead to email-compatible format
-        const emailCompatibleLead = {
-          ...lead,
-          age: lead.age || 30,
-          insuranceCompanyId: lead.insuranceCompanyId || '',
-          budgetMin: lead.budgetMin || '',
-          budgetMax: lead.budgetMax || '',
-          campaign: lead.campaign || '',
-          notes: lead.notes || '',
-          income: lead.income || '3000.00',
-          planType: lead.planType || 'individual',
-          category: lead.category || 'health_insurance',
-          quality: lead.quality || 'silver',
-          status: lead.status || 'available',
-          availableLives: lead.availableLives || 1,
-          createdAt: lead.createdAt?.toISOString() || new Date().toISOString(),
-          updatedAt: lead.updatedAt?.toISOString() || new Date().toISOString()
-        };
-        
-        // Send notification to user (async, don't wait)
-        sendLeadPurchaseNotification(updatedUser, emailCompatibleLead, company).catch(error => {
-          console.error('Failed to send user email notification:', error);
+        const userId = req.session.userId;
+        const leadId = req.params.id;
+
+        // Get lead details
+        const lead = await storage.getLeadById(leadId);
+        if (!lead) {
+          return res.status(404).json({ message: "Lead not found" });
+        }
+
+        if (lead.status !== "available") {
+          return res
+            .status(400)
+            .json({ message: "Lead is not available for purchase" });
+        }
+
+        // Get user details
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        // Check if user has sufficient credits
+        const userCredits = parseCredits(user.credits);
+        const leadPrice = parseCredits(lead.price);
+
+        if (userCredits < leadPrice) {
+          return res.status(400).json({ message: "Insufficient credits" });
+        }
+
+        // Create purchase
+        const purchase = await storage.purchaseLead({
+          leadId,
+          userId,
+          price: lead.price,
         });
-        
-        // Send notification to admin (async, don't wait)
-        sendAdminPurchaseNotification(updatedUser, emailCompatibleLead, company).catch(error => {
-          console.error('Failed to send admin email notification:', error);
+
+        // Deduct credits
+        const newBalance = subtractCredits(user.credits, leadPrice);
+        await storage.updateUserCredits(userId, newBalance);
+
+        // Add credit transaction
+        await storage.addCreditTransaction({
+          userId,
+          type: "purchase",
+          amount: `-${lead.price}`,
+          description: `Lead purchase - ${lead.name}`,
+          balanceBefore: user.credits,
+          balanceAfter: newBalance,
         });
-      } catch (emailError) {
-        console.error('Error preparing email notifications:', emailError);
-        // Don't fail the purchase if email fails
+
+        // Send email notifications
+        try {
+          // Get company details for email
+          const companies = await storage.getInsuranceCompanies();
+          const company = companies.find(
+            (c) => c.id === lead.insuranceCompanyId,
+          ) || {
+            id: lead.insuranceCompanyId || "",
+            name: lead.insuranceCompanyId || "",
+            color: "#7C3AED",
+          };
+
+          // Update user object with new balance for email
+          const updatedUser = {
+            ...user,
+            credits: newBalance,
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+          };
+
+          // Convert lead to email-compatible format
+          const emailCompatibleLead = {
+            ...lead,
+            age: lead.age || 30,
+            insuranceCompanyId: lead.insuranceCompanyId || "",
+            budgetMin: lead.budgetMin || "",
+            budgetMax: lead.budgetMax || "",
+            campaign: lead.campaign || "",
+            notes: lead.notes || "",
+            income: lead.income || "3000.00",
+            planType: lead.planType || "individual",
+            category: lead.category || "health_insurance",
+            quality: lead.quality || "silver",
+            status: lead.status || "available",
+            availableLives: lead.availableLives || 1,
+            createdAt:
+              lead.createdAt?.toISOString() || new Date().toISOString(),
+            updatedAt:
+              lead.updatedAt?.toISOString() || new Date().toISOString(),
+          };
+
+          // Send notification to user (async, don't wait)
+          sendLeadPurchaseNotification(
+            updatedUser,
+            emailCompatibleLead,
+            company,
+          ).catch((error) => {
+            console.error("Failed to send user email notification:", error);
+          });
+
+          // Send notification to admin (async, don't wait)
+          sendAdminPurchaseNotification(
+            updatedUser,
+            emailCompatibleLead,
+            company,
+          ).catch((error) => {
+            console.error("Failed to send admin email notification:", error);
+          });
+        } catch (emailError) {
+          console.error("Error preparing email notifications:", emailError);
+          // Don't fail the purchase if email fails
+        }
+
+        res.json(purchase);
+      } catch (error) {
+        console.error("Error purchasing lead:", error);
+        res.status(500).json({ message: "Failed to purchase lead" });
       }
-      
-      res.json(purchase);
-    } catch (error) {
-      console.error("Error purchasing lead:", error);
-      res.status(500).json({ message: "Failed to purchase lead" });
-    }
-  });
+    },
+  );
 
   // Get user's purchased leads
-  app.get('/api/my-leads', isSimpleAuthenticated, async (req: any, res) => {
+  app.get("/api/my-leads", isSimpleAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       const purchases = await storage.getUserPurchases(userId);
-      
+
       // Get lead details for each purchase and merge them
       const purchasesWithLeads = await Promise.all(
         purchases.map(async (purchase) => {
@@ -974,14 +1095,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...lead,
             price: purchase.price,
             purchasedAt: purchase.purchasedAt,
-            status: purchase.status || 'active',
+            status: purchase.status || "active",
           };
-        })
+        }),
       );
-      
+
       // Filter out any null values (leads that weren't found)
-      const validPurchases = purchasesWithLeads.filter(p => p !== null);
-      
+      const validPurchases = purchasesWithLeads.filter((p) => p !== null);
+
       res.json(validPurchases);
     } catch (error) {
       console.error("Error fetching user purchases:", error);
@@ -990,42 +1111,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credit routes
-  app.post('/api/credits/add', isAuthenticated, csrfProtection, async (req: any, res) => {
-    try {
-      const userId = req.user!.claims.sub;
-      const { amount, paymentMethod, paymentId } = req.body;
-      
-      if (!amount || amount <= 0) {
-        return res.status(400).json({ message: "Invalid amount" });
-      }
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const newBalance = addCredits(user.credits, amount);
-      await storage.updateUserCredits(userId, newBalance);
-      
-      await storage.addCreditTransaction({
-        userId,
-        type: "deposit",
-        amount: amount.toFixed(2),
-        description: `Credit deposit via ${paymentMethod}`,
-        balanceBefore: user.credits,
-        balanceAfter: newBalance,
-        paymentMethod,
-        paymentId,
-      });
-      
-      res.json({ success: true, newBalance });
-    } catch (error) {
-      console.error("Error adding credits:", error);
-      res.status(500).json({ message: "Failed to add credits" });
-    }
-  });
+  app.post(
+    "/api/credits/add",
+    isAuthenticated,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        const userId = req.user!.claims.sub;
+        const { amount, paymentMethod, paymentId } = req.body;
 
-  app.get('/api/transactions', isSimpleAuthenticated, async (req: any, res) => {
+        if (!amount || amount <= 0) {
+          return res.status(400).json({ message: "Invalid amount" });
+        }
+
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        const newBalance = addCredits(user.credits, amount);
+        await storage.updateUserCredits(userId, newBalance);
+
+        await storage.addCreditTransaction({
+          userId,
+          type: "deposit",
+          amount: amount.toFixed(2),
+          description: `Credit deposit via ${paymentMethod}`,
+          balanceBefore: user.credits,
+          balanceAfter: newBalance,
+          paymentMethod,
+          paymentId,
+        });
+
+        res.json({ success: true, newBalance });
+      } catch (error) {
+        console.error("Error adding credits:", error);
+        res.status(500).json({ message: "Failed to add credits" });
+      }
+    },
+  );
+
+  app.get("/api/transactions", isSimpleAuthenticated, async (req: any, res) => {
     try {
       const userId = req.session.userId;
       const transactions = await storage.getUserTransactions(userId);
@@ -1037,7 +1163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Insurance company routes
-  app.get('/api/insurance-companies', async (req, res) => {
+  app.get("/api/insurance-companies", async (req, res) => {
     try {
       const companies = await storage.getInsuranceCompanies();
       res.json(companies);
@@ -1048,10 +1174,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes
-  app.get('/api/admin/users', requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/users", requireAdmin, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
-      const sanitizedUsers = users.map(user => sanitizeUser(user));
+      const sanitizedUsers = users.map((user) => sanitizeUser(user));
       res.json(sanitizedUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -1060,138 +1186,173 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new user (admin only)
-  app.post('/api/admin/users', requireAdmin, csrfProtection, async (req: any, res) => {
-    try {
-      
-      const { email, password, firstName, lastName, role, credits } = req.body;
-      
-      // Validate required fields
-      if (!email || !password || !firstName || !lastName || !role) {
-        return res.status(400).json({ message: "Missing required fields" });
+  app.post(
+    "/api/admin/users",
+    requireAdmin,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        const { email, password, firstName, lastName, role, credits } =
+          req.body;
+
+        // Validate required fields
+        if (!email || !password || !firstName || !lastName || !role) {
+          return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        // Check if user already exists
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser) {
+          return res
+            .status(400)
+            .json({ message: "User with this email already exists" });
+        }
+
+        // Hash password securely
+        const hashedPassword = await hashPassword(password);
+
+        // Create new user
+        const newUser = await storage.createUser({
+          email,
+          password: hashedPassword,
+          firstName,
+          lastName,
+          role,
+          credits: credits || "0",
+        });
+
+        res.json(sanitizeUser(newUser));
+      } catch (error) {
+        console.error("Error creating user:", error);
+        res.status(500).json({ message: "Failed to create user" });
       }
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({ message: "User with this email already exists" });
-      }
-      
-      // Hash password securely
-      const hashedPassword = await hashPassword(password);
-      
-      // Create new user
-      const newUser = await storage.createUser({
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        role,
-        credits: credits || "0",
-      });
-      
-      res.json(sanitizeUser(newUser));
-    } catch (error) {
-      console.error("Error creating user:", error);
-      res.status(500).json({ message: "Failed to create user" });
-    }
-  });
+    },
+  );
 
   // Update user (admin only)
-  app.put('/api/admin/users/:id', requireAdmin, csrfProtection, async (req: any, res) => {
-    try {
-      const targetUserId = req.params.id;
-      
-      const { email, firstName, lastName, role, credits, status } = req.body;
-      
-      // Check if target user exists
-      const targetUser = await storage.getUser(targetUserId);
-      if (!targetUser) {
-        return res.status(404).json({ message: "User not found" });
+  app.put(
+    "/api/admin/users/:id",
+    requireAdmin,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        const targetUserId = req.params.id;
+
+        const { email, firstName, lastName, role, credits, status } = req.body;
+
+        // Check if target user exists
+        const targetUser = await storage.getUser(targetUserId);
+        if (!targetUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        // Prevent admin from changing their own role to non-admin
+        if (req.user?.id === targetUserId && role && role !== "admin") {
+          return res.status(400).json({
+            message: "Você não pode alterar seu próprio tipo de usuário",
+          });
+        }
+
+        // Prevent admin from changing their own status
+        if (
+          req.user?.id === targetUserId &&
+          status &&
+          status !== targetUser.status
+        ) {
+          return res
+            .status(400)
+            .json({ message: "Você não pode alterar seu próprio status" });
+        }
+
+        // Update user
+        const updatedUser = await storage.updateUser(targetUserId, {
+          email: email || targetUser.email,
+          firstName: firstName || targetUser.firstName,
+          lastName: lastName || targetUser.lastName,
+          role: role || targetUser.role,
+          credits: credits !== undefined ? credits : targetUser.credits,
+          status: status || targetUser.status,
+        });
+
+        res.json(sanitizeUser(updatedUser));
+      } catch (error) {
+        console.error("Error updating user:", error);
+        res.status(500).json({ message: "Failed to update user" });
       }
-      
-      // Prevent admin from changing their own role to non-admin
-      if (req.user?.id === targetUserId && role && role !== 'admin') {
-        return res.status(400).json({ message: "Você não pode alterar seu próprio tipo de usuário" });
-      }
-      
-      // Prevent admin from changing their own status
-      if (req.user?.id === targetUserId && status && status !== targetUser.status) {
-        return res.status(400).json({ message: "Você não pode alterar seu próprio status" });
-      }
-      
-      // Update user
-      const updatedUser = await storage.updateUser(targetUserId, {
-        email: email || targetUser.email,
-        firstName: firstName || targetUser.firstName,
-        lastName: lastName || targetUser.lastName,
-        role: role || targetUser.role,
-        credits: credits !== undefined ? credits : targetUser.credits,
-        status: status || targetUser.status,
-      });
-      
-      res.json(sanitizeUser(updatedUser));
-    } catch (error) {
-      console.error("Error updating user:", error);
-      res.status(500).json({ message: "Failed to update user" });
-    }
-  });
+    },
+  );
 
   // Toggle user status (suspend/activate)
-  app.patch('/api/admin/users/:id/toggle-status', requireAdmin, csrfProtection, async (req: any, res) => {
-    try {
-      const targetUserId = req.params.id;
-      
-      // Check if target user exists
-      const targetUser = await storage.getUser(targetUserId);
-      if (!targetUser) {
-        return res.status(404).json({ message: "User not found" });
+  app.patch(
+    "/api/admin/users/:id/toggle-status",
+    requireAdmin,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        const targetUserId = req.params.id;
+
+        // Check if target user exists
+        const targetUser = await storage.getUser(targetUserId);
+        if (!targetUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        // Prevent admin from suspending themselves
+        if (req.user?.id === targetUserId) {
+          return res
+            .status(400)
+            .json({ message: "Você não pode suspender sua própria conta" });
+        }
+
+        // Toggle status
+        const newStatus =
+          targetUser.status === "active" ? "suspended" : "active";
+        const updatedUser = await storage.updateUser(targetUserId, {
+          status: newStatus,
+        });
+
+        res.json(sanitizeUser(updatedUser));
+      } catch (error) {
+        console.error("Error toggling user status:", error);
+        res.status(500).json({ message: "Failed to toggle user status" });
       }
-      
-      // Prevent admin from suspending themselves
-      if (req.user?.id === targetUserId) {
-        return res.status(400).json({ message: "Você não pode suspender sua própria conta" });
-      }
-      
-      // Toggle status
-      const newStatus = targetUser.status === 'active' ? 'suspended' : 'active';
-      const updatedUser = await storage.updateUser(targetUserId, {
-        status: newStatus,
-      });
-      
-      res.json(sanitizeUser(updatedUser));
-    } catch (error) {
-      console.error("Error toggling user status:", error);
-      res.status(500).json({ message: "Failed to toggle user status" });
-    }
-  });
+    },
+  );
 
   // Delete user (admin only)
-  app.delete('/api/admin/users/:id', requireAdmin, csrfProtection, async (req: any, res) => {
-    try {
-      const targetUserId = req.params.id;
-      
-      // Check if target user exists
-      const targetUser = await storage.getUser(targetUserId);
-      if (!targetUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Prevent admin from deleting themselves
-      if (req.user?.id === targetUserId) {
-        return res.status(400).json({ message: "Você não pode deletar sua própria conta" });
-      }
-      
-      // Delete user
-      await storage.deleteUser(targetUserId);
-      
-      res.json({ message: "User deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      res.status(500).json({ message: "Failed to delete user" });
-    }
-  });
+  app.delete(
+    "/api/admin/users/:id",
+    requireAdmin,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        const targetUserId = req.params.id;
 
-  app.get('/api/admin/stats', requireAdmin, async (req: any, res) => {
+        // Check if target user exists
+        const targetUser = await storage.getUser(targetUserId);
+        if (!targetUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        // Prevent admin from deleting themselves
+        if (req.user?.id === targetUserId) {
+          return res
+            .status(400)
+            .json({ message: "Você não pode deletar sua própria conta" });
+        }
+
+        // Delete user
+        await storage.deleteUser(targetUserId);
+
+        res.json({ message: "User deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({ message: "Failed to delete user" });
+      }
+    },
+  );
+
+  app.get("/api/admin/stats", requireAdmin, async (req: any, res) => {
     try {
       const stats = await storage.getUserStats();
       res.json(stats);
@@ -1202,7 +1363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin lead management routes
-  app.get('/api/admin/leads', requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/leads", requireAdmin, async (req: any, res) => {
     try {
       const allLeads = await storage.getAllLeads();
       res.json(allLeads);
@@ -1212,84 +1373,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/leads', requireAdmin, csrfProtection, async (req: any, res) => {
-    try {
-      console.log("Received lead data:", JSON.stringify(req.body, null, 2));
-      
-      const validatedData = insertLeadSchema.parse(req.body);
-      console.log("Validated lead data:", JSON.stringify(validatedData, null, 2));
-      
-      const lead = await storage.createLead(validatedData);
-      console.log("Lead created successfully:", lead.id);
-      
-      res.json(lead);
-    } catch (error) {
-      console.error("Error creating lead:", error);
-      
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Dados inválidos", 
-          errors: error.errors.map(e => ({
-            field: e.path.join('.'),
-            message: e.message
-          }))
+  app.post(
+    "/api/admin/leads",
+    requireAdmin,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        console.log("Received lead data:", JSON.stringify(req.body, null, 2));
+
+        const validatedData = insertLeadSchema.parse(req.body);
+        console.log(
+          "Validated lead data:",
+          JSON.stringify(validatedData, null, 2),
+        );
+
+        const lead = await storage.createLead(validatedData);
+        console.log("Lead created successfully:", lead.id);
+
+        res.json(lead);
+      } catch (error) {
+        console.error("Error creating lead:", error);
+
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({
+            message: "Dados inválidos",
+            errors: error.errors.map((e) => ({
+              field: e.path.join("."),
+              message: e.message,
+            })),
+          });
+        }
+
+        res.status(500).json({
+          message: "Erro ao criar lead. Verifique os dados e tente novamente.",
         });
       }
-      
-      res.status(500).json({ message: "Erro ao criar lead. Verifique os dados e tente novamente." });
-    }
-  });
+    },
+  );
 
-  app.put('/api/admin/leads/:id', requireAdmin, csrfProtection, async (req: any, res) => {
-    try {
-      console.log("Updating lead:", req.params.id, JSON.stringify(req.body, null, 2));
-      
-      const validatedData = insertLeadSchema.parse(req.body);
-      console.log("Validated data - quality:", validatedData.quality, "status:", validatedData.status);
-      
-      const lead = await storage.updateLead(req.params.id, validatedData);
-      
-      if (!lead) {
-        return res.status(404).json({ message: "Lead não encontrado" });
-      }
-      
-      console.log("Lead updated successfully - quality:", lead.quality, "status:", lead.status);
-      res.json(lead);
-    } catch (error) {
-      console.error("Error updating lead:", error);
-      
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Dados inválidos", 
-          errors: error.errors.map(e => ({
-            field: e.path.join('.'),
-            message: e.message
-          }))
+  app.put(
+    "/api/admin/leads/:id",
+    requireAdmin,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        console.log(
+          "Updating lead:",
+          req.params.id,
+          JSON.stringify(req.body, null, 2),
+        );
+
+        const validatedData = insertLeadSchema.parse(req.body);
+        console.log(
+          "Validated data - quality:",
+          validatedData.quality,
+          "status:",
+          validatedData.status,
+        );
+
+        const lead = await storage.updateLead(req.params.id, validatedData);
+
+        if (!lead) {
+          return res.status(404).json({ message: "Lead não encontrado" });
+        }
+
+        console.log(
+          "Lead updated successfully - quality:",
+          lead.quality,
+          "status:",
+          lead.status,
+        );
+        res.json(lead);
+      } catch (error) {
+        console.error("Error updating lead:", error);
+
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({
+            message: "Dados inválidos",
+            errors: error.errors.map((e) => ({
+              field: e.path.join("."),
+              message: e.message,
+            })),
+          });
+        }
+
+        res.status(500).json({
+          message:
+            "Erro ao atualizar lead. Verifique os dados e tente novamente.",
         });
       }
-      
-      res.status(500).json({ message: "Erro ao atualizar lead. Verifique os dados e tente novamente." });
-    }
-  });
+    },
+  );
 
-  app.delete('/api/admin/leads/:id', requireAdmin, csrfProtection, async (req: any, res) => {
-    try {
-      
-      const success = await storage.deleteLead(req.params.id);
-      if (!success) {
-        return res.status(404).json({ message: "Lead not found" });
+  app.delete(
+    "/api/admin/leads/:id",
+    requireAdmin,
+    csrfProtection,
+    async (req: any, res) => {
+      try {
+        const success = await storage.deleteLead(req.params.id);
+        if (!success) {
+          return res.status(404).json({ message: "Lead not found" });
+        }
+        res.json({ message: "Lead deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting lead:", error);
+        res.status(500).json({ message: "Failed to delete lead" });
       }
-      res.json({ message: "Lead deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting lead:", error);
-      res.status(500).json({ message: "Failed to delete lead" });
-    }
-  });
+    },
+  );
 
   // Integration settings routes
-  app.get('/api/admin/integrations', requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/integrations", requireAdmin, async (req: any, res) => {
     try {
-      
       const settings = {
         n8nWebhookUrl: "",
         n8nEnabled: false,
@@ -1298,7 +1494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mercadoPagoAccessToken: "",
         mercadoPagoEnabled: false,
       };
-      
+
       res.json(settings);
     } catch (error) {
       console.error("Error fetching integration settings:", error);
@@ -1306,75 +1502,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/admin/integrations', requireAdmin, csrfProtection, async (req: any, res) => {
-    try {
-      
-      res.json({ message: "Integration settings saved successfully" });
-    } catch (error) {
-      console.error("Error saving integration settings:", error);
-      res.status(500).json({ message: "Failed to save integration settings" });
-    }
-  });
-
-  app.post('/api/admin/integrations/test-webhook', requireAdmin, async (req: any, res) => {
-    try {
-      
-      const { url } = req.body;
-      
-      const testPayload = {
-        test: true,
-        timestamp: new Date().toISOString(),
-        message: "Test webhook from KeepLeads"
-      };
-      
+  app.post(
+    "/api/admin/integrations",
+    requireAdmin,
+    csrfProtection,
+    async (req: any, res) => {
       try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(testPayload),
-        });
-        
-        if (response.ok) {
-          res.json({ message: "Webhook tested successfully" });
-        } else {
-          res.status(400).json({ message: `Webhook test failed: ${response.statusText}` });
-        }
-      } catch (fetchError) {
-        const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown error';
-        res.status(400).json({ message: `Webhook test failed: ${errorMessage}` });
+        res.json({ message: "Integration settings saved successfully" });
+      } catch (error) {
+        console.error("Error saving integration settings:", error);
+        res
+          .status(500)
+          .json({ message: "Failed to save integration settings" });
       }
-    } catch (error) {
-      console.error("Error testing webhook:", error);
-      res.status(500).json({ message: "Failed to test webhook" });
-    }
-  });
+    },
+  );
+
+  app.post(
+    "/api/admin/integrations/test-webhook",
+    requireAdmin,
+    async (req: any, res) => {
+      try {
+        const { url } = req.body;
+
+        const testPayload = {
+          test: true,
+          timestamp: new Date().toISOString(),
+          message: "Test webhook from KeepLeads",
+        };
+
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(testPayload),
+          });
+
+          if (response.ok) {
+            res.json({ message: "Webhook tested successfully" });
+          } else {
+            res
+              .status(400)
+              .json({ message: `Webhook test failed: ${response.statusText}` });
+          }
+        } catch (fetchError) {
+          const errorMessage =
+            fetchError instanceof Error ? fetchError.message : "Unknown error";
+          res
+            .status(400)
+            .json({ message: `Webhook test failed: ${errorMessage}` });
+        }
+      } catch (error) {
+        console.error("Error testing webhook:", error);
+        res.status(500).json({ message: "Failed to test webhook" });
+      }
+    },
+  );
 
   // Excel Template Download - Generate and download leads template
-  app.get('/api/admin/leads/template', requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/leads/template", requireAdmin, async (req: any, res) => {
     try {
       // Get insurance companies for the template
       const companies = await storage.getInsuranceCompanies();
-      const companyNames = companies.map(c => c.name).join(', ');
-      
+      const companyNames = companies.map((c) => c.name).join(", ");
+
       // Create template data with example row and instructions
       const templateData = [
         {
-          'Nome *': 'João da Silva',
-          'Email *': 'joao@email.com',
-          'Telefone *': '(11) 99999-9999',
-          'Idade': 35,
-          'Cidade': 'São Paulo',
-          'Estado *': 'SP',
-          'Tipo de Plano': 'individual',
-          'Vidas Disponíveis': 1,
-          'Origem *': 'Google Ads',
-          'Campanha': 'Campanha Verão 2024',
-          'Qualidade *': 'ouro',
-          'Preço *': '50.00',
-          'Observações': 'Cliente interessado em plano familiar'
-        }
+          "Nome *": "João da Silva",
+          "Email *": "joao@email.com",
+          "Telefone *": "(11) 99999-9999",
+          Idade: 35,
+          Cidade: "São Paulo",
+          "Estado *": "SP",
+          "Tipo de Plano": "PF",
+          "Vidas Disponíveis": 1,
+          "Origem *": "Google Ads",
+          Campanha: "Campanha Verão 2024",
+          "Qualidade *": "ouro",
+          "Preço *": "50.00",
+          Observações: "Cliente interessado em plano familiar",
+        },
       ];
 
       // Create workbook and worksheet
@@ -1382,13 +1592,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ws = XLSX.utils.json_to_sheet(templateData);
 
       // Set column widths
-      ws['!cols'] = [
+      ws["!cols"] = [
         { wch: 25 }, // Nome
         { wch: 30 }, // Email
         { wch: 18 }, // Telefone
-        { wch: 8 },  // Idade
+        { wch: 8 }, // Idade
         { wch: 20 }, // Cidade
-        { wch: 8 },  // Estado
+        { wch: 8 }, // Estado
         { wch: 15 }, // Tipo de Plano
         { wch: 18 }, // Vidas Disponíveis
         { wch: 15 }, // Origem
@@ -1400,50 +1610,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Add instructions sheet
       const instructionsData = [
-        ['INSTRUÇÕES PARA PREENCHIMENTO DA PLANILHA DE LEADS'],
-        [''],
-        ['Campos obrigatórios estão marcados com * (asterisco)'],
-        [''],
-        ['CAMPOS:'],
-        ['Nome *: Nome completo do lead'],
-        ['Email *: Email válido do lead'],
-        ['Telefone *: Telefone com DDD (formato: (XX) XXXXX-XXXX)'],
-        ['Idade: Idade do lead (número inteiro)'],
-        ['Cidade: Cidade de residência'],
-        ['Estado *: Sigla do estado (ex: SP, RJ, MG)'],
-        ['Tipo de Plano: "individual", "familiar" ou "empresarial"'],
-        ['Vidas Disponíveis: Número de pessoas a serem cobertas'],
-        ['Origem *: Fonte do lead (ex: Google Ads, Facebook, Instagram, Indicação)'],
-        ['Campanha: Nome da campanha de marketing'],
-        ['Qualidade *: "ouro", "prata" ou "bronze"'],
-        ['Preço *: Preço de venda do lead (valor numérico)'],
-        ['Observações: Notas adicionais sobre o lead'],
-        [''],
-        ['DICAS:'],
-        ['- Delete a linha de exemplo antes de importar'],
-        ['- Não altere os nomes das colunas'],
-        ['- Valores numéricos devem usar ponto como separador decimal'],
-        ['- Estados devem usar a sigla (SP, RJ, MG, etc.)'],
-        [''],
-        ['SEGURADORAS CADASTRADAS:'],
-        [companyNames || 'Nenhuma seguradora cadastrada ainda'],
+        ["INSTRUÇÕES PARA PREENCHIMENTO DA PLANILHA DE LEADS"],
+        [""],
+        ["Campos obrigatórios estão marcados com * (asterisco)"],
+        [""],
+        ["CAMPOS:"],
+        ["Nome *: Nome completo do lead"],
+        ["Email *: Email válido do lead"],
+        ["Telefone *: Telefone com DDD (formato: (XX) XXXXX-XXXX)"],
+        ["Idade: Idade do lead (número inteiro)"],
+        ["Cidade: Cidade de residência"],
+        ["Estado *: Sigla do estado (ex: SP, RJ, MG)"],
+        ['Tipo de Plano: "PF", "PJ" ou "PME"'],
+        ["Vidas Disponíveis: Número de pessoas a serem cobertas"],
+        [
+          "Origem *: Fonte do lead (ex: Google Ads, Facebook, Instagram, Indicação)",
+        ],
+        ["Campanha: Nome da campanha de marketing"],
+        ['Qualidade *: "ouro", "prata", "bronze" ou "diamante"'],
+        ["Preço *: Preço de venda do lead (valor numérico)"],
+        ["Observações: Notas adicionais sobre o lead"],
+        [""],
+        ["DICAS:"],
+        ["- Delete a linha de exemplo antes de importar"],
+        ["- Não altere os nomes das colunas"],
+        ["- Valores numéricos devem usar ponto como separador decimal"],
+        ["- Estados devem usar a sigla (SP, RJ, MG, etc.)"],
+        [""],
+        ["SEGURADORAS CADASTRADAS:"],
+        [companyNames || "Nenhuma seguradora cadastrada ainda"],
       ];
-      
+
       const wsInstructions = XLSX.utils.aoa_to_sheet(instructionsData);
-      wsInstructions['!cols'] = [{ wch: 80 }];
+      wsInstructions["!cols"] = [{ wch: 80 }];
 
       // Add sheets to workbook
-      XLSX.utils.book_append_sheet(wb, ws, 'Leads');
-      XLSX.utils.book_append_sheet(wb, wsInstructions, 'Instruções');
+      XLSX.utils.book_append_sheet(wb, ws, "Leads");
+      XLSX.utils.book_append_sheet(wb, wsInstructions, "Instruções");
 
       // Generate buffer
-      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+      const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 
       // Set headers for download
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename=template_leads_keepleads.xlsx');
-      res.setHeader('Content-Length', buffer.length);
-      
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=template_leads_keepleads.xlsx",
+      );
+      res.setHeader("Content-Length", buffer.length);
+
       res.send(buffer);
     } catch (error) {
       console.error("Error generating template:", error);
@@ -1452,40 +1670,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Excel Import - Upload and process leads from Excel file
-  app.post('/api/admin/leads/import', requireAdmin, async (req: any, res) => {
+  app.post("/api/admin/leads/import", requireAdmin, async (req: any, res) => {
     try {
       // Check if file data is provided (base64 encoded)
       const { fileData, fileName } = req.body;
-      
+
       if (!fileData) {
         return res.status(400).json({ message: "No file data provided" });
       }
 
       // Convert base64 to buffer
-      const buffer = Buffer.from(fileData, 'base64');
-      
+      const buffer = Buffer.from(fileData, "base64");
+
       // Parse Excel file
-      const workbook = XLSX.read(buffer, { type: 'buffer' });
-      
+      const workbook = XLSX.read(buffer, { type: "buffer" });
+
       // Get the first sheet (Leads)
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      
+
       // Convert to JSON
       const rawData = XLSX.utils.sheet_to_json(worksheet);
-      
+
       if (!rawData || rawData.length === 0) {
-        return res.status(400).json({ message: "A planilha está vazia ou não contém dados válidos" });
+        return res.status(400).json({
+          message: "A planilha está vazia ou não contém dados válidos",
+        });
       }
 
       const results = {
         total: rawData.length,
         success: 0,
-        errors: [] as { row: number; error: string }[]
+        errors: [] as { row: number; error: string }[],
       };
 
       // Brazilian states
-      const validStates = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
+      const validStates = [
+        "AC",
+        "AL",
+        "AP",
+        "AM",
+        "BA",
+        "CE",
+        "DF",
+        "ES",
+        "GO",
+        "MA",
+        "MT",
+        "MS",
+        "MG",
+        "PA",
+        "PB",
+        "PR",
+        "PE",
+        "PI",
+        "RJ",
+        "RN",
+        "RS",
+        "RO",
+        "RR",
+        "SC",
+        "SP",
+        "SE",
+        "TO",
+      ];
 
       // Process each row
       for (let i = 0; i < rawData.length; i++) {
@@ -1494,60 +1742,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         try {
           // Map Excel columns to lead fields
-          const name = row['Nome *'] || row['Nome'];
-          const email = row['Email *'] || row['Email'];
-          const phone = row['Telefone *'] || row['Telefone'];
-          const age = row['Idade'];
-          const city = row['Cidade'];
-          const state = (row['Estado *'] || row['Estado'] || '').toString().toUpperCase().trim();
-          const planType = (row['Tipo de Plano'] || 'individual').toString().toLowerCase().trim();
-          const availableLives = row['Vidas Disponíveis'] || row['Vidas Disponiveis'] || 1;
-          const source = row['Origem *'] || row['Origem'];
-          const campaign = row['Campanha'];
-          const qualityRaw = (row['Qualidade *'] || row['Qualidade'] || 'prata').toString().toLowerCase().trim();
+          const name = row["Nome *"] || row["Nome"];
+          const email = row["Email *"] || row["Email"];
+          const phone = row["Telefone *"] || row["Telefone"];
+          const age = row["Idade"];
+          const city = row["Cidade"];
+          const state = (row["Estado *"] || row["Estado"] || "")
+            .toString()
+            .toUpperCase()
+            .trim();
+          const planType = (row["Tipo de Plano"] || "individual")
+            .toString()
+            .toLowerCase()
+            .trim();
+          const availableLives =
+            row["Vidas Disponíveis"] || row["Vidas Disponiveis"] || 1;
+          const source = row["Origem *"] || row["Origem"];
+          const campaign = row["Campanha"];
+          const qualityRaw = (row["Qualidade *"] || row["Qualidade"] || "prata")
+            .toString()
+            .toLowerCase()
+            .trim();
           // Map Portuguese to internal values
           const qualityMap: { [key: string]: string } = {
-            'ouro': 'gold',
-            'prata': 'silver',
-            'bronze': 'bronze',
-            'gold': 'gold',
-            'silver': 'silver'
+            ouro: "gold",
+            prata: "silver",
+            bronze: "bronze",
+            gold: "gold",
+            silver: "silver",
           };
           const quality = qualityMap[qualityRaw] || qualityRaw;
-          const price = row['Preço *'] || row['Preco *'] || row['Preço'] || row['Preco'];
-          const notes = row['Observações'] || row['Observacoes'];
+          const price =
+            row["Preço *"] || row["Preco *"] || row["Preço"] || row["Preco"];
+          const notes = row["Observações"] || row["Observacoes"];
 
           // Validate required fields
-          if (!name || name.toString().trim() === '') {
-            results.errors.push({ row: rowNum, error: 'Nome é obrigatório' });
+          if (!name || name.toString().trim() === "") {
+            results.errors.push({ row: rowNum, error: "Nome é obrigatório" });
             continue;
           }
-          if (!email || email.toString().trim() === '') {
-            results.errors.push({ row: rowNum, error: 'Email é obrigatório' });
+          if (!email || email.toString().trim() === "") {
+            results.errors.push({ row: rowNum, error: "Email é obrigatório" });
             continue;
           }
-          if (!phone || phone.toString().trim() === '') {
-            results.errors.push({ row: rowNum, error: 'Telefone é obrigatório' });
+          if (!phone || phone.toString().trim() === "") {
+            results.errors.push({
+              row: rowNum,
+              error: "Telefone é obrigatório",
+            });
             continue;
           }
           if (!state || !validStates.includes(state)) {
-            results.errors.push({ row: rowNum, error: `Estado inválido: ${state}. Use a sigla (SP, RJ, MG, etc.)` });
+            results.errors.push({
+              row: rowNum,
+              error: `Estado inválido: ${state}. Use a sigla (SP, RJ, MG, etc.)`,
+            });
             continue;
           }
-          if (!source || source.toString().trim() === '') {
-            results.errors.push({ row: rowNum, error: 'Origem é obrigatória' });
+          if (!source || source.toString().trim() === "") {
+            results.errors.push({ row: rowNum, error: "Origem é obrigatória" });
             continue;
           }
-          if (!['gold', 'silver', 'bronze'].includes(quality)) {
-            results.errors.push({ row: rowNum, error: `Qualidade inválida: ${qualityRaw}. Use ouro, prata ou bronze` });
+          if (!["gold", "silver", "bronze"].includes(quality)) {
+            results.errors.push({
+              row: rowNum,
+              error: `Qualidade inválida: ${qualityRaw}. Use ouro, prata ou bronze`,
+            });
             continue;
           }
           if (!price || isNaN(parseFloat(price))) {
-            results.errors.push({ row: rowNum, error: 'Preço é obrigatório e deve ser um número' });
+            results.errors.push({
+              row: rowNum,
+              error: "Preço é obrigatório e deve ser um número",
+            });
             continue;
           }
-          if (!['individual', 'familiar', 'empresarial'].includes(planType)) {
-            results.errors.push({ row: rowNum, error: `Tipo de plano inválido: ${planType}. Use individual, familiar ou empresarial` });
+          if (!["individual", "familiar", "empresarial"].includes(planType)) {
+            results.errors.push({
+              row: rowNum,
+              error: `Tipo de plano inválido: ${planType}. Use individual, familiar ou empresarial`,
+            });
             continue;
           }
 
@@ -1559,21 +1833,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             age: age ? parseInt(age) : null,
             city: city ? city.toString().trim() : null,
             state: state,
-            planType: planType as 'individual' | 'familiar' | 'empresarial',
+            planType: planType as "individual" | "familiar" | "empresarial",
             availableLives: availableLives ? parseInt(availableLives) : 1,
             source: source.toString().trim(),
             campaign: campaign ? campaign.toString().trim() : null,
-            quality: quality as 'gold' | 'silver' | 'bronze',
+            quality: quality as "gold" | "silver" | "bronze",
             price: price.toString(),
             notes: notes ? notes.toString().trim() : null,
-            status: 'available' as const,
+            status: "available" as const,
           };
 
           // Insert lead into database
           await storage.createLead(leadData);
           results.success++;
         } catch (rowError) {
-          const errorMessage = rowError instanceof Error ? rowError.message : 'Erro desconhecido';
+          const errorMessage =
+            rowError instanceof Error ? rowError.message : "Erro desconhecido";
           results.errors.push({ row: rowNum, error: errorMessage });
         }
       }
@@ -1581,12 +1856,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return results
       res.json({
         message: `Importação concluída: ${results.success} de ${results.total} leads importados com sucesso`,
-        results
+        results,
       });
     } catch (error) {
       console.error("Error importing leads:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      res.status(500).json({ message: `Falha ao importar leads: ${errorMessage}` });
+      const errorMessage =
+        error instanceof Error ? error.message : "Erro desconhecido";
+      res
+        .status(500)
+        .json({ message: `Falha ao importar leads: ${errorMessage}` });
     }
   });
 
