@@ -303,8 +303,8 @@ export default function PublicLeads() {
         {/* Filters */}
         <Card className="mb-8">
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="space-y-2">
+            <div className="flex flex-wrap lg:flex-nowrap items-end gap-4">
+              <div className="flex-1 min-w-[120px] space-y-2">
                 <Label>Tipo de Plano</Label>
                 <Select value={filters.planType} onValueChange={(value) => handleFilterChange("planType", value)}>
                   <SelectTrigger data-testid="select-plan-type">
@@ -319,8 +319,8 @@ export default function PublicLeads() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Quantidade de Vidas</Label>
+              <div className="flex-1 min-w-[120px] space-y-2">
+                <Label>Vidas</Label>
                 <Select value={filters.livesCount} onValueChange={(value) => handleFilterChange("livesCount", value)}>
                   <SelectTrigger data-testid="select-lives-count">
                     <SelectValue placeholder="Todas" />
@@ -336,14 +336,14 @@ export default function PublicLeads() {
                 </Select>
               </div>
               
-              <div className="space-y-2">
+              <div className="flex-1 min-w-[140px] space-y-2">
                 <Label>Cidade</Label>
                 <Select value={filters.city} onValueChange={(value) => handleFilterChange("city", value)}>
                   <SelectTrigger data-testid="select-city">
-                    <SelectValue placeholder="Todas as cidades" />
+                    <SelectValue placeholder="Todas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todas as cidades</SelectItem>
+                    <SelectItem value="all">Todas</SelectItem>
                     {cities.map((city) => (
                       <SelectItem key={city} value={city}>
                         {city}
@@ -353,14 +353,14 @@ export default function PublicLeads() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Qualidade do Plano</Label>
+              <div className="flex-1 min-w-[120px] space-y-2">
+                <Label>Qualidade</Label>
                 <Select value={filters.quality} onValueChange={(value) => handleFilterChange("quality", value)}>
                   <SelectTrigger data-testid="select-quality">
-                    <SelectValue placeholder="Todos os planos" />
+                    <SelectValue placeholder="Todos" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos os planos</SelectItem>
+                    <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="diamond">Diamante</SelectItem>
                     <SelectItem value="gold">Ouro</SelectItem>
                     <SelectItem value="silver">Prata</SelectItem>
@@ -369,27 +369,20 @@ export default function PublicLeads() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Faixa de Preço</Label>
-                <div className="space-y-2">
-                  <Slider
-                    value={priceRange}
-                    onValueChange={handlePriceRangeChange}
-                    max={200}
-                    min={0}
-                    step={5}
-                    className="w-full"
-                  />
-                  <span className="text-sm text-slate-600">
-                    R$ {priceRange[0]} - R$ {priceRange[1]}
-                  </span>
-                </div>
+              <div className="flex-1 min-w-[150px] space-y-2">
+                <Label>Preço: R$ {priceRange[0]} - R$ {priceRange[1]}</Label>
+                <Slider
+                  value={priceRange}
+                  onValueChange={handlePriceRangeChange}
+                  max={200}
+                  min={0}
+                  step={5}
+                  className="w-full"
+                />
               </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button onClick={clearFilters} variant="outline" data-testid="button-clear-filters">
-                Limpar Filtros
+
+              <Button onClick={clearFilters} variant="outline" data-testid="button-clear-filters" className="whitespace-nowrap">
+                Limpar
               </Button>
             </div>
           </CardContent>
