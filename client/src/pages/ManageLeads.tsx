@@ -55,7 +55,7 @@ const leadFormSchema = z.object({
   age: z.number().optional().nullable(),
   city: z.string().optional(),
   state: z.string().min(1, "Estado é obrigatório"),
-  planType: z.enum(["individual", "empresarial", "familiar"], { required_error: "Tipo de plano é obrigatório" }),
+  planType: z.enum(["pf", "pj", "pme"], { required_error: "Tipo de plano é obrigatório" }),
   availableLives: z.number().min(1, "Mínimo 1 vida disponível"),
   source: z.string().min(1, "Origem é obrigatória"),
   campaign: z.string().optional(),
@@ -221,7 +221,7 @@ export default function ManageLeads() {
       age: lead.age || undefined,
       city: lead.city || "",
       state: lead.state,
-      planType: lead.planType as "individual" | "familiar" | "empresarial",
+      planType: lead.planType as "pf" | "pj" | "pme",
       availableLives: lead.availableLives,
       source: lead.source,
       campaign: lead.campaign || "",
@@ -554,9 +554,9 @@ export default function ManageLeads() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-slate-900">{locationText}</div>
                             <div className="text-sm text-slate-500">
-                              {lead.planType === "individual" ? "Individual" : 
-                               lead.planType === "familiar" ? "Familiar" : 
-                               lead.planType === "empresarial" ? "Empresarial" : lead.planType}
+                              {lead.planType === "pf" ? "PF" : 
+                               lead.planType === "pj" ? "PJ" : 
+                               lead.planType === "pme" ? "PME" : lead.planType?.toUpperCase()}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -717,9 +717,9 @@ export default function ManageLeads() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="individual">Individual</SelectItem>
-                            <SelectItem value="familiar">Familiar</SelectItem>
-                            <SelectItem value="empresarial">Empresarial</SelectItem>
+                            <SelectItem value="pf">PF</SelectItem>
+                            <SelectItem value="pj">PJ</SelectItem>
+                            <SelectItem value="pme">PME</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />

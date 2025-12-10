@@ -1751,7 +1751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .toString()
             .toUpperCase()
             .trim();
-          const planType = (row["Tipo de Plano"] || "individual")
+          const planType = (row["Tipo de Plano"] || "pf")
             .toString()
             .toLowerCase()
             .trim();
@@ -1817,10 +1817,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             continue;
           }
-          if (!["individual", "familiar", "empresarial"].includes(planType)) {
+          if (!["pf", "pj", "pme"].includes(planType)) {
             results.errors.push({
               row: rowNum,
-              error: `Tipo de plano inválido: ${planType}. Use individual, familiar ou empresarial`,
+              error: `Tipo de plano inválido: ${planType}. Use PF, PJ ou PME`,
             });
             continue;
           }
@@ -1833,7 +1833,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             age: age ? parseInt(age) : null,
             city: city ? city.toString().trim() : null,
             state: state,
-            planType: planType as "individual" | "familiar" | "empresarial",
+            planType: planType as "pf" | "pj" | "pme",
             availableLives: availableLives ? parseInt(availableLives) : 1,
             source: source.toString().trim(),
             campaign: campaign ? campaign.toString().trim() : null,
