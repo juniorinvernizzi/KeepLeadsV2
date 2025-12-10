@@ -106,7 +106,7 @@ export default function LeadInfoModal({ isOpen, onClose, lead, companies }: Lead
             
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-2xl font-bold text-gray-900">{lead.availableLives}</div>
-              <p className="text-sm text-gray-500">Vida{lead.availableLives > 1 ? 's' : ''} Disponível{lead.availableLives > 1 ? 'is' : ''}</p>
+              <p className="text-sm text-gray-500">{lead.availableLives > 1 ? 'Vidas Disponíveis' : 'Vida Disponível'}</p>
             </div>
             
             <div className="text-center p-4 bg-gray-50 rounded-lg">
