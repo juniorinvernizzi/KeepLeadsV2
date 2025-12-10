@@ -10,13 +10,13 @@ import PurchaseModal from "./PurchaseModal";
 import LeadInfoModal from "./LeadInfoModal";
 import {
   MapPin,
-  User,
   Users,
   CreditCard,
   Star,
   Shield,
   Clock,
   ArrowRight,
+  Diamond,
 } from "lucide-react";
 
 interface Lead {
@@ -52,13 +52,15 @@ interface Company {
 interface LeadCardProps {
   lead: Lead;
   companies: Company[];
-  onPurchase: () => void;
+  onPurchase?: () => void;
+  isPublic?: boolean;
 }
 
 export default function LeadCard({
   lead,
   companies,
   onPurchase,
+  isPublic = false,
 }: LeadCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -81,15 +83,13 @@ export default function LeadCard({
         title: "Lead comprado com sucesso!",
         description: "O lead foi adicionado aos seus leads comprados.",
       });
-      // Invalidate all related queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/simple-auth/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/my-leads"] });
       queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-      // Also refetch immediately to ensure fresh data
       queryClient.refetchQueries({ queryKey: ["/api/simple-auth/user"] });
       setShowPurchaseModal(false);
-      onPurchase();
+      onPurchase?.();
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
@@ -131,6 +131,12 @@ export default function LeadCard({
 
   const getQualityBadge = () => {
     switch (lead.quality) {
+      case "diamond":
+        return {
+          label: "Diamante",
+          color: "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white",
+          icon: <Diamond className="w-3 h-3" />,
+        };
       case "gold":
         return {
           label: "Ouro",
@@ -158,14 +164,40 @@ export default function LeadCard({
     }
   };
 
+  const getPlanTypeLabel = () => {
+    switch (lead.planType) {
+      case "pf":
+        return "PF";
+      case "pj":
+        return "PJ";
+      case "pme":
+        return "PME";
+      default:
+        return lead.planType?.toUpperCase() || "-";
+    }
+  };
+
   const qualityBadge = getQualityBadge();
+
+  const handleCardClick = () => {
+    setShowInfoModal(true);
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isPublic) {
+      window.location.href = "/login";
+    } else {
+      setShowPurchaseModal(true);
+    }
+  };
 
   return (
     <>
       <Card
         className="group relative w-full max-w-sm bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border-0 overflow-hidden cursor-pointer transform hover:-translate-y-1"
         data-testid={`card-lead-${lead.id}`}
-        onClick={() => setShowInfoModal(true)}
+        onClick={handleCardClick}
       >
         {/* Header com gradiente */}
         <div className="relative bg-gradient-to-br from-gray-600 via-gray-600 to-gray-700 p-4">
@@ -217,14 +249,14 @@ export default function LeadCard({
                   Plano
                 </span>
               </div>
-              <p className="text-xs sm:text-sm font-bold text-gray-900 capitalize truncate">
-                {lead.planType}
+              <p className="text-xs sm:text-sm font-bold text-gray-900 uppercase truncate">
+                {getPlanTypeLabel()}
               </p>
             </div>
           </div>
 
           {/* Preço com destaque especial */}
-          <div className="relative bg-gradient-to-br from-gray-100 to-gray-20 rounded-xl p-4 sm:p-5 mb-4 sm:mb-6 overflow-hidden">
+          <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-4 sm:p-5 mb-4 sm:mb-6 overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-gray-200/50 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
             <div className="relative text-center">
               <p className="text-[10px] sm:text-xs text-gray-800 mb-1">
@@ -240,12 +272,17 @@ export default function LeadCard({
           </div>
 
           {/* Botão de ação moderno */}
-          {canPurchase ? (
+          {isPublic ? (
             <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowPurchaseModal(true);
-              }}
+              onClick={handleButtonClick}
+              className="w-full h-12 bg-gradient-to-r from-primary-600 to-primary-light-600 hover:from-primary-light-700 hover:to-primary-light-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 group"
+              data-testid={`button-login-to-buy-${lead.id}`}
+            >
+              <span>Fazer login para comprar</span>
+            </Button>
+          ) : canPurchase ? (
+            <Button
+              onClick={handleButtonClick}
               disabled={!hasSufficientCredits}
               className="w-full h-12 bg-gradient-to-r from-primary-600 to-gray-600 hover:from-gray-700 hover:to-gray-500 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 group disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
               data-testid={`button-purchase-${lead.id}`}
@@ -265,15 +302,17 @@ export default function LeadCard({
         </CardContent>
       </Card>
 
-      <PurchaseModal
-        isOpen={showPurchaseModal}
-        onClose={() => setShowPurchaseModal(false)}
-        onConfirm={handlePurchase}
-        lead={lead}
-        company={company}
-        userCredits={userCredits}
-        isLoading={purchaseMutation.isPending}
-      />
+      {!isPublic && (
+        <PurchaseModal
+          isOpen={showPurchaseModal}
+          onClose={() => setShowPurchaseModal(false)}
+          onConfirm={handlePurchase}
+          lead={lead}
+          company={company}
+          userCredits={userCredits}
+          isLoading={purchaseMutation.isPending}
+        />
+      )}
 
       <LeadInfoModal
         isOpen={showInfoModal}

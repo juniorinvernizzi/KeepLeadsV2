@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, CreditCard, User, Star } from "lucide-react";
-import LeadInfoModal from "@/components/LeadInfoModal";
 import FilterBar from "@/components/FilterBar";
+import LeadCard from "@/components/LeadCard";
 
 interface Lead {
   id: string;
@@ -28,160 +26,6 @@ interface Lead {
   notes: string;
   createdAt: string;
   updatedAt: string;
-}
-
-interface PublicLeadCardProps {
-  lead: Lead;
-  companies: Array<{id: string; name: string; color: string; logo?: string}>;
-}
-
-function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
-  const [showInfoModal, setShowInfoModal] = useState(false);
-  
-  const company = companies.find(c => c.id === lead.insuranceCompanyId) || {
-    id: lead.insuranceCompanyId,
-    name: lead.insuranceCompanyId,
-    color: "#7C3AED"
-  };
-
-  const getQualityBadge = () => {
-    switch (lead.quality) {
-      case "diamond":
-        return {
-          label: "Diamante",
-          color: "bg-gradient-to-r from-cyan-500 to-cyan-600 text-white",
-          icon: <Star className="w-3 h-3" />,
-        };
-      case "gold":
-        return {
-          label: "Ouro",
-          color: "bg-gradient-to-r from-yellow-500 to-yellow-600 text-white",
-          icon: <Star className="w-3 h-3" />,
-        };
-      case "silver":
-        return {
-          label: "Prata",
-          color: "bg-gradient-to-r from-gray-500 to-gray-600 text-white",
-          icon: <User className="w-3 h-3" />,
-        };
-      case "bronze":
-        return {
-          label: "Bronze",
-          color: "bg-gradient-to-r from-orange-500 to-orange-600 text-white",
-          icon: <Calendar className="w-3 h-3" />,
-        };
-      default:
-        return {
-          label: "Padrão",
-          color: "bg-gradient-to-r from-gray-500 to-gray-600 text-white",
-          icon: <User className="w-3 h-3" />,
-        };
-    }
-  };
-
-  const qualityBadge = getQualityBadge();
-  
-  return (
-    <>
-      <Card 
-        className="group relative w-full max-w-sm bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 border-0 overflow-hidden cursor-pointer transform hover:-translate-y-1" 
-        data-testid={`card-lead-${lead.id}`}
-        onClick={() => setShowInfoModal(true)}
-      >
-        {/* Header com gradiente */}
-        <div className="relative bg-gradient-to-br from-gray-600 via-gray-600 to-gray-700 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h3 className="font-semibold text-white text-sm">
-                Plano de Saúde
-              </h3>
-              <p className="text-xs text-purple-100">Lead Qualificado</p>
-            </div>
-            <div
-              className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 ${qualityBadge.color}`}
-            >
-              {qualityBadge.icon}
-              <span>{qualityBadge.label}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 text-purple-100">
-            <MapPin className="w-4 h-4" />
-            <span
-              className="text-sm font-medium"
-              data-testid={`text-location-${lead.id}`}
-            >
-              {lead.city ? `${lead.city}, ${lead.state}` : lead.state}
-            </span>
-          </div>
-        </div>
-
-        <CardContent className="p-4 sm:p-6">
-          {/* Informações principais em grid moderno */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
-            <div className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-emerald-100">
-              <div className="flex items-center space-x-1 mb-1">
-                <User className="w-3 h-3 text-emerald-600" />
-                <span className="text-[10px] sm:text-xs font-medium text-emerald-600">
-                  Vidas
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm font-bold text-gray-900">
-                {lead.availableLives}
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg sm:rounded-xl p-2 sm:p-3 border border-orange-100">
-              <div className="flex items-center space-x-1 mb-1">
-                <CreditCard className="w-3 h-3 text-orange-600" />
-                <span className="text-[10px] sm:text-xs font-medium text-orange-600">
-                  Plano
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm font-bold text-gray-900 uppercase truncate">
-                {lead.planType === "pf" ? "PF" : lead.planType === "pj" ? "PJ" : lead.planType === "pme" ? "PME" : lead.planType?.toUpperCase()}
-              </p>
-            </div>
-          </div>
-
-          {/* Preço com destaque especial */}
-          <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-4 sm:p-5 mb-4 sm:mb-6 overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-gray-200/50 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
-            <div className="relative text-center">
-              <p className="text-[10px] sm:text-xs text-gray-800 mb-1">
-                Valor do lead
-              </p>
-              <div
-                className="text-2xl sm:text-3xl font-bold text-gray-800"
-                data-testid={`text-price-${lead.id}`}
-              >
-                R$ {parseFloat(lead.price).toFixed(2)}
-              </div>
-            </div>
-          </div>
-
-          {/* Botão de ação moderno */}
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              window.location.href = "/login";
-            }}
-            className="w-full h-12 bg-gradient-to-r from-primary-600 to-primary-light-600 hover:from-primary-light-700 hover:to-primary-light-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2 group"
-            data-testid={`button-login-to-buy-${lead.id}`}
-          >
-            <span>Fazer login para comprar</span>
-          </Button>
-        </CardContent>
-      </Card>
-
-      <LeadInfoModal
-        isOpen={showInfoModal}
-        onClose={() => setShowInfoModal(false)}
-        lead={lead}
-        companies={companies}
-      />
-    </>
-  );
 }
 
 export default function PublicLeads() {
@@ -266,8 +110,6 @@ export default function PublicLeads() {
               </Button>
             </div>
           </div>
-          
-          
         </div>
       </header>
 
@@ -327,10 +169,11 @@ export default function PublicLeads() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {leads.map((lead) => (
-              <PublicLeadCard 
+              <LeadCard 
                 key={lead.id} 
                 lead={lead} 
                 companies={companies}
+                isPublic={true}
               />
             ))}
           </div>
