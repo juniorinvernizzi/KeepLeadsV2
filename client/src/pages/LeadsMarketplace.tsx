@@ -99,7 +99,6 @@ export default function LeadsMarketplace() {
         <FilterBar 
           filters={filters} 
           onFiltersChange={handleFilterChange}
-          companies={companies}
         />
 
         {/* Results Header */}

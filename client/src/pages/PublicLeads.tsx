@@ -3,12 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { MapPin, Calendar, CreditCard, User, Star } from "lucide-react";
 import LeadInfoModal from "@/components/LeadInfoModal";
+import FilterBar from "@/components/FilterBar";
 
 interface Lead {
   id: string;
@@ -189,15 +186,13 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
 
 export default function PublicLeads() {
   const [filters, setFilters] = useState({
-    search: "",
     city: "all",
     planType: "all",
     livesCount: "all",
     quality: "all",
-    minPrice: "",
-    maxPrice: "",
+    minPrice: "0",
+    maxPrice: "200",
   });
-  const [priceRange, setPriceRange] = useState([0, 200]);
 
   const { data: leads = [], isLoading } = useQuery<Lead[]>({
     queryKey: ["/api/leads", JSON.stringify(filters)],
@@ -225,31 +220,19 @@ export default function PublicLeads() {
     "Campinas", "Florianópolis"
   ];
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handlePriceRangeChange = (values: number[]) => {
-    setPriceRange(values);
-    setFilters(prev => ({ 
-      ...prev, 
-      minPrice: values[0].toString(),
-      maxPrice: values[1].toString()
-    }));
+  const handleFiltersChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
   };
 
   const clearFilters = () => {
-    const emptyFilters = {
-      search: "",
+    setFilters({
       city: "all",
       planType: "all",
       livesCount: "all",
       quality: "all",
-      minPrice: "",
-      maxPrice: "",
-    };
-    setFilters(emptyFilters);
-    setPriceRange([0, 200]);
+      minPrice: "0",
+      maxPrice: "200",
+    });
   };
 
   return (
@@ -301,92 +284,11 @@ export default function PublicLeads() {
         </div>
 
         {/* Filters */}
-        <Card className="mb-8">
-          <CardContent className="p-6">
-            <div className="flex flex-wrap lg:flex-nowrap items-end gap-4">
-              <div className="flex-1 min-w-[120px] space-y-2">
-                <Label>Tipo de Plano</Label>
-                <Select value={filters.planType} onValueChange={(value) => handleFilterChange("planType", value)}>
-                  <SelectTrigger data-testid="select-plan-type">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="pf">PF</SelectItem>
-                    <SelectItem value="pj">PJ</SelectItem>
-                    <SelectItem value="pme">PME</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex-1 min-w-[120px] space-y-2">
-                <Label>Vidas</Label>
-                <Select value={filters.livesCount} onValueChange={(value) => handleFilterChange("livesCount", value)}>
-                  <SelectTrigger data-testid="select-lives-count">
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    <SelectItem value="1">1 vida</SelectItem>
-                    <SelectItem value="2">2 vidas</SelectItem>
-                    <SelectItem value="3-5">3-5 vidas</SelectItem>
-                    <SelectItem value="6-10">6-10 vidas</SelectItem>
-                    <SelectItem value="11+">11+ vidas</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex-1 min-w-[140px] space-y-2">
-                <Label>Cidade</Label>
-                <Select value={filters.city} onValueChange={(value) => handleFilterChange("city", value)}>
-                  <SelectTrigger data-testid="select-city">
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas</SelectItem>
-                    {cities.map((city) => (
-                      <SelectItem key={city} value={city}>
-                        {city}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex-1 min-w-[120px] space-y-2">
-                <Label>Qualidade</Label>
-                <Select value={filters.quality} onValueChange={(value) => handleFilterChange("quality", value)}>
-                  <SelectTrigger data-testid="select-quality">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="diamond">Diamante</SelectItem>
-                    <SelectItem value="gold">Ouro</SelectItem>
-                    <SelectItem value="silver">Prata</SelectItem>
-                    <SelectItem value="bronze">Bronze</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex-1 min-w-[150px] space-y-2">
-                <Label>Preço: R$ {priceRange[0]} - R$ {priceRange[1]}</Label>
-                <Slider
-                  value={priceRange}
-                  onValueChange={handlePriceRangeChange}
-                  max={200}
-                  min={0}
-                  step={5}
-                  className="w-full"
-                />
-              </div>
-
-              <Button onClick={clearFilters} variant="outline" data-testid="button-clear-filters" className="whitespace-nowrap">
-                Limpar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <FilterBar 
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          cities={cities}
+        />
 
         {/* Results */}
         <div className="flex items-center justify-between mb-6">

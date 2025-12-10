@@ -1,5 +1,4 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,20 +20,20 @@ interface FilterBarProps {
     quality: string;
   };
   onFiltersChange: (filters: any) => void;
-  companies: Array<{ id: string; name: string }>;
+  cities?: string[];
 }
 
 export default function FilterBar({
   filters,
   onFiltersChange,
-  companies,
+  cities = [],
 }: FilterBarProps) {
   const priceRange = [
     parseInt(filters.minPrice) || 0,
     parseInt(filters.maxPrice) || 200,
   ];
 
-  const cities = [
+  const defaultCities = [
     "São Paulo",
     "Rio de Janeiro",
     "Brasília",
@@ -47,9 +46,12 @@ export default function FilterBar({
     "Manaus",
   ];
 
+  const availableCities = cities.length > 0 ? cities : defaultCities;
+
   const planTypes = [
-    { value: "individual", label: "Individual" },
-    { value: "empresarial", label: "Empresarial" },
+    { value: "pf", label: "PF" },
+    { value: "pj", label: "PJ" },
+    { value: "pme", label: "PME" },
   ];
 
   const livesOptions = [
@@ -61,11 +63,11 @@ export default function FilterBar({
   ];
 
   const qualityOptions = [
+    { value: "diamond", label: "Diamante" },
     { value: "gold", label: "Ouro" },
     { value: "silver", label: "Prata" },
     { value: "bronze", label: "Bronze" },
   ];
-
 
   const handleFilterChange = (key: string, value: string) => {
     const newFilters = { ...filters, [key]: value };
@@ -86,8 +88,8 @@ export default function FilterBar({
       city: "all",
       planType: "all",
       livesCount: "all",
-      minPrice: "",
-      maxPrice: "",
+      minPrice: "0",
+      maxPrice: "200",
       quality: "all",
     };
     onFiltersChange(emptyFilters);
@@ -96,38 +98,18 @@ export default function FilterBar({
   return (
     <Card className="mb-8">
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-          <div className="space-y-2">
-            <Label htmlFor="city">Localização</Label>
-            <Select
-              value={filters.city}
-              onValueChange={(value) => handleFilterChange("city", value)}
-            >
-              <SelectTrigger data-testid="select-city">
-                <SelectValue placeholder="Todas as cidades" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas localizações</SelectItem>
-                {cities.map((city) => (
-                  <SelectItem key={city} value={city}>
-                    {city}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="planType">Tipo de Plano</Label>
+        <div className="flex flex-wrap lg:flex-nowrap items-end gap-4">
+          <div className="flex-1 min-w-[120px] space-y-2">
+            <Label>Tipo de Plano</Label>
             <Select
               value={filters.planType}
               onValueChange={(value) => handleFilterChange("planType", value)}
             >
               <SelectTrigger data-testid="select-plan-type">
-                <SelectValue placeholder="Todos os tipos" />
+                <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos os tipos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 {planTypes.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
                     {type.label}
@@ -137,8 +119,8 @@ export default function FilterBar({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="livesCount">Quantidade de Vidas</Label>
+          <div className="flex-1 min-w-[120px] space-y-2">
+            <Label>Vidas</Label>
             <Select
               value={filters.livesCount}
               onValueChange={(value) => handleFilterChange("livesCount", value)}
@@ -157,17 +139,37 @@ export default function FilterBar({
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="quality">Qualidade do Plano</Label>
+          <div className="flex-1 min-w-[140px] space-y-2">
+            <Label>Cidade</Label>
+            <Select
+              value={filters.city}
+              onValueChange={(value) => handleFilterChange("city", value)}
+            >
+              <SelectTrigger data-testid="select-city">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {availableCities.map((city) => (
+                  <SelectItem key={city} value={city}>
+                    {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex-1 min-w-[120px] space-y-2">
+            <Label>Qualidade</Label>
             <Select
               value={filters.quality}
               onValueChange={(value) => handleFilterChange("quality", value)}
             >
               <SelectTrigger data-testid="select-quality">
-                <SelectValue placeholder="Todas as qualidades" />
+                <SelectValue placeholder="Todos" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas as qualidades</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 {qualityOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
@@ -177,44 +179,27 @@ export default function FilterBar({
             </Select>
           </div>
 
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
-            <span className="text-sm text-slate-600 whitespace-nowrap">
-              Preço:
-            </span>
-            <div className="flex items-center gap-3 sm:gap-4 flex-1 sm:flex-initial">
-              <div className="w-full sm:w-48">
-                <Slider
-                  value={priceRange}
-                  onValueChange={handlePriceRangeChange}
-                  max={200}
-                  min={0}
-                  step={5}
-                  className="w-full"
-                  data-testid="slider-price-range"
-                />
-              </div>
-              <span
-                className="text-sm font-medium text-slate-800 whitespace-nowrap"
-                data-testid="text-price-range"
-              >
-                R$ {priceRange[0]} - R$ {priceRange[1]}
-              </span>
-            </div>
+          <div className="flex-1 min-w-[150px] space-y-2">
+            <Label>Preço: R$ {priceRange[0]} - R$ {priceRange[1]}</Label>
+            <Slider
+              value={priceRange}
+              onValueChange={handlePriceRangeChange}
+              max={200}
+              min={0}
+              step={5}
+              className="w-full"
+              data-testid="slider-price-range"
+            />
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              onClick={clearFilters}
-              data-testid="button-clear-filters"
-              className="w-full sm:w-auto"
-            >
-              Limpar filtros
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            onClick={clearFilters}
+            data-testid="button-clear-filters"
+            className="whitespace-nowrap"
+          >
+            Limpar
+          </Button>
         </div>
       </CardContent>
     </Card>
