@@ -1411,7 +1411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ['Idade: Idade do lead (número inteiro)'],
         ['Cidade: Cidade de residência'],
         ['Estado *: Sigla do estado (ex: SP, RJ, MG)'],
-        ['Tipo de Plano: "individual" ou "empresarial"'],
+        ['Tipo de Plano: "individual", "familiar" ou "empresarial"'],
         ['Vidas Disponíveis: Número de pessoas a serem cobertas'],
         ['Origem *: Fonte do lead (ex: Google Ads, Facebook, Instagram, Indicação)'],
         ['Campanha: Nome da campanha de marketing'],
@@ -1546,8 +1546,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             results.errors.push({ row: rowNum, error: 'Preço é obrigatório e deve ser um número' });
             continue;
           }
-          if (!['individual', 'empresarial'].includes(planType)) {
-            results.errors.push({ row: rowNum, error: `Tipo de plano inválido: ${planType}. Use individual ou empresarial` });
+          if (!['individual', 'familiar', 'empresarial'].includes(planType)) {
+            results.errors.push({ row: rowNum, error: `Tipo de plano inválido: ${planType}. Use individual, familiar ou empresarial` });
             continue;
           }
 
@@ -1559,7 +1559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             age: age ? parseInt(age) : null,
             city: city ? city.toString().trim() : null,
             state: state,
-            planType: planType as 'individual' | 'empresarial',
+            planType: planType as 'individual' | 'familiar' | 'empresarial',
             availableLives: availableLives ? parseInt(availableLives) : 1,
             source: source.toString().trim(),
             campaign: campaign ? campaign.toString().trim() : null,

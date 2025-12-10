@@ -52,12 +52,13 @@ const leadFormSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("E-mail inválido"),
   phone: z.string().min(1, "Telefone é obrigatório"),
+  age: z.number().optional().nullable(),
   city: z.string().optional(),
   state: z.string().min(1, "Estado é obrigatório"),
-  planType: z.string().min(1, "Tipo de plano é obrigatório"),
+  planType: z.enum(["individual", "empresarial", "familiar"], { required_error: "Tipo de plano é obrigatório" }),
   availableLives: z.number().min(1, "Mínimo 1 vida disponível"),
   source: z.string().min(1, "Origem é obrigatória"),
-  campaign: z.string().min(1, "Campanha é obrigatória"),
+  campaign: z.string().optional(),
   quality: z.enum(["gold", "silver", "bronze"], { required_error: "Qualidade é obrigatória" }),
   status: z.enum(["available", "sold", "reserved", "expired"], { required_error: "Status é obrigatório" }),
   price: z.string().min(1, "Preço é obrigatório"),
@@ -118,6 +119,7 @@ export default function ManageLeads() {
       name: "",
       email: "",
       phone: "",
+      age: undefined,
       city: "",
       state: "",
       planType: "individual",
@@ -154,13 +156,11 @@ export default function ManageLeads() {
     mutationFn: async (data: LeadFormData) => {
       const leadData = {
         ...data,
-        age: 30, // Default value for hidden field
-        budgetMin: "0.00", // Default value for hidden field
-        budgetMax: "0.00", // Default value for hidden field
-        insuranceCompanyId: null, // No company filtering
+        age: data.age || null,
+        budgetMin: "0.00",
+        budgetMax: "0.00",
+        insuranceCompanyId: null,
       };
-
-      console.log("Submitting lead data - quality:", leadData.quality, "status:", leadData.status);
 
       if (editingLead) {
         return apiRequest("PUT", `/api/admin/leads/${editingLead.id}`, leadData);
@@ -218,12 +218,13 @@ export default function ManageLeads() {
       name: lead.name,
       email: lead.email,
       phone: lead.phone,
+      age: lead.age || undefined,
       city: lead.city || "",
       state: lead.state,
-      planType: lead.planType,
+      planType: lead.planType as "individual" | "familiar" | "empresarial",
       availableLives: lead.availableLives,
       source: lead.source,
-      campaign: lead.campaign,
+      campaign: lead.campaign || "",
       quality: lead.quality as "gold" | "silver" | "bronze",
       status: lead.status as "available" | "sold" | "reserved" | "expired",
       price: lead.price,
@@ -552,7 +553,11 @@ export default function ManageLeads() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-slate-900">{locationText}</div>
-                            <div className="text-sm text-slate-500">{lead.planType}</div>
+                            <div className="text-sm text-slate-500">
+                              {lead.planType === "individual" ? "Individual" : 
+                               lead.planType === "familiar" ? "Familiar" : 
+                               lead.planType === "empresarial" ? "Empresarial" : lead.planType}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <Badge 
@@ -713,6 +718,7 @@ export default function ManageLeads() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="individual">Individual</SelectItem>
+                            <SelectItem value="familiar">Familiar</SelectItem>
                             <SelectItem value="empresarial">Empresarial</SelectItem>
                           </SelectContent>
                         </Select>
