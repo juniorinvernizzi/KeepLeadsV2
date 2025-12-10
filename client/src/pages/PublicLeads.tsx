@@ -141,8 +141,8 @@ function PublicLeadCard({ lead, companies }: PublicLeadCardProps) {
                   Plano
                 </span>
               </div>
-              <p className="text-xs sm:text-sm font-bold text-gray-900 capitalize truncate">
-                {lead.planType}
+              <p className="text-xs sm:text-sm font-bold text-gray-900 uppercase truncate">
+                {lead.planType === "pf" ? "PF" : lead.planType === "pj" ? "PJ" : lead.planType === "pme" ? "PME" : lead.planType?.toUpperCase()}
               </p>
             </div>
           </div>
