@@ -1173,6 +1173,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Reports
+  app.get("/api/admin/reports", requireAdmin, async (req: any, res) => {
+    try {
+      const { period } = req.query;
+      
+      // Calculate date range based on period
+      const now = new Date();
+      let fromDate: Date;
+      
+      switch (period) {
+        case "today":
+          fromDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case "week":
+          fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case "month":
+          fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        case "year":
+          fromDate = new Date(now.getFullYear(), 0, 1);
+          break;
+        case "all":
+          fromDate = new Date(2020, 0, 1);
+          break;
+        default:
+          fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      }
+      
+      const toDate = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Include today
+      
+      const reports = await storage.getReportsData(fromDate, toDate);
+      res.json(reports);
+    } catch (error) {
+      console.error("Error fetching reports:", error);
+      res.status(500).json({ message: "Failed to fetch reports" });
+    }
+  });
+
   // Admin routes
   app.get("/api/admin/users", requireAdmin, async (req: any, res) => {
     try {

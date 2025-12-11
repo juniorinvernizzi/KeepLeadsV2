@@ -22,6 +22,7 @@ import TestImport from "@/pages/TestImport";
 import EditProfile from "@/pages/EditProfile";
 import PublicLeads from "@/pages/PublicLeads";
 import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import AdminReports from "@/pages/AdminReports";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -56,6 +57,7 @@ function Router() {
           <Route path="/credits" component={Credits} />
           <Route path="/admin" component={AdminPanel} />
           <Route path="/admin/manage-leads" component={ManageLeads} />
+          <Route path="/admin/reports" component={AdminReports} />
           <Route path="/admin/test-import" component={TestImport} />
           <Route path="/integrations" component={Integrations} />
           <Route path="/profile/edit" component={EditProfile} />
@@ -68,6 +70,7 @@ function Router() {
           <Route path="/credits" component={Login} />
           <Route path="/admin" component={Login} />
           <Route path="/admin/manage-leads" component={Login} />
+          <Route path="/admin/reports" component={Login} />
           <Route path="/admin/test-import" component={Login} />
           <Route path="/integrations" component={Login} />
           <Route path="/profile/edit" component={Login} />

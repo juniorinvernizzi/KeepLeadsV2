@@ -27,6 +27,7 @@ import {
   FolderOpen,
   ChevronDown,
   TestTube,
+  BarChart2,
 } from "lucide-react";
 import { Link as LinkIcon } from "lucide-react";
 
@@ -79,11 +80,11 @@ export default function Layout({ children }: LayoutProps) {
             label: "Gerenciar Leads",
             icon: <FolderOpen className="w-5 h-5" />,
           },
-          /*{
-            path: "/admin/test-import",
-            label: "Testar Importação",
-            icon: <TestTube className="w-5 h-5" />,
-          },*/
+          {
+            path: "/admin/reports",
+            label: "Relatórios",
+            icon: <BarChart2 className="w-5 h-5" />,
+          },
           {
             path: "/admin",
             label: "Configurações",

@@ -67,6 +67,28 @@ export interface IStorage {
     soldLeads: number;
     totalRevenue: string;
   }>;
+  getReportsData(fromDate: Date, toDate: Date): Promise<{
+    sales: {
+      totalSold: number;
+      totalRevenue: string;
+      averageTicket: string;
+      salesByDay: { date: string; count: number; revenue: string }[];
+    };
+    insertions: {
+      totalCreated: number;
+      byQuality: { quality: string; count: number }[];
+      byPlan: { planType: string; count: number }[];
+      insertionsByDay: { date: string; count: number }[];
+    };
+    system: {
+      totalUsers: number;
+      activeClients: number;
+      availableLeads: number;
+      reservedLeads: number;
+      expiredLeads: number;
+      totalCreditsDeposited: string;
+    };
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -327,10 +349,189 @@ export class DatabaseStorage implements IStorage {
     
     return {
       totalUsers: userCount.count,
-      activeUsers: userCount.count, // Simplified - could be enhanced with last login tracking
+      activeUsers: userCount.count,
       totalLeads: leadCount.count,
       soldLeads: soldLeadCount.count,
       totalRevenue: revenueSum.sum,
+    };
+  }
+
+  async getReportsData(fromDate: Date, toDate: Date): Promise<{
+    sales: {
+      totalSold: number;
+      totalRevenue: string;
+      averageTicket: string;
+      salesByDay: { date: string; count: number; revenue: string }[];
+    };
+    insertions: {
+      totalCreated: number;
+      byQuality: { quality: string; count: number }[];
+      byPlan: { planType: string; count: number }[];
+      insertionsByDay: { date: string; count: number }[];
+    };
+    system: {
+      totalUsers: number;
+      activeClients: number;
+      availableLeads: number;
+      reservedLeads: number;
+      expiredLeads: number;
+      totalCreditsDeposited: string;
+    };
+  }> {
+    // Sales metrics
+    const salesData = await db
+      .select({
+        count: sql<number>`count(*)`,
+        revenue: sql<string>`coalesce(sum(price), '0')`,
+      })
+      .from(leadPurchases)
+      .where(and(
+        gte(leadPurchases.purchasedAt, fromDate),
+        lte(leadPurchases.purchasedAt, toDate)
+      ));
+
+    const totalSold = salesData[0]?.count || 0;
+    const totalRevenue = salesData[0]?.revenue || "0";
+    const averageTicket = totalSold > 0 ? (parseFloat(totalRevenue) / totalSold).toFixed(2) : "0";
+
+    // Sales by day
+    const salesByDayData = await db
+      .select({
+        date: sql<string>`to_char(purchased_at, 'YYYY-MM-DD')`,
+        count: sql<number>`count(*)`,
+        revenue: sql<string>`coalesce(sum(price), '0')`,
+      })
+      .from(leadPurchases)
+      .where(and(
+        gte(leadPurchases.purchasedAt, fromDate),
+        lte(leadPurchases.purchasedAt, toDate)
+      ))
+      .groupBy(sql`to_char(purchased_at, 'YYYY-MM-DD')`)
+      .orderBy(sql`to_char(purchased_at, 'YYYY-MM-DD')`);
+
+    // Insertions metrics
+    const insertionsData = await db
+      .select({
+        count: sql<number>`count(*)`,
+      })
+      .from(leads)
+      .where(and(
+        gte(leads.createdAt, fromDate),
+        lte(leads.createdAt, toDate)
+      ));
+
+    const totalCreated = insertionsData[0]?.count || 0;
+
+    // By quality
+    const byQualityData = await db
+      .select({
+        quality: leads.quality,
+        count: sql<number>`count(*)`,
+      })
+      .from(leads)
+      .where(and(
+        gte(leads.createdAt, fromDate),
+        lte(leads.createdAt, toDate)
+      ))
+      .groupBy(leads.quality);
+
+    // By plan type
+    const byPlanData = await db
+      .select({
+        planType: leads.planType,
+        count: sql<number>`count(*)`,
+      })
+      .from(leads)
+      .where(and(
+        gte(leads.createdAt, fromDate),
+        lte(leads.createdAt, toDate)
+      ))
+      .groupBy(leads.planType);
+
+    // Insertions by day
+    const insertionsByDayData = await db
+      .select({
+        date: sql<string>`to_char(created_at, 'YYYY-MM-DD')`,
+        count: sql<number>`count(*)`,
+      })
+      .from(leads)
+      .where(and(
+        gte(leads.createdAt, fromDate),
+        lte(leads.createdAt, toDate)
+      ))
+      .groupBy(sql`to_char(created_at, 'YYYY-MM-DD')`)
+      .orderBy(sql`to_char(created_at, 'YYYY-MM-DD')`);
+
+    // System metrics
+    const [userCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users);
+
+    const [clientCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(and(eq(users.role, "client"), eq(users.status, "active")));
+
+    const [availableCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(leads)
+      .where(eq(leads.status, "available"));
+
+    const [reservedCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(leads)
+      .where(eq(leads.status, "reserved"));
+
+    const [expiredCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(leads)
+      .where(eq(leads.status, "expired"));
+
+    const [creditsDeposited] = await db
+      .select({
+        total: sql<string>`coalesce(sum(amount), '0')`,
+      })
+      .from(creditTransactions)
+      .where(and(
+        eq(creditTransactions.type, "deposit"),
+        gte(creditTransactions.createdAt, fromDate),
+        lte(creditTransactions.createdAt, toDate)
+      ));
+
+    return {
+      sales: {
+        totalSold,
+        totalRevenue,
+        averageTicket,
+        salesByDay: salesByDayData.map(d => ({
+          date: d.date,
+          count: d.count,
+          revenue: d.revenue,
+        })),
+      },
+      insertions: {
+        totalCreated,
+        byQuality: byQualityData.map(d => ({
+          quality: d.quality || "silver",
+          count: d.count,
+        })),
+        byPlan: byPlanData.map(d => ({
+          planType: d.planType || "pf",
+          count: d.count,
+        })),
+        insertionsByDay: insertionsByDayData.map(d => ({
+          date: d.date,
+          count: d.count,
+        })),
+      },
+      system: {
+        totalUsers: userCount.count,
+        activeClients: clientCount.count,
+        availableLeads: availableCount.count,
+        reservedLeads: reservedCount.count,
+        expiredLeads: expiredCount.count,
+        totalCreditsDeposited: creditsDeposited.total,
+      },
     };
   }
 }
