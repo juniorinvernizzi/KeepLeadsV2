@@ -297,7 +297,7 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async updateUserProfile(userId: string, profileData: { firstName?: string; lastName?: string; email?: string }): Promise<void> {
+  async updateUserProfile(userId: string, profileData: { firstName?: string; lastName?: string; email?: string; profileImageUrl?: string }): Promise<void> {
     await db
       .update(users)
       .set({ ...profileData, updatedAt: new Date() })

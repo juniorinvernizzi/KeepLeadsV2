@@ -158,13 +158,14 @@ export default function Layout({ children }: LayoutProps) {
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100">
           <div className="bg-gray-50 rounded-xl p-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <span className="text-sm font-semibold text-purple-600">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={user.profileImageUrl} alt={user.firstName || "User"} />
+                <AvatarFallback className="bg-purple-100 text-purple-600 font-semibold">
                   {user.firstName
                     ? user.firstName.charAt(0).toUpperCase()
                     : user.email?.charAt(0).toUpperCase() || "U"}
-                </span>
-              </div>
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0">
                 <div
                   className="text-sm font-medium text-gray-900 truncate"
@@ -206,7 +207,7 @@ export default function Layout({ children }: LayoutProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 p-2">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={""} alt={user?.firstName || "User"} />
+                  <AvatarImage src={user?.profileImageUrl} alt={user?.firstName || "User"} />
                   <AvatarFallback
                     className={`${user?.role === "admin" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"} font-semibold`}
                   >

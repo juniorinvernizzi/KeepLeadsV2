@@ -1,11 +1,18 @@
 import { MailService } from '@sendgrid/mail';
 
-if (!process.env.SENDGRID_API_KEY) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set");
+const isProduction = process.env.NODE_ENV === 'production';
+const hasSendGridKey = !!process.env.SENDGRID_API_KEY;
+
+if (isProduction && !hasSendGridKey) {
+  throw new Error("SENDGRID_API_KEY environment variable must be set in production");
 }
 
-const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY);
+const mailService = hasSendGridKey ? new MailService() : null;
+if (mailService && hasSendGridKey) {
+  mailService.setApiKey(process.env.SENDGRID_API_KEY!);
+} else {
+  console.warn('⚠️  SendGrid not configured - emails will be logged to console only');
+}
 
 interface EmailParams {
   to: string;
@@ -29,6 +36,16 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     
     if (params.html) {
       emailData.html = params.html;
+    }
+    
+    // If SendGrid is not configured, just log the email
+    if (!mailService) {
+      console.log('📧 [EMAIL - DEV MODE]');
+      console.log('  To:', params.to);
+      console.log('  From:', params.from);
+      console.log('  Subject:', params.subject);
+      if (params.text) console.log('  Text:', params.text.substring(0, 100) + '...');
+      return true;
     }
     
     await mailService.send(emailData);

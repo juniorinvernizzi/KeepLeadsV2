@@ -8,9 +8,7 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+const isReplitEnvironment = process.env.REPLIT_DOMAINS && process.env.REPL_ID;
 
 const getOidcConfig = memoize(
   async () => {
@@ -24,17 +22,11 @@ const getOidcConfig = memoize(
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
   const isProd = process.env.NODE_ENV === 'production';
-  return session({
-    secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
+  const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
+  
+  const sessionConfig: any = {
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -43,7 +35,24 @@ export function getSession() {
       sameSite: isProd ? 'none' : 'lax',
       maxAge: sessionTtl,
     },
-  });
+  };
+  
+  // Use PostgreSQL store only if DATABASE_URL is available and properly configured
+  if (process.env.DATABASE_URL) {
+    try {
+      const pgStore = connectPg(session);
+      sessionConfig.store = new pgStore({
+        conString: process.env.DATABASE_URL,
+        createTableIfMissing: false,
+        ttl: sessionTtl,
+        tableName: "sessions",
+      });
+    } catch (error) {
+      console.warn('Failed to initialize PostgreSQL session store, using memory store:', error);
+    }
+  }
+  
+  return session(sessionConfig);
 }
 
 function updateUserSession(
@@ -72,6 +81,15 @@ export async function setupAuth(app: Express) {
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Only setup Replit Auth if in Replit environment
+  if (!isReplitEnvironment) {
+    console.log('⚠️  Replit Auth disabled - running in local development mode');
+    console.log('   Use simple login (/api/simple-login) for authentication');
+    passport.serializeUser((user: Express.User, cb) => cb(null, user));
+    passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+    return;
+  }
 
   const config = await getOidcConfig();
 
