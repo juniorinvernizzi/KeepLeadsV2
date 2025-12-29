@@ -1073,6 +1073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const emailCompatibleLead = {
             ...lead,
             age: lead.age || 30,
+            city: lead.city || "",
             insuranceCompanyId: lead.insuranceCompanyId || "",
             budgetMin: lead.budgetMin || "",
             budgetMax: lead.budgetMax || "",
