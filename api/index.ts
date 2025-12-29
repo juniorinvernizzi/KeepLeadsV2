@@ -3,11 +3,36 @@ import express from "express";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { db } from "../server/db";
-import { users } from "../shared/schema";
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import { pgTable, varchar, decimal, timestamp } from "drizzle-orm/pg-core";
 import { eq } from "drizzle-orm";
+import { sql } from 'drizzle-orm';
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import ws from "ws";
+
+// Configure Neon for serverless
+neonConfig.webSocketConstructor = ws;
+
+// Create database connection
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const db = drizzle({ client: pool });
+
+// Define users table schema inline
+const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").unique().notNull(),
+  password: varchar("password"),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  role: varchar("role").notNull().default("client"),
+  status: varchar("status").notNull().default("active"),
+  credits: decimal("credits", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
 const app = express();
 
