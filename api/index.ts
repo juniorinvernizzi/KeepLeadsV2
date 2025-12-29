@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import express from "express";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -15,10 +14,6 @@ import ws from "ws";
 // Configure Neon for serverless
 neonConfig.webSocketConstructor = ws;
 
-// Create database connection
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const db = drizzle({ client: pool });
-
 // Define users table schema inline
 const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -33,6 +28,26 @@ const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// Lazy initialization of database
+let pool: Pool | null = null;
+let db: ReturnType<typeof drizzle> | null = null;
+
+function getDb() {
+  if (!db) {
+    const connectionString = process.env.DATABASE_URL;
+    console.log('DATABASE_URL exists:', !!connectionString);
+    
+    if (!connectionString) {
+      throw new Error('DATABASE_URL environment variable is not set');
+    }
+    
+    pool = new Pool({ connectionString });
+    db = drizzle({ client: pool });
+    console.log('✓ Database connection initialized');
+  }
+  return db;
+}
 
 const app = express();
 
@@ -131,7 +146,8 @@ async function initServer() {
         }
 
         console.log('Looking up user:', email);
-        const [user] = await db.select().from(users).where(eq(users.email, email));
+        const database = getDb();
+        const [user] = await database.select().from(users).where(eq(users.email, email));
         
         if (!user) {
           console.log('User not found:', email);
