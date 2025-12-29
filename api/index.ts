@@ -58,10 +58,10 @@ async function initServer() {
     // Setup auth/session middleware
     await setupAuth(app);
     
-    // Simple login route
-    app.post("/simple-login", async (req: any, res) => {
+    // Simple login route - handle both with and without /api prefix
+    const loginHandler = async (req: any, res: any) => {
       try {
-        console.log('Login attempt:', { email: req.body?.email });
+        console.log('Login attempt:', { email: req.body?.email, url: req.url });
         
         const { email, password } = req.body;
 
@@ -111,7 +111,10 @@ async function initServer() {
           error: error instanceof Error ? error.message : String(error) 
         });
       }
-    });
+    };
+    
+    app.post("/simple-login", loginHandler);
+    app.post("/api/simple-login", loginHandler);
     
     initialized = true;
     console.log('✓ Vercel handler initialized');
