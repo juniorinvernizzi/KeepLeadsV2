@@ -146,6 +146,11 @@ const csrfProtection = (req: any, res: any, next: any) => {
     allowedOrigins.push(`https://${host}`);
     allowedOrigins.push(`http://${host}`);
   }
+  
+  // Allow Vercel preview and production domains
+  if (host && host.includes('vercel.app')) {
+    allowedOrigins.push(`https://${host}`);
+  }
 
   // Check Origin header first (more reliable)
   if (origin) {

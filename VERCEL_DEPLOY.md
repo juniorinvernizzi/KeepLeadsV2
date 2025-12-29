@@ -29,19 +29,14 @@ Responda as perguntas:
 
 ### 3. Configurar variáveis de ambiente na Vercel
 
-**IMPORTANTE:** Acesse https://vercel.com/seu-projeto/settings/environment-variables
+Acesse o dashboard da Vercel e adicione as variáveis de ambiente:
 
-**Obrigatórias para o sistema funcionar:**
+**Obrigatórias:**
 ```
 DATABASE_URL=postgresql://neondb_owner:npg_3NCUd4uRaSTm@ep-young-math-ae4kpbip.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require
 NODE_ENV=production
-SESSION_SECRET=keepleads-super-secret-key-min-32-characters-long-2025
+SESSION_SECRET=seu-secret-aqui-min-32-chars
 ```
-
-**⚠️ CRÍTICO: SESSION_SECRET**
-- Deve ter no mínimo 32 caracteres
-- Não use o valor default de desenvolvimento
-- Necessário para sessões funcionarem na Vercel
 
 **Opcionais:**
 ```
@@ -49,16 +44,6 @@ MERCADO_PAGO_ACCESS_TOKEN=seu-token-aqui
 MERCADO_PAGO_PUBLIC_KEY=sua-key-aqui
 SENDGRID_API_KEY=seu-api-key-aqui
 ```
-
-### Como adicionar variáveis na Vercel:
-1. Acesse: https://vercel.com/seu-projeto/settings/environment-variables
-2. Clique em "Add New"
-3. Nome: `SESSION_SECRET`
-4. Valor: `keepleads-super-secret-key-min-32-characters-long-2025`
-5. Environment: Selecione "Production", "Preview" e "Development"
-6. Clique em "Save"
-7. Repita para `DATABASE_URL` e `NODE_ENV`
-8. **IMPORTANTE:** Após adicionar as variáveis, faça um novo deploy ou clique em "Redeploy" no dashboard
 
 ### 4. Deploy para produção
 ```bash
