@@ -1,8 +1,11 @@
 import 'dotenv/config';
-import express, { type Express } from "express";
+import express from "express";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { setupAuth } from "../server/replitAuth";
-import { storage } from "../server/storage";
+import { db } from "../server/db";
+import { users } from "../shared/schema";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 
@@ -21,7 +24,7 @@ let initialized = false;
 // Extend Express session type
 declare module 'express-session' {
   interface SessionData {
-    userId: number;
+    userId: string;
     user: any;
   }
 }
@@ -55,8 +58,40 @@ const sanitizeUser = (user: any) => {
 
 async function initServer() {
   if (!initialized) {
-    // Setup auth/session middleware
-    await setupAuth(app);
+    // Setup session middleware directly
+    const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+    const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
+    
+    const sessionConfig: any = {
+      secret: sessionSecret,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: true, // Always true in Vercel (HTTPS)
+        sameSite: 'lax',
+        maxAge: sessionTtl,
+        path: '/',
+      },
+    };
+    
+    // Use PostgreSQL store
+    if (process.env.DATABASE_URL) {
+      try {
+        const pgStore = connectPg(session);
+        sessionConfig.store = new pgStore({
+          conString: process.env.DATABASE_URL,
+          createTableIfMissing: true,
+          ttl: sessionTtl / 1000,
+          tableName: "sessions",
+        });
+        console.log('✓ PostgreSQL session store configured');
+      } catch (error) {
+        console.warn('⚠️ Failed to initialize PostgreSQL session store:', error);
+      }
+    }
+    
+    app.use(session(sessionConfig));
     
     // Simple login route - handle both with and without /api prefix
     const loginHandler = async (req: any, res: any) => {
@@ -71,7 +106,8 @@ async function initServer() {
         }
 
         console.log('Looking up user:', email);
-        const user = await storage.getUserByEmail(email);
+        const [user] = await db.select().from(users).where(eq(users.email, email));
+        
         if (!user) {
           console.log('User not found:', email);
           return res.status(401).json({ message: "Invalid credentials" });
