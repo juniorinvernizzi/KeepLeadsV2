@@ -16,6 +16,14 @@ import bcrypt from "bcrypt";
 import crypto from "crypto";
 import * as XLSX from "xlsx";
 
+// Extend Express session type
+declare module 'express-session' {
+  interface SessionData {
+    userId: number;
+    user: any;
+  }
+}
+
 interface ReplitAuthenticatedRequest extends Request {
   user?: {
     claims: {
@@ -179,36 +187,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Simple login routes
   app.post("/api/simple-login", async (req, res) => {
     try {
+      console.log('Login attempt:', { email: req.body?.email });
+      
       const { email, password } = req.body;
 
       if (!email || !password) {
+        console.log('Missing credentials');
         return res.status(400).json({ message: "Email and password required" });
       }
 
+      console.log('Looking up user:', email);
       const user = await storage.getUserByEmail(email);
       if (!user) {
+        console.log('User not found:', email);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      console.log('Verifying password for user:', user.id);
       const isPasswordValid = await comparePassword(
         password,
         user.password || "",
       );
       if (!isPasswordValid) {
+        console.log('Invalid password for user:', user.id);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Set session
-      (req.session as any).userId = user.id;
-      (req.session as any).user = user;
-
-      res.json({
-        success: true,
-        user: sanitizeUser(user),
+      console.log('Password verified, setting session for user:', user.id);
+      // Set session with proper callback
+      req.session.userId = user.id;
+      req.session.user = user;
+      
+      console.log('Saving session...');
+      // Save session explicitly
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Failed to save session" });
+        }
+        
+        console.log('Session saved successfully for user:', user.id);
+        return res.json({
+          success: true,
+          user: sanitizeUser(user),
+        });
       });
     } catch (error) {
       console.error("Login error:", error);
-      res.status(500).json({ message: "Login failed" });
+      return res.status(500).json({ message: "Login failed", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -235,17 +261,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "client",
       });
 
-      // Set session
-      (req.session as any).userId = newUser.id;
-      (req.session as any).user = newUser;
-
-      res.json({
-        success: true,
-        user: sanitizeUser(newUser),
+      // Set session with proper callback
+      req.session.userId = newUser.id;
+      req.session.user = newUser;
+      
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Failed to save session" });
+        }
+        
+        return res.json({
+          success: true,
+          user: sanitizeUser(newUser),
+        });
       });
     } catch (error) {
       console.error("Register error:", error);
-      res.status(500).json({ message: "Registration failed" });
+      return res.status(500).json({ message: "Registration failed" });
     }
   });
 

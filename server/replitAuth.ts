@@ -43,13 +43,16 @@ export function getSession() {
       const pgStore = connectPg(session);
       sessionConfig.store = new pgStore({
         conString: process.env.DATABASE_URL,
-        createTableIfMissing: false,
-        ttl: sessionTtl,
+        createTableIfMissing: true,
+        ttl: sessionTtl / 1000, // convert to seconds
         tableName: "sessions",
       });
+      console.log('✓ PostgreSQL session store configured');
     } catch (error) {
-      console.warn('Failed to initialize PostgreSQL session store, using memory store:', error);
+      console.warn('⚠️ Failed to initialize PostgreSQL session store, using memory store:', error);
     }
+  } else {
+    console.log('⚠️ DATABASE_URL not set - using memory session store');
   }
   
   return session(sessionConfig);
