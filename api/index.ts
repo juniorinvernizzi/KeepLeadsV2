@@ -193,6 +193,46 @@ async function initServer() {
     app.post("/simple-login", loginHandler);
     app.post("/api/simple-login", loginHandler);
     
+    // Get current user route - CRITICAL for authentication
+    const getUserHandler = async (req: any, res: any) => {
+      try {
+        console.log('Get user request, session:', { userId: req.session?.userId });
+        
+        if (!req.session?.userId) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+        
+        const database = getDb();
+        const [user] = await database.select().from(users).where(eq(users.id, req.session.userId));
+        
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+        
+        return res.json(sanitizeUser(user));
+      } catch (error) {
+        console.error("Get user error:", error);
+        return res.status(500).json({ message: "Failed to get user" });
+      }
+    };
+    
+    app.get("/simple-auth/user", getUserHandler);
+    app.get("/api/simple-auth/user", getUserHandler);
+    
+    // Logout route
+    const logoutHandler = (req: any, res: any) => {
+      req.session?.destroy((err: any) => {
+        if (err) {
+          console.error("Logout error:", err);
+          return res.status(500).json({ message: "Failed to logout" });
+        }
+        res.json({ success: true });
+      });
+    };
+    
+    app.post("/simple-logout", logoutHandler);
+    app.post("/api/simple-logout", logoutHandler);
+    
     initialized = true;
     console.log('✓ Vercel handler initialized');
   }
