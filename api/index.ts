@@ -11,20 +11,39 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Initialize server promise
 let initialized = false;
+let initPromise: Promise<void> | null = null;
 
 async function initServer() {
-  if (!initialized) {
-    await registerRoutes(app);
-    initialized = true;
+  if (!initialized && !initPromise) {
+    initPromise = (async () => {
+      try {
+        console.log('🔄 Initializing Vercel serverless function...');
+        await registerRoutes(app);
+        initialized = true;
+        console.log('✓ Serverless function initialized successfully');
+      } catch (error) {
+        console.error('❌ Failed to initialize serverless function:', error);
+        throw error;
+      }
+    })();
   }
+  return initPromise;
 }
 
 // Export as Vercel serverless function
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  await initServer();
-  
-  // Convert Vercel request to Express request format
-  (req as any).url = req.url?.replace(/^\/api/, '') || '/';
-  
-  return app(req as any, res as any);
+  try {
+    await initServer();
+    
+    // Convert Vercel request to Express request format
+    (req as any).url = req.url?.replace(/^\/api/, '') || '/';
+    
+    return app(req as any, res as any);
+  } catch (error) {
+    console.error('Handler error:', error);
+    return res.status(500).json({ 
+      message: 'Internal server error',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
 }

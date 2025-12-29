@@ -34,7 +34,9 @@ export function getSession() {
       secure: isProd, // false em desenvolvimento para funcionar com HTTP
       sameSite: isProd ? 'none' : 'lax',
       maxAge: sessionTtl,
+      domain: isProd ? undefined : undefined, // Let browser handle domain
     },
+    proxy: true, // Trust proxy headers (important for Vercel)
   };
   
   // Use PostgreSQL store only if DATABASE_URL is available and properly configured
@@ -46,13 +48,16 @@ export function getSession() {
         createTableIfMissing: true,
         ttl: sessionTtl / 1000, // convert to seconds
         tableName: "sessions",
+        pruneSessionInterval: 60 * 15, // Clean expired sessions every 15 min
       });
       console.log('✓ PostgreSQL session store configured');
     } catch (error) {
-      console.warn('⚠️ Failed to initialize PostgreSQL session store, using memory store:', error);
+      console.error('❌ Failed to initialize PostgreSQL session store:', error);
+      console.warn('⚠️ Using memory store - sessions will not persist between deployments');
     }
   } else {
-    console.log('⚠️ DATABASE_URL not set - using memory session store');
+    console.warn('⚠️ DATABASE_URL not set - using memory session store');
+    console.warn('⚠️ Sessions will not persist in serverless environment (Vercel)');
   }
   
   return session(sessionConfig);
