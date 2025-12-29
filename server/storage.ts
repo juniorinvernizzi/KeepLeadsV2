@@ -503,7 +503,7 @@ export class DatabaseStorage implements IStorage {
         totalSold,
         totalRevenue,
         averageTicket,
-        salesByDay: salesByDayData.map(d => ({
+        salesByDay: salesByDayData.map((d: { date: string; count: number; revenue: string }) => ({
           date: d.date as string,
           count: d.count as number,
           revenue: d.revenue as string,
@@ -511,15 +511,15 @@ export class DatabaseStorage implements IStorage {
       },
       insertions: {
         totalCreated,
-        byQuality: byQualityData.map(d => ({
+        byQuality: byQualityData.map((d: { quality: string | null; count: number }) => ({
           quality: (d.quality || "silver") as string,
           count: d.count as number,
         })),
-        byPlan: byPlanData.map(d => ({
+        byPlan: byPlanData.map((d: { planType: string | null; count: number }) => ({
           planType: (d.planType || "pf") as string,
           count: d.count as number,
         })),
-        insertionsByDay: insertionsByDayData.map(d => ({
+        insertionsByDay: insertionsByDayData.map((d: { date: string; count: number }) => ({
           date: d.date as string,
           count: d.count as number,
         })),

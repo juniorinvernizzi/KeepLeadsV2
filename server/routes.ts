@@ -19,7 +19,7 @@ import * as XLSX from "xlsx";
 // Extend Express session type
 declare module 'express-session' {
   interface SessionData {
-    userId: number;
+    userId: string;
     user: any;
   }
 }
