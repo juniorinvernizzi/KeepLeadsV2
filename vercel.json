@@ -15,7 +15,8 @@
   "functions": {
     "api/index.ts": {
       "memory": 1024,
-      "maxDuration": 10
+      "maxDuration": 30,
+      "includeFiles": "server/**/*.ts,shared/**/*.ts"
     }
   }
 }

@@ -1,53 +1,6 @@
 import express from "express";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import { pgTable, varchar, decimal, timestamp } from "drizzle-orm/pg-core";
-import { eq } from "drizzle-orm";
-import { sql } from 'drizzle-orm';
-import bcrypt from "bcrypt";
-import crypto from "crypto";
-import ws from "ws";
-
-// Configure Neon for serverless
-neonConfig.webSocketConstructor = ws;
-
-// Define users table schema inline
-const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").unique().notNull(),
-  password: varchar("password"),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").notNull().default("client"),
-  status: varchar("status").notNull().default("active"),
-  credits: decimal("credits", { precision: 10, scale: 2 }).notNull().default("0.00"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Lazy initialization of database
-let pool: Pool | null = null;
-let db: ReturnType<typeof drizzle> | null = null;
-
-function getDb() {
-  if (!db) {
-    const connectionString = process.env.DATABASE_URL;
-    console.log('DATABASE_URL exists:', !!connectionString);
-    
-    if (!connectionString) {
-      throw new Error('DATABASE_URL environment variable is not set');
-    }
-    
-    pool = new Pool({ connectionString });
-    db = drizzle({ client: pool });
-    console.log('✓ Database connection initialized');
-  }
-  return db;
-}
+import { registerRoutes } from "../server/routes";
 
 const app = express();
 
@@ -61,180 +14,15 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Initialize server promise
 let initialized = false;
 
-// Extend Express session type
-declare module 'express-session' {
-  interface SessionData {
-    userId: string;
-    user: any;
-  }
-}
-
-// Secure password hashing functions
-const SALT_ROUNDS = 12;
-
-const hashPassword = async (password: string): Promise<string> => {
-  return await bcrypt.hash(password, SALT_ROUNDS);
-};
-
-const comparePassword = async (
-  password: string,
-  hash: string,
-): Promise<boolean> => {
-  try {
-    const bcryptMatch = await bcrypt.compare(password, hash);
-    if (bcryptMatch) return true;
-  } catch (e) {
-    // Not a bcrypt hash, try SHA256
-  }
-
-  const sha256Hash = crypto.createHash("sha256").update(password).digest("hex");
-  return sha256Hash === hash;
-};
-
-const sanitizeUser = (user: any) => {
-  const { password, ...sanitizedUser } = user;
-  return sanitizedUser;
-};
-
 async function initServer() {
   if (!initialized) {
-    // Setup session middleware directly
-    const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-    const sessionSecret = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
+    console.log('Initializing Vercel handler...');
+    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    console.log('SESSION_SECRET exists:', !!process.env.SESSION_SECRET);
     
-    const sessionConfig: any = {
-      secret: sessionSecret,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        httpOnly: true,
-        secure: true, // Always true in Vercel (HTTPS)
-        sameSite: 'lax',
-        maxAge: sessionTtl,
-        path: '/',
-      },
-    };
-    
-    // Use PostgreSQL store
-    if (process.env.DATABASE_URL) {
-      try {
-        const pgStore = connectPg(session);
-        sessionConfig.store = new pgStore({
-          conString: process.env.DATABASE_URL,
-          createTableIfMissing: true,
-          ttl: sessionTtl / 1000,
-          tableName: "sessions",
-        });
-        console.log('✓ PostgreSQL session store configured');
-      } catch (error) {
-        console.warn('⚠️ Failed to initialize PostgreSQL session store:', error);
-      }
-    }
-    
-    app.use(session(sessionConfig));
-    
-    // Simple login route - handle both with and without /api prefix
-    const loginHandler = async (req: any, res: any) => {
-      try {
-        console.log('Login attempt:', { email: req.body?.email, url: req.url });
-        
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-          console.log('Missing credentials');
-          return res.status(400).json({ message: "Email and password required" });
-        }
-
-        console.log('Looking up user:', email);
-        const database = getDb();
-        const [user] = await database.select().from(users).where(eq(users.email, email));
-        
-        if (!user) {
-          console.log('User not found:', email);
-          return res.status(401).json({ message: "Invalid credentials" });
-        }
-
-        console.log('Verifying password for user:', user.id);
-        const isPasswordValid = await comparePassword(
-          password,
-          user.password || "",
-        );
-        if (!isPasswordValid) {
-          console.log('Invalid password for user:', user.id);
-          return res.status(401).json({ message: "Invalid credentials" });
-        }
-
-        console.log('Password verified, setting session for user:', user.id);
-        req.session.userId = user.id;
-        req.session.user = user;
-        
-        console.log('Saving session...');
-        req.session.save((err: any) => {
-          if (err) {
-            console.error("Session save error:", err);
-            return res.status(500).json({ message: "Failed to save session" });
-          }
-          
-          console.log('Session saved successfully for user:', user.id);
-          return res.json({
-            success: true,
-            user: sanitizeUser(user),
-          });
-        });
-      } catch (error) {
-        console.error("Login error:", error);
-        return res.status(500).json({ 
-          message: "Login failed", 
-          error: error instanceof Error ? error.message : String(error) 
-        });
-      }
-    };
-    
-    app.post("/simple-login", loginHandler);
-    app.post("/api/simple-login", loginHandler);
-    
-    // Get current user route - CRITICAL for authentication
-    const getUserHandler = async (req: any, res: any) => {
-      try {
-        console.log('Get user request, session:', { userId: req.session?.userId });
-        
-        if (!req.session?.userId) {
-          return res.status(401).json({ message: "Unauthorized" });
-        }
-        
-        const database = getDb();
-        const [user] = await database.select().from(users).where(eq(users.id, req.session.userId));
-        
-        if (!user) {
-          return res.status(401).json({ message: "User not found" });
-        }
-        
-        return res.json(sanitizeUser(user));
-      } catch (error) {
-        console.error("Get user error:", error);
-        return res.status(500).json({ message: "Failed to get user" });
-      }
-    };
-    
-    app.get("/simple-auth/user", getUserHandler);
-    app.get("/api/simple-auth/user", getUserHandler);
-    
-    // Logout route
-    const logoutHandler = (req: any, res: any) => {
-      req.session?.destroy((err: any) => {
-        if (err) {
-          console.error("Logout error:", err);
-          return res.status(500).json({ message: "Failed to logout" });
-        }
-        res.json({ success: true });
-      });
-    };
-    
-    app.post("/simple-logout", logoutHandler);
-    app.post("/api/simple-logout", logoutHandler);
-    
+    await registerRoutes(app);
     initialized = true;
-    console.log('✓ Vercel handler initialized');
+    console.log('✓ Vercel handler initialized with all routes');
   }
 }
 
@@ -243,8 +31,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await initServer();
     
-    // Convert Vercel request to Express request format
-    (req as any).url = req.url?.replace(/^\/api/, '') || '/';
+    // Remove /api prefix for Express routing
+    const originalUrl = req.url || '/';
+    (req as any).url = originalUrl.replace(/^\/api/, '') || '/';
+    
+    console.log('Request:', req.method, originalUrl, '->', (req as any).url);
     
     return app(req as any, res as any);
   } catch (error) {
