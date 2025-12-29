@@ -18,11 +18,24 @@ async function initServer() {
     initPromise = (async () => {
       try {
         console.log('🔄 Initializing Vercel serverless function...');
+        
+        // Check critical environment variables
+        if (!process.env.DATABASE_URL) {
+          console.error('❌ DATABASE_URL not configured!');
+          throw new Error('DATABASE_URL environment variable is required');
+        }
+        
+        if (!process.env.SESSION_SECRET) {
+          console.warn('⚠️ SESSION_SECRET not configured! Using default (not secure)');
+        }
+        
+        console.log('✓ Environment variables validated');
         await registerRoutes(app);
         initialized = true;
         console.log('✓ Serverless function initialized successfully');
       } catch (error) {
         console.error('❌ Failed to initialize serverless function:', error);
+        initPromise = null; // Reset promise to allow retry
         throw error;
       }
     })();
