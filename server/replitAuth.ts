@@ -1,12 +1,12 @@
 import * as client from "openid-client";
-import { Strategy, type VerifyFunction } from "openid-client/passport";
+//import { Strategy, type VerifyFunction } from "openid-client/passport";
 
 import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
-import { storage } from "./storage";
+import { storage } from "./storage.js";
 
 const isReplitEnvironment = process.env.REPLIT_DOMAINS && process.env.REPL_ID;
 
@@ -33,7 +33,7 @@ export function getSession() {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'lax' : 'lax', // Changed from 'none' to 'lax' for better compatibility
-      maxAge: sessionTtl,
+      // import { Strategy, type VerifyFunction } from "openid-client/passport";
       path: '/',
       domain: isProd ? undefined : undefined, // Let browser handle domain
     },

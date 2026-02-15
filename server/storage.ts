@@ -15,7 +15,7 @@ import {
   type InsuranceCompany,
   type InsertInsuranceCompany,
 } from "@shared/schema";
-import { db } from "./db";
+import { db } from "./db.js";
 import { eq, desc, asc, and, or, like, gte, lte, sql } from "drizzle-orm";
 
 export interface IStorage {

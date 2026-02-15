@@ -1,7 +1,7 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { storage } from "./storage.js";
+import { setupAuth, isAuthenticated } from "./replitAuth.js";
 import {
   insertLeadSchema,
   insertCreditTransactionSchema,
@@ -10,7 +10,7 @@ import {
 import {
   sendLeadPurchaseNotification,
   sendAdminPurchaseNotification,
-} from "./emailService";
+} from "./emailService.js";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import crypto from "crypto";

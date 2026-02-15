@@ -1,6 +1,6 @@
 import express from "express";
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { registerRoutes } from "../server/routes";
+import { registerRoutes } from "../server/routes.js";
 
 const app = express();
 
@@ -29,6 +29,15 @@ async function initServer() {
 // Export as Vercel serverless function
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    // Ensure environment variables are set
+    if (!process.env.DATABASE_URL) {
+      console.error('DATABASE_URL not set!');
+      return res.status(500).json({ 
+        message: 'Database configuration error',
+        error: 'DATABASE_URL environment variable is not set'
+      });
+    }
+
     await initServer();
     
     // Remove /api prefix for Express routing
@@ -40,9 +49,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return app(req as any, res as any);
   } catch (error) {
     console.error('Handler error:', error);
+    console.error('Stack:', error instanceof Error ? error.stack : 'No stack');
     return res.status(500).json({ 
       message: 'Internal server error',
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
+      stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
     });
   }
 }
