@@ -4,7 +4,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 const hasSendGridKey = !!process.env.SENDGRID_API_KEY;
 
 if (isProduction && !hasSendGridKey) {
-  throw new Error("SENDGRID_API_KEY environment variable must be set in production");
+  console.warn('⚠️  SENDGRID_API_KEY not set - emails will be logged to console only');
 }
 
 const mailService = hasSendGridKey ? new MailService() : null;
